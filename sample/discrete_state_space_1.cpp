@@ -26,4 +26,6 @@ int main(void) {
     std::cout << "Y: " << sys.get_Y()(0, 0) << ", ";
     std::cout << std::endl;
   }
+
+  return 0;
 }

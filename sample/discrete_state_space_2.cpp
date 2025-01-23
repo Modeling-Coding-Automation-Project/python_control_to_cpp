@@ -43,4 +43,6 @@ int main(void) {
     std::cout << "Y_1: " << sys.get_Y()(1, 0) << ", ";
     std::cout << std::endl;
   }
+
+  return 0;
 }
