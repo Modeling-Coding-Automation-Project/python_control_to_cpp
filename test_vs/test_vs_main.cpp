@@ -288,20 +288,20 @@ void check_python_control_transfer_function(void) {
     //const T NEAR_LIMIT_SOFT = 1.0e-2F;
 
     /* 分子3次 分母4次 伝達関数 定義 */
-    TransferFunctionNumeratorType<T, 4> numerator_3_4({
+    auto numerator_3_4 = make_TransferFunctionNumerator<4>(
         static_cast<T>(0.0012642614672828678),
         static_cast<T>(0.0037594540384011665),
         static_cast<T>(-0.002781625665309928),
         static_cast<T>(-0.0009364784774175128)
-        });
+    );
 
-    TransferFunctionNumeratorType<T, 5> denominator_3_4({
+    auto denominator_3_4 = make_TransferFunctionNumerator<5>(
         static_cast<T>(1.0),
         static_cast<T>(-3.565195017021459),
         static_cast<T>(4.815115383504625),
         static_cast<T>(-2.9189348011558485),
         static_cast<T>(0.6703200460356397)
-        });
+    );
 
     T dt = static_cast<T>(0.2);
 
@@ -365,20 +365,20 @@ void check_python_control_transfer_function(void) {
         "check DiscreteTransferFunction reset state.");
 
     /* 分子3次 分母4次 分子分母リセット */
-    TransferFunctionNumeratorType<T, 4> numerator_3_4_0({
+    auto numerator_3_4_0 = make_TransferFunctionNumerator<4>(
         static_cast<T>(0),
         static_cast<T>(0),
         static_cast<T>(0),
         static_cast<T>(0)
-        });
+    );
 
-    TransferFunctionNumeratorType<T, 5> denominator_3_4_0({
+    auto denominator_3_4_0 = make_TransferFunctionNumerator<5>(
         static_cast<T>(1),
         static_cast<T>(0),
         static_cast<T>(0),
         static_cast<T>(0),
         static_cast<T>(0)
-        });
+    );
 
     system_3_4.reset_numerator_and_denominator(numerator_3_4_0, denominator_3_4_0);
 
@@ -394,21 +394,21 @@ void check_python_control_transfer_function(void) {
 
 
     /* 分子4次 分母4次 伝達関数 定義 */
-    TransferFunctionNumeratorType<T, 5> numerator_4_4({
+    auto numerator_4_4 = make_TransferFunctionNumerator<5>(
         static_cast<T>(1.0),
         static_cast<T>(0.5),
         static_cast<T>(0.3),
         static_cast<T>(0.2),
         static_cast<T>(0.1)
-        });
+    );
 
-    TransferFunctionNumeratorType<T, 5> denominator_4_4({
+    auto denominator_4_4 = make_TransferFunctionNumerator<5>(
         static_cast<T>(1.1),
         static_cast<T>(-0.5),
         static_cast<T>(0.4),
         static_cast<T>(-0.3),
         static_cast<T>(0.2)
-        });
+    );
 
     auto system_4_4 = make_DiscreteTransferFunction(numerator_4_4, denominator_4_4, dt);
 
@@ -457,19 +457,19 @@ void check_python_control_transfer_function(void) {
 
 
     /* 分子2次 分母4次 伝達関数 定義 */
-    TransferFunctionNumeratorType<T, 3> numerator_2_4({
+    auto numerator_2_4 = make_TransferFunctionNumerator<3>(
         static_cast<T>(0.5),
         static_cast<T>(0.3),
         static_cast<T>(0.1)
-        });
+    );
 
-    TransferFunctionNumeratorType<T, 5> denominator_2_4({
+    auto denominator_2_4 = make_TransferFunctionNumerator<5>(
         static_cast<T>(1.0),
         static_cast<T>(-1.8),
         static_cast<T>(1.5),
         static_cast<T>(-0.7),
         static_cast<T>(0.2)
-        });
+    );
 
     auto system_2_4 = make_DiscreteTransferFunction(numerator_2_4, denominator_2_4, dt);
 
@@ -527,16 +527,16 @@ void check_python_control_pid_controller(void) {
     T dt = static_cast<T>(0.2);
 
     /* プラントモデル */
-    TransferFunctionNumeratorType<T, 2> numerator_plant({
+    auto numerator_plant = make_TransferFunctionNumerator<2>(
         static_cast<T>(0.015479737715070607),
         static_cast<T>(0.01497228851342225)
-        });
+    );
 
-    TransferFunctionNumeratorType<T, 3> denominator_plant({
+    auto denominator_plant = make_TransferFunctionNumerator<3>(
         static_cast<T>(1.0),
         static_cast<T>(-1.9048374180359595),
         static_cast<T>(0.9048374180359595)
-        });
+    );
 
     auto plant = make_DiscreteTransferFunction(numerator_plant, denominator_plant, dt);
 

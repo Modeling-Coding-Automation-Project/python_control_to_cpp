@@ -52,7 +52,7 @@ public:
   /* Function */
   inline K_Type solve(void) { return this->_solve_with_arimoto_potter(); }
 
-  K_Type get_K() const { return this->_K; }
+  inline K_Type get_K() const { return this->_K; }
 
   inline void set_A(const A_Type &A) { this->_A = A; }
 
