@@ -116,7 +116,7 @@ void check_python_control_state_space(void) {
 
 
     for (std::size_t sim_step = 0; sim_step < TestData::SIM_SS_STEP_MAX; ++sim_step) {
-        StateSpaceInputType<T, 1> u({ static_cast<T>(1.0) });
+        auto u = make_StateSpaceInput<1>(static_cast<T>(1.0));
 
         sys.update(u);
 
@@ -155,7 +155,7 @@ void check_python_control_state_space(void) {
         static_cast<T>(DELAY_STEP), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay_step.");
 
-    StateSpaceInputType<T, 1> u_delay({ static_cast<T>(1.0) });
+    auto u_delay = make_StateSpaceInput<1>(static_cast<T>(1.0));
 
     for (std::size_t i = 0; i < DELAY_STEP; i++) {
         sys_delay.update(u_delay);
@@ -251,7 +251,7 @@ void check_python_control_state_space(void) {
     }
 
     for (std::size_t sim_step = 0; sim_step < TestData::DC_MOTOR_SIM_SS_STEP_MAX; ++sim_step) {
-        StateSpaceInputType<T, 1> u({ static_cast<T>(1.0) });
+        auto u = make_StateSpaceInput<1>(static_cast<T>(1.0));
 
         sys_dc.update(u);
 
@@ -761,7 +761,7 @@ void check_python_control_lqr(void) {
 }
 
 
-int main() {
+int main(void) {
 
     check_python_control_state_space<double>();
 

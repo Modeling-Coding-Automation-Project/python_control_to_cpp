@@ -14,6 +14,47 @@ using StateSpaceInputType =
     PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Input_Size, 1,
                         PythonNumpy::DenseAvailable<Input_Size, 1>>;
 
+namespace MakeStateSpaceInput {
+
+template <std::size_t IndexCount, typename StateSpaceInputType, typename T>
+inline void assign_values(StateSpaceInputType &input, T value_1) {
+
+  static_assert(
+      IndexCount < StateSpaceInputType::COLS,
+      "Number of arguments must be less than the number of input size.");
+
+  input.template set<IndexCount, 0>(value_1);
+}
+
+template <std::size_t IndexCount, typename StateSpaceInputType, typename T,
+          typename U, typename... Args>
+inline void assign_values(StateSpaceInputType &input, T value_1, U value_2,
+                          Args... args) {
+
+  static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
+  static_assert(
+      IndexCount < StateSpaceInputType::COLS,
+      "Number of arguments must be less than the number of input size.");
+
+  input.template set<IndexCount, 0>(value_1);
+
+  assign_values<IndexCount + 1>(input, value_2, args...);
+}
+
+} // namespace MakeStateSpaceInput
+
+/* make State Space Input  */
+template <std::size_t Input_Size, typename T, typename... Args>
+inline auto make_StateSpaceInput(T value_1, Args... args)
+    -> StateSpaceInputType<T, Input_Size> {
+
+  StateSpaceInputType<T, Input_Size> input;
+
+  MakeStateSpaceInput::assign_values<0>(input, value_1, args...);
+
+  return input;
+}
+
 namespace ForDiscreteStateSpace {
 
 /* Substitute Y values to Ring Buffer */
