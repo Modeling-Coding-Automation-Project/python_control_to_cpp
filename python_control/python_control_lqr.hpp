@@ -69,15 +69,12 @@ private:
     auto R_inv_solver = PythonNumpy::make_LinalgSolver(this->_R);
     auto R_inv = R_inv_solver.get_answer();
 
-    auto Hamiltonian_Left =
-        PythonNumpy::concatenate_vertically(this->_A, -this->_Q);
-    auto Hamiltonian_Right = PythonNumpy::concatenate_vertically(
-        PythonNumpy::A_mul_BTranspose(-this->_B * R_inv_solver.get_answer(),
-                                      this->_B),
-        -this->_A.transpose());
-
-    auto Hamiltonian = PythonNumpy::concatenate_horizontally(Hamiltonian_Left,
-                                                             Hamiltonian_Right);
+    auto Hamiltonian = PythonNumpy::concatenate_horizontally(
+        PythonNumpy::concatenate_vertically(this->_A, -this->_Q),
+        PythonNumpy::concatenate_vertically(
+            PythonNumpy::A_mul_BTranspose(-this->_B * R_inv_solver.get_answer(),
+                                          this->_B),
+            -this->_A.transpose()));
 
     auto eig_solver = PythonNumpy::make_LinalgSolverEig(Hamiltonian);
 
@@ -94,6 +91,7 @@ private:
                         _State_Size, _State_Size>
         V2;
 
+    std::size_t minus_count = 0;
     for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * _State_Size);
          i++) {
 
@@ -102,6 +100,11 @@ private:
         for (std::size_t j = 0; j < _State_Size; j++) {
           V1(j, i) = eigen_vectors(j, i);
           V2(j, i) = eigen_vectors(j + _State_Size, i);
+        }
+
+        minus_count++;
+        if (_State_Size == minus_count) {
+          break;
         }
       }
     }

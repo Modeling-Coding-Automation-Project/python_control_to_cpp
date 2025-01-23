@@ -28,7 +28,10 @@ int main(void) {
 
   double dt = 0.01;
 
-  auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
+  /* If you want to set delay in the state space, insert template argument */
+  constexpr std::size_t DELAY_STEP = 2;
+
+  auto sys = make_DiscreteStateSpace<DELAY_STEP>(A, B, C, D, dt);
 
   /* State Space Simulation */
   for (std::size_t sim_step = 0; sim_step < 100; ++sim_step) {
@@ -36,8 +39,8 @@ int main(void) {
 
     sys.update(u);
 
-    std::cout << "Y_0: " << sys.Y(0, 0) << ", ";
-    std::cout << "Y_1: " << sys.Y(1, 0) << ", ";
+    std::cout << "Y_0: " << sys.get_Y()(0, 0) << ", ";
+    std::cout << "Y_1: " << sys.get_Y()(1, 0) << ", ";
     std::cout << std::endl;
   }
 }
