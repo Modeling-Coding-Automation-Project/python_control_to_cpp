@@ -684,11 +684,14 @@ void check_python_control_lqr(void) {
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     //const T NEAR_LIMIT_SOFT = 1.0e-2F;
 
-    auto Ac = make_SparseMatrix<SparseAvailable<
+    /* LQR計算 */
+    using SparseAvailable_Ac = SparseAvailable<
         ColumnAvailable<false, true, false, false>,
         ColumnAvailable<false, true, true, false>,
         ColumnAvailable<false, false, false, true>,
-        ColumnAvailable<false, true, true, false>>>(
+        ColumnAvailable<false, true, true, false>>;
+
+    auto Ac = make_SparseMatrix<SparseAvailable_Ac>(
             static_cast<T>(1.0), static_cast<T>(-0.1),
             static_cast<T>(3.0), static_cast<T>(1.0),
             static_cast<T>(-0.5), static_cast<T>(30.0));
@@ -703,11 +706,13 @@ void check_python_control_lqr(void) {
     //        static_cast<T>(1.0), static_cast<T>(0.1),
     //        static_cast<T>(-0.05), static_cast<T>(3.0), static_cast<T>(1.0));
 
-    auto Bc = make_SparseMatrix< SparseAvailable<
+    using SparseAvailable_Bc = SparseAvailable<
         ColumnAvailable<false>,
         ColumnAvailable<true>,
         ColumnAvailable<false>,
-        ColumnAvailable<true>>>(
+        ColumnAvailable<true>>;
+
+    auto Bc = make_SparseMatrix<SparseAvailable_Bc>(
             static_cast<T>(2.0), static_cast<T>(5.0));
 
     //auto Bd = make_SparseMatrix<SparseAvailable<
@@ -724,7 +729,8 @@ void check_python_control_lqr(void) {
 
 
     auto lqr = make_LQR(Ac, Bc, Q, R);
-    auto K = lqr.solve_continuous();
+    auto K = lqr.solve();
+    K = lqr.get_K();
 
     auto K_answer = make_DenseMatrix<1, 4>(
         static_cast<T>(-1.0),
@@ -734,6 +740,21 @@ void check_python_control_lqr(void) {
 
     tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LQR solve continuous.");
+
+    /* set */
+    lqr.set_A(make_SparseMatrix<SparseAvailable_Ac>(
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqr.set_B(make_SparseMatrix<SparseAvailable_Bc>(
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqr.set_Q(make_DiagMatrix<4>(
+        static_cast<T>(0), static_cast<T>(0),
+        static_cast<T>(0), static_cast<T>(0)));
+
+    lqr.set_R(make_DiagMatrix<1>(static_cast<T>(0)));
 
 
     tester.throw_error_if_test_failed();

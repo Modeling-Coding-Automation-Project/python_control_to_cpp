@@ -50,7 +50,21 @@ public:
 
 public:
   /* Function */
-  K_Type solve_continuous() {
+  inline K_Type solve(void) { return this->_solve_with_arimoto_potter(); }
+
+  K_Type get_K() const { return this->_K; }
+
+  inline void set_A(const A_Type &A) { this->_A = A; }
+
+  inline void set_B(const B_Type &B) { this->_B = B; }
+
+  inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
+
+  inline void set_R(const R_Type &R) { this->_R = R; }
+
+private:
+  /* Function */
+  inline K_Type _solve_with_arimoto_potter(void) {
 
     auto R_inv_solver = PythonNumpy::make_LinalgSolver(this->_R);
     auto R_inv = R_inv_solver.get_answer();
@@ -96,12 +110,10 @@ public:
 
     auto P = (V2 * V1_inv_solver.get_answer()).real();
 
-    this->_K = R_inv * this->_B.transpose() * P;
+    this->_K = R_inv * PythonNumpy::ATranspose_mul_B(this->_B, P);
 
     return this->_K;
   }
-
-  K_Type get_K() const { return this->_K; }
 
 private:
   /* Variable */
