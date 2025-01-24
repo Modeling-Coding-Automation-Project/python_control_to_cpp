@@ -72,6 +72,7 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
     V1 = None
     V2 = None
 
+    minus_count = 0
     for i in range(2 * n):
         if eigen_values[i].real < 0:
             if V1 is None:
@@ -80,6 +81,11 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
             else:
                 V1 = np.vstack((V1, eigen_vectors[0:n, i]))
                 V2 = np.vstack((V2, eigen_vectors[n:2 * n, i]))
+
+            minus_count += 1
+            if minus_count == n:
+                break
+
     V1 = np.matrix(V1.T)
     V2 = np.matrix(V2.T)
 
