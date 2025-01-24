@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "python_control.hpp"
+#include "python_numpy.hpp"
 
 using namespace PythonNumpy;
 using namespace PythonControl;

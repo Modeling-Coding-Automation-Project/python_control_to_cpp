@@ -2,7 +2,6 @@
 
 #include "python_control.hpp"
 
-using namespace PythonNumpy;
 using namespace PythonControl;
 
 int main(void) {
