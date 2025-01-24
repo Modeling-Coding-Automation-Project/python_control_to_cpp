@@ -54,6 +54,13 @@ int main(void) {
   auto K = lqr.solve();
   K = lqr.get_K();
 
+  std::cout << "K: ";
+  std::cout << K(0, 0) << ", ";
+  std::cout << K(0, 1) << ", ";
+  std::cout << K(0, 2) << ", ";
+  std::cout << K(0, 3) << ", ";
+  std::cout << std::endl << std::endl;
+
   /* Simulation */
   auto X_ref = make_DenseMatrix<4, 1>(1.0, 0.0, 0.0, 0.0);
 
