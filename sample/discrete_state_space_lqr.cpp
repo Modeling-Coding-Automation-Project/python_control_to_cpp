@@ -55,15 +55,17 @@ int main(void) {
   K = lqr.get_K();
 
   /* Simulation */
-  auto xref = make_DenseMatrix<4, 1>(1.0, 0.0, 0.0, 0.0);
+  auto X_ref = make_DenseMatrix<4, 1>(1.0, 0.0, 0.0, 0.0);
 
   for (int i = 0; i < 100; i++) {
-    auto x = plant.get_X();
-    auto u = K * (xref - x);
+    auto X = plant.get_X();
+    auto U = K * (X_ref - X);
 
-    plant.update(make_StateSpaceInput<1>(u(0, 0)));
+    plant.update(U);
 
-    // std::cout << x << std::endl;
+    std::cout << "X_0: " << X(0, 0) << ", ";
+    std::cout << "X_2: " << X(2, 0) << ", ";
+    std::cout << std::endl;
   }
 
   return 0;
