@@ -11,8 +11,7 @@ constexpr double STATE_SPACE_DIVISION_MIN = 1.0e-10;
 
 template <typename T, std::size_t Input_Size>
 using StateSpaceInputType =
-    PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Input_Size, 1,
-                        PythonNumpy::DenseAvailable<Input_Size, 1>>;
+    PythonNumpy::Matrix<PythonNumpy::DefDense, T, Input_Size, 1>;
 
 namespace MakeStateSpaceInput {
 

@@ -549,7 +549,7 @@ public:
   }
 
   void update(const _T &u) {
-    _U_Type input({u});
+    auto input = make_StateSpaceInput<_U_Type::COLS>(u);
 
     this->_state_space.update(input);
   }
