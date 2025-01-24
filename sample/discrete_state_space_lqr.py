@@ -6,7 +6,6 @@ https://github.com/AtsushiSakai/PyAdvancedControl
 https://jp.mathworks.com/help/control/ref/lti.lqr.html
 """
 
-import time
 import matplotlib.pyplot as plt
 import control
 import numpy as np
@@ -50,31 +49,11 @@ D = sys_d.D
 # LQR parameters
 Q = np.diag([1.0, 0.0, 1.0, 0.0])
 R = np.diag([1.0])
-K_opt = None
 
 
 def process(x, u):
     x = A * x + B * u
     return (x)
-
-
-def solve_DARE_with_iteration(A, B, Q, R):
-    """
-    solve a discrete time_Algebraic Riccati equation (DARE)
-    """
-    X = Q
-    maxiter = 150
-    eps = 0.01
-
-    for i in range(maxiter):
-        Xn = A.T * X * A - A.T * X * B * \
-            la.inv(R + B.T * X * B) * B.T * X * A + Q
-        if (abs(Xn - X)).max() < eps:
-            X = Xn
-            break
-        X = Xn
-
-    return Xn
 
 
 def lqr_with_arimoto_potter(Ac, Bc, Q, R):
@@ -93,6 +72,7 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
     V1 = None
     V2 = None
 
+    minus_count = 0
     for i in range(2 * n):
         if eigen_values[i].real < 0:
             if V1 is None:
@@ -101,6 +81,11 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
             else:
                 V1 = np.vstack((V1, eigen_vectors[0:n, i]))
                 V2 = np.vstack((V2, eigen_vectors[n:2 * n, i]))
+
+            minus_count += 1
+            if minus_count == n:
+                break
+
     V1 = np.matrix(V1.T)
     V2 = np.matrix(V2.T)
 
@@ -127,32 +112,17 @@ def dlqr_origin(Ad, Bd, Q, R):
     return K
 
 
-def lqr_ref_tracking(x, xref):
-    global K_opt
-    if K_opt is None:
-        K_opt_arimoto_potter = lqr_with_arimoto_potter(Ac, Bc, Q, R)
-        K_opt_origin_d = dlqr_origin(A, B, Q, R)
-        K_opt_lqr, _, _ = control.lqr(Ac, Bc, Q, R)
-        K_opt_dlqr, _, _ = control.dlqr(A, B, Q, R)
-
-        print("K_opt_arimoto_potter:")
-        print(K_opt_arimoto_potter)
-        print("K_opt_origin_d:")
-        print(K_opt_origin_d)
-        print("K_opt_lqr:")
-        print(K_opt_lqr)
-        print("K_opt_dlqr:")
-        print(K_opt_dlqr)
-
-        K_opt = K_opt_arimoto_potter
-        # K_opt = K_opt_dlqr
-
-    u = K_opt * (xref - x)
-
-    return u
-
-
 def main_reference_tracking():
+    # design LQR controller
+    K = lqr_with_arimoto_potter(Ac, Bc, Q, R)
+    # K, _, _ = control.lqr(Ac, Bc, Q, R)
+    # K = dlqr_origin(A, B, Q, R)
+    # K, _, _ = control.dlqr(A, B, Q, R)
+
+    print("K: ")
+    print(K)
+
+    # prepare simulation
     t = 0.0
 
     x = np.matrix([
@@ -175,8 +145,9 @@ def main_reference_tracking():
     x2_history = [x[2, 0]]
     u_history = [0.0]
 
+    # simulation
     while t <= simulation_time:
-        u = lqr_ref_tracking(x, xref)
+        u = K * (xref - x)
         u0 = float(u[0, 0])
 
         x = process(x, u0)

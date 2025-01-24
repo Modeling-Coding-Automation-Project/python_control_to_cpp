@@ -50,20 +50,31 @@ public:
 
 public:
   /* Function */
-  K_Type solve_continuous() {
+  inline K_Type solve(void) { return this->_solve_with_arimoto_potter(); }
+
+  inline K_Type get_K() const { return this->_K; }
+
+  inline void set_A(const A_Type &A) { this->_A = A; }
+
+  inline void set_B(const B_Type &B) { this->_B = B; }
+
+  inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
+
+  inline void set_R(const R_Type &R) { this->_R = R; }
+
+private:
+  /* Function */
+  inline K_Type _solve_with_arimoto_potter(void) {
 
     auto R_inv_solver = PythonNumpy::make_LinalgSolver(this->_R);
     auto R_inv = R_inv_solver.get_answer();
 
-    auto Hamiltonian_Left =
-        PythonNumpy::concatenate_vertically(this->_A, -this->_Q);
-    auto Hamiltonian_Right = PythonNumpy::concatenate_vertically(
-        PythonNumpy::A_mul_BTranspose(-this->_B * R_inv_solver.get_answer(),
-                                      this->_B),
-        -this->_A.transpose());
-
-    auto Hamiltonian = PythonNumpy::concatenate_horizontally(Hamiltonian_Left,
-                                                             Hamiltonian_Right);
+    auto Hamiltonian = PythonNumpy::concatenate_horizontally(
+        PythonNumpy::concatenate_vertically(this->_A, -this->_Q),
+        PythonNumpy::concatenate_vertically(
+            PythonNumpy::A_mul_BTranspose(-this->_B * R_inv_solver.get_answer(),
+                                          this->_B),
+            -this->_A.transpose()));
 
     auto eig_solver = PythonNumpy::make_LinalgSolverEig(Hamiltonian);
 
@@ -80,6 +91,7 @@ public:
                         _State_Size, _State_Size>
         V2;
 
+    std::size_t minus_count = 0;
     for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * _State_Size);
          i++) {
 
@@ -89,6 +101,11 @@ public:
           V1(j, i) = eigen_vectors(j, i);
           V2(j, i) = eigen_vectors(j + _State_Size, i);
         }
+
+        minus_count++;
+        if (_State_Size == minus_count) {
+          break;
+        }
       }
     }
 
@@ -96,12 +113,10 @@ public:
 
     auto P = (V2 * V1_inv_solver.get_answer()).real();
 
-    this->_K = R_inv * this->_B.transpose() * P;
+    this->_K = R_inv * PythonNumpy::ATranspose_mul_B(this->_B, P);
 
     return this->_K;
   }
-
-  K_Type get_K() const { return this->_K; }
 
 private:
   /* Variable */

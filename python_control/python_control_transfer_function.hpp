@@ -11,6 +11,7 @@ namespace PythonControl {
 
 constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
 
+/* Numerator and Denominator definition */
 template <typename T, std::size_t Numerator_Size>
 using TransferFunctionNumeratorType =
     PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Numerator_Size, 1,
@@ -20,6 +21,90 @@ template <typename T, std::size_t Denominator_Size>
 using TransferFunctionDenominatorType =
     PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Denominator_Size, 1,
                         PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
+
+namespace MakeNumerator {
+
+template <std::size_t IndexCount, typename TransferFunctionNumeratorType,
+          typename T>
+inline void assign_values(TransferFunctionNumeratorType &numerator, T value_1) {
+
+  static_assert(
+      IndexCount < TransferFunctionNumeratorType::COLS,
+      "Number of arguments must be less than the number of Numerator factor.");
+
+  numerator.template set<IndexCount, 0>(value_1);
+}
+
+template <std::size_t IndexCount, typename TransferFunctionNumeratorType,
+          typename T, typename U, typename... Args>
+inline void assign_values(TransferFunctionNumeratorType &numerator, T value_1,
+                          U value_2, Args... args) {
+
+  static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
+  static_assert(
+      IndexCount < TransferFunctionNumeratorType::COLS,
+      "Number of arguments must be less than the number of Numerator factor.");
+
+  numerator.template set<IndexCount, 0>(value_1);
+
+  assign_values<IndexCount + 1>(numerator, value_2, args...);
+}
+
+} // namespace MakeNumerator
+
+namespace MakeDenominator {
+
+template <std::size_t IndexCount, typename TransferFunctionDenominatorType,
+          typename T>
+inline void assign_values(TransferFunctionDenominatorType &denominator,
+                          T value_1) {
+
+  static_assert(
+      IndexCount < TransferFunctionDenominatorType::COLS,
+      "Number of arguments must be less than the number of Numerator factor.");
+
+  denominator.template set<IndexCount, 0>(value_1);
+}
+
+template <std::size_t IndexCount, typename TransferFunctionDenominatorType,
+          typename T, typename U, typename... Args>
+inline void assign_values(TransferFunctionDenominatorType &denominator,
+                          T value_1, U value_2, Args... args) {
+
+  static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
+  static_assert(
+      IndexCount < TransferFunctionDenominatorType::COLS,
+      "Number of arguments must be less than the number of Numerator factor.");
+
+  denominator.template set<IndexCount, 0>(value_1);
+
+  assign_values<IndexCount + 1>(denominator, value_2, args...);
+}
+
+} // namespace MakeDenominator
+
+/* make Numerator and Denominator */
+template <std::size_t M, typename T, typename... Args>
+inline auto make_TransferFunctionNumerator(T value_1, Args... args)
+    -> TransferFunctionNumeratorType<T, M> {
+
+  TransferFunctionNumeratorType<T, M> numerator;
+
+  MakeNumerator::assign_values<0>(numerator, value_1, args...);
+
+  return numerator;
+}
+
+template <std::size_t M, typename T, typename... Args>
+inline auto make_TransferFunctionDenominator(T value_1, Args... args)
+    -> TransferFunctionNumeratorType<T, M> {
+
+  TransferFunctionNumeratorType<T, M> denominator;
+
+  MakeNumerator::assign_values<0>(denominator, value_1, args...);
+
+  return denominator;
+}
 
 namespace ForDiscreteTransferFunction {
 
@@ -464,7 +549,7 @@ public:
   }
 
   void update(const _T &u) {
-    _U_Type input({u});
+    auto input = make_StateSpaceInput<_U_Type::COLS>(u);
 
     this->_state_space.update(input);
   }
