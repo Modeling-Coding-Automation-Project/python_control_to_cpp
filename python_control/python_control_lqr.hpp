@@ -72,8 +72,7 @@ private:
     auto Hamiltonian = PythonNumpy::concatenate_horizontally(
         PythonNumpy::concatenate_vertically(this->_A, -this->_Q),
         PythonNumpy::concatenate_vertically(
-            PythonNumpy::A_mul_BTranspose(-this->_B * R_inv_solver.get_answer(),
-                                          this->_B),
+            PythonNumpy::A_mul_BTranspose(-this->_B * R_inv, this->_B),
             -this->_A.transpose()));
 
     auto eig_solver = PythonNumpy::make_LinalgSolverEig(Hamiltonian);
