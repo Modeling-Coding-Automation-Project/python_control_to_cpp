@@ -729,17 +729,6 @@ void check_python_control_lqr(void) {
 
 
     auto lqr = make_LQR(Ac, Bc, Q, R);
-    auto K = lqr.solve();
-    K = lqr.get_K();
-
-    auto K_answer = make_DenseMatrix<1, 4>(
-        static_cast<T>(-1.0),
-        static_cast<T>(-1.75585926),
-        static_cast<T>(16.91449007),
-        static_cast<T>(3.22735877) );
-
-    tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check LQR solve continuous.");
 
     /* set */
     lqr.set_A(make_SparseMatrix<SparseAvailable_Ac>(
@@ -755,6 +744,24 @@ void check_python_control_lqr(void) {
         static_cast<T>(0), static_cast<T>(0)));
 
     lqr.set_R(make_DiagMatrix<1>(static_cast<T>(0)));
+
+    lqr.set_A(Ac);
+    lqr.set_B(Bc);
+    lqr.set_Q(Q);
+    lqr.set_R(R);
+
+    /* LQR計算 */
+    auto K = lqr.solve();
+    K = lqr.get_K();
+
+    auto K_answer = make_DenseMatrix<1, 4>(
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.75585926),
+        static_cast<T>(16.91449007),
+        static_cast<T>(3.22735877) );
+
+    tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check LQR solve continuous.");
 
 
     tester.throw_error_if_test_failed();
