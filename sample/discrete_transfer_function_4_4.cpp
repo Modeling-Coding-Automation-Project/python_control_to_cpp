@@ -10,7 +10,7 @@ int main(void) {
       make_TransferFunctionNumerator<5>(1.0, 0.5, 0.3, 0.2, 0.1);
 
   auto denominator_4_4 =
-      make_TransferFunctionNumerator<5>(1.1, -0.5, 0.4, -0.3, 0.2);
+      make_TransferFunctionDenominator<5>(1.1, -0.5, 0.4, -0.3, 0.2);
 
   double dt = 0.2;
 

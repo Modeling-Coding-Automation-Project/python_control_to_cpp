@@ -9,7 +9,7 @@ int main(void) {
   auto numerator_plant = make_TransferFunctionNumerator<2>(0.015479737715070607,
                                                            0.01497228851342225);
 
-  auto denominator_plant = make_TransferFunctionNumerator<3>(
+  auto denominator_plant = make_TransferFunctionDenominator<3>(
       1.0, -1.9048374180359595, 0.9048374180359595);
 
   double dt = 0.2;
