@@ -295,7 +295,7 @@ void check_python_control_transfer_function(void) {
         static_cast<T>(-0.0009364784774175128)
     );
 
-    auto denominator_3_4 = make_TransferFunctionNumerator<5>(
+    auto denominator_3_4 = make_TransferFunctionDenominator<5>(
         static_cast<T>(1.0),
         static_cast<T>(-3.565195017021459),
         static_cast<T>(4.815115383504625),
@@ -372,7 +372,7 @@ void check_python_control_transfer_function(void) {
         static_cast<T>(0)
     );
 
-    auto denominator_3_4_0 = make_TransferFunctionNumerator<5>(
+    auto denominator_3_4_0 = make_TransferFunctionDenominator<5>(
         static_cast<T>(1),
         static_cast<T>(0),
         static_cast<T>(0),
@@ -402,7 +402,7 @@ void check_python_control_transfer_function(void) {
         static_cast<T>(0.1)
     );
 
-    auto denominator_4_4 = make_TransferFunctionNumerator<5>(
+    auto denominator_4_4 = make_TransferFunctionDenominator<5>(
         static_cast<T>(1.1),
         static_cast<T>(-0.5),
         static_cast<T>(0.4),
@@ -463,7 +463,7 @@ void check_python_control_transfer_function(void) {
         static_cast<T>(0.1)
     );
 
-    auto denominator_2_4 = make_TransferFunctionNumerator<5>(
+    auto denominator_2_4 = make_TransferFunctionDenominator<5>(
         static_cast<T>(1.0),
         static_cast<T>(-1.8),
         static_cast<T>(1.5),
@@ -532,7 +532,7 @@ void check_python_control_pid_controller(void) {
         static_cast<T>(0.01497228851342225)
     );
 
-    auto denominator_plant = make_TransferFunctionNumerator<3>(
+    auto denominator_plant = make_TransferFunctionDenominator<3>(
         static_cast<T>(1.0),
         static_cast<T>(-1.9048374180359595),
         static_cast<T>(0.9048374180359595)
