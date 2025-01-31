@@ -756,17 +756,17 @@ void check_python_control_lqr(void) {
     lqr.set_R(R);
 
     /* LQR計算 */
-    //auto K = lqr.solve();
-    //K = lqr.get_K();
+    auto K = lqr.solve();
+    K = lqr.get_K();
 
-    //auto K_answer = make_DenseMatrix<1, 4>(
-    //    static_cast<T>(-1.0),
-    //    static_cast<T>(-1.75585926),
-    //    static_cast<T>(16.91449007),
-    //    static_cast<T>(3.22735877) );
+    auto K_answer = make_DenseMatrix<1, 4>(
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.75585926),
+        static_cast<T>(16.91449007),
+        static_cast<T>(3.22735877) );
 
-    //tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
-    //    "check LQR solve continuous.");
+    tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check LQR solve continuous.");
 
     /* LQI定義 */
     auto Q_ex = make_DiagMatrix<6>(
