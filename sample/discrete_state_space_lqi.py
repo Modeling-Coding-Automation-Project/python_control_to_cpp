@@ -41,10 +41,10 @@ Dc = np.matrix([
 ])
 
 # Create Expanded State Space Model
-A_ex = np.block([
+Ac_ex = np.block([
     [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
     [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
-B_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
 
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
@@ -105,8 +105,8 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
 
 def main_reference_tracking():
 
-    # K_ex = lqr_with_arimoto_potter(A_ex, B_ex, Q_ex, R_ex)
-    K_ex = control.lqr(A_ex, B_ex, Q_ex, R_ex)[0]
+    # K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
+    K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
 
     print("K_ex: ")
     print(K_ex)
