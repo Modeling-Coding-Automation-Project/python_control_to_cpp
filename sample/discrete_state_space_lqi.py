@@ -54,7 +54,7 @@ Cd = sys_d.C
 Dd = sys_d.D
 
 # LQI parameters
-Q_ex = np.diag([1.0, 0.0, 1.0, 0.0, 1.0, 0.0])
+Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
 R_ex = np.diag([1.0])
 
 
@@ -105,8 +105,8 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
 
 def main_reference_tracking():
 
-    # K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
-    K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
+    K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
+    # K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
 
     print("K_ex: ")
     print(K_ex)
