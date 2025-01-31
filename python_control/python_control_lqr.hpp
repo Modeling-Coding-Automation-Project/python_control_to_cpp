@@ -47,8 +47,8 @@ inline void lqr_solve_with_arimoto_potter(const A_Type &A, const B_Type &B,
     if (eigen_values(i, 0).real < static_cast<_T>(0)) {
 
       for (std::size_t j = 0; j < _State_Size; j++) {
-        V1(j, i) = eigen_vectors(j, i);
-        V2(j, i) = eigen_vectors(j + _State_Size, i);
+        V1(j, minus_count) = eigen_vectors(j, i);
+        V2(j, minus_count) = eigen_vectors(j + _State_Size, i);
       }
 
       minus_count++;
@@ -214,7 +214,7 @@ public:
                     (B_Type::COLS == A_Type::COLS) &&
                     (C_Type::ROWS == A_Type::COLS) &&
                     (Q_Type::ROWS == Q_Type::COLS) &&
-                    (Q_Type::ROWS == A_Type::COLS) &&
+                    (Q_Type::ROWS == (A_Type::COLS + C_Type::COLS)) &&
                     (R_Type::ROWS == R_Type::COLS) &&
                     (R_Type::ROWS == B_Type::ROWS),
                 "A, B, C, Q, R matrix size is not compatible");
@@ -225,12 +225,55 @@ public:
       const R_Type &R)
       : _A(A), _B(B), _C(C), _Q(Q), _R(R) {}
 
+  /* Copy Constructor */
+  LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input)
+      : _A(input._A), _B(input._B), _C(input._C), _Q(input._Q), _R(input._R) {}
+
+  LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
+  operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input) {
+    if (this != &input) {
+      this->_A = input._A;
+      this->_B = input._B;
+      this->_C = input._C;
+      this->_Q = input._Q;
+      this->_R = input._R;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept
+      : _A(std::move(input._A)), _B(std::move(input._B)),
+        _C(std::move(input._C)), _Q(std::move(input._Q)),
+        _R(std::move(input._R)) {}
+
+  LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
+  operator=(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept {
+    if (this != &input) {
+      this->_A = std::move(input._A);
+      this->_B = std::move(input._B);
+      this->_C = std::move(input._C);
+      this->_Q = std::move(input._Q);
+      this->_R = std::move(input._R);
+    }
+    return *this;
+  }
+
 public:
   /* Function */
   inline K_Type solve(void) {
 
-    PythonControl::lqr_solve_with_arimoto_potter(this->_A, this->_B, this->_Q,
-                                                 this->_R, this->_K);
+    auto A_ex = PythonNumpy::concatenate_horizontally(
+        PythonNumpy::concatenate_vertically(this->_A, this->_C),
+        PythonNumpy::make_SparseMatrixEmpty<_T, (_State_Size + _Output_Size),
+                                            _Output_Size>());
+
+    auto B_ex = PythonNumpy::concatenate_vertically(
+        this->_B,
+        PythonNumpy::make_SparseMatrixEmpty<_T, _Output_Size, _Input_Size>());
+
+    PythonControl::lqr_solve_with_arimoto_potter(A_ex, B_ex, this->_Q, this->_R,
+                                                 this->_K);
 
     return this->_K;
   }
@@ -240,6 +283,8 @@ public:
   inline void set_A(const A_Type &A) { this->_A = A; }
 
   inline void set_B(const B_Type &B) { this->_B = B; }
+
+  inline void set_C(const C_Type &C) { this->_C = C; }
 
   inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
 
