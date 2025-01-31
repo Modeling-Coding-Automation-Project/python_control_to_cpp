@@ -41,10 +41,10 @@ Dc = np.matrix([
 
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
-A = sys_d.A
-B = sys_d.B
-C = sys_d.C
-D = sys_d.D
+Ad = sys_d.A
+Bd = sys_d.B
+Cd = sys_d.C
+Dd = sys_d.D
 
 # LQR parameters
 Q = np.diag([1.0, 0.0, 1.0, 0.0])
@@ -52,7 +52,7 @@ R = np.diag([1.0])
 
 
 def process(x, u):
-    x = A * x + B * u
+    x = Ad * x + Bd * u
     return (x)
 
 
