@@ -684,7 +684,6 @@ void check_python_control_lqr(void) {
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     //const T NEAR_LIMIT_SOFT = 1.0e-2F;
 
-    /* LQR計算 */
     using SparseAvailable_Ac = SparseAvailable<
         ColumnAvailable<false, true, false, false>,
         ColumnAvailable<false, true, true, false>,
@@ -721,6 +720,11 @@ void check_python_control_lqr(void) {
     //    ColumnAvailable<false>,
     //    ColumnAvailable<true>>>(static_cast<T>(0.2), static_cast<T>(0.5));
 
+    using SparseAvailable_Cc = SparseAvailable<
+        ColumnAvailable<true, false, false, false>,
+        ColumnAvailable<false, false, true, false>>;
+    auto Cc = make_SparseMatrix<SparseAvailable_Cc>(static_cast<T>(1.0), static_cast<T>(1.0));
+
     auto Q = make_DiagMatrix<4>(
         static_cast<T>(1), static_cast<T>(0),
         static_cast<T>(1), static_cast<T>(0));
@@ -728,6 +732,7 @@ void check_python_control_lqr(void) {
     auto R = make_DiagMatrix<1>(static_cast<T>(1));
 
 
+    /* LQR定義 */
     auto lqr = make_LQR(Ac, Bc, Q, R);
 
     /* set */
@@ -762,6 +767,47 @@ void check_python_control_lqr(void) {
 
     tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LQR solve continuous.");
+
+    /* LQI定義 */
+    auto Q_ex = make_DiagMatrix<6>(
+        static_cast<T>(1), static_cast<T>(0.1),
+        static_cast<T>(1), static_cast<T>(0.1),
+        static_cast<T>(2), static_cast<T>(0.1));
+
+    auto R_ex = make_DiagMatrix<1>(static_cast<T>(1));
+
+    auto lqi = make_LQI(Ac, Bc, Cc, Q_ex, R_ex);
+
+    /* set */
+    lqi.set_A(make_SparseMatrix<SparseAvailable_Ac>(
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqi.set_B(make_SparseMatrix<SparseAvailable_Bc>(
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqi.set_C(make_SparseMatrix<SparseAvailable_Cc>(
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqi.set_Q(make_DiagMatrix<6>(
+        static_cast<T>(0), static_cast<T>(0),
+        static_cast<T>(0), static_cast<T>(0),
+        static_cast<T>(0), static_cast<T>(0)));
+
+    lqi.set_R(make_DiagMatrix<1>(static_cast<T>(0)));
+
+    lqi.set_A(Ac);
+    lqi.set_B(Bc);
+    lqi.set_C(Cc);
+    lqi.set_Q(Q_ex);
+    lqi.set_R(R_ex);
+
+    /* LQI計算 */
+    auto K_ex = lqi.solve();
+    K_ex = lqi.get_K();
+
+    /* （作成中） */
 
 
     tester.throw_error_if_test_failed();

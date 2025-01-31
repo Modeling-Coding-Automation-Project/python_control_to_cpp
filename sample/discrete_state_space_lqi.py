@@ -4,6 +4,7 @@ Linear-Quadratic Regulator sample code
 Reference URL:
 https://github.com/AtsushiSakai/PyAdvancedControl
 https://jp.mathworks.com/help/control/ref/lti.lqr.html
+https://jp.mathworks.com/help/control/ref/ss.lqi.html
 """
 
 import matplotlib.pyplot as plt
@@ -39,6 +40,12 @@ Dc = np.matrix([
     [0.0]
 ])
 
+# Create Expanded State Space Model
+Ac_ex = np.block([
+    [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
+    [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
+Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
 Ad = sys_d.A
@@ -46,9 +53,9 @@ Bd = sys_d.B
 Cd = sys_d.C
 Dd = sys_d.D
 
-# LQR parameters
-Q = np.diag([1.0, 0.0, 1.0, 0.0])
-R = np.diag([1.0])
+# LQI parameters
+Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
+R_ex = np.diag([1.0])
 
 
 def process(x, u):
@@ -65,6 +72,9 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
          np.hstack((-Q, -Ac.T))))
 
     eigen_values, eigen_vectors = la.eig(Hamiltonian)
+
+    result = Hamiltonian @ eigen_vectors - \
+        eigen_vectors @ np.diag(eigen_values)
 
     V1 = None
     V2 = None
@@ -93,31 +103,16 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
     return K
 
 
-def dlqr_origin(Ad, Bd, Q, R):
-    """
-    This is the original dlqr function from Python Control Library
-    """
-
-    N = np.zeros((Q.shape[0], R.shape[1]))
-
-    # Solve the discrete-time algebraic Riccati equation
-    X = la.solve_discrete_are(Ad, Bd, Q, R, e=None, s=N)
-
-    # Compute the LQR gain
-    K = np.linalg.solve(Bd.T @ X @ Bd + R, Bd.T @ X @ Ad)
-
-    return K
-
-
 def main_reference_tracking():
-    # design LQR controller
-    K = lqr_with_arimoto_potter(Ac, Bc, Q, R)
-    # K, _, _ = control.lqr(Ac, Bc, Q, R)
-    # K = dlqr_origin(A, B, Q, R)
-    # K, _, _ = control.dlqr(A, B, Q, R)
 
-    print("K: ")
-    print(K)
+    K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
+    # K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
+
+    print("K_ex: ")
+    print(K_ex)
+
+    K_x = K_ex[:, 0:4]
+    K_e = K_ex[:, 4:6]
 
     # prepare simulation
     t = 0.0
@@ -137,15 +132,28 @@ def main_reference_tracking():
         [0.0]
     ])
 
+    y_ref = np.matrix([
+        [1.0],
+        [0.0]
+    ])
+
+    e_y_integral = np.zeros((2, 1))
+
     time_history = [0.0]
     x1_history = [x[0, 0]]
     x2_history = [x[2, 0]]
     u_history = [0.0]
 
+    u_offset = 0.1
+
     # simulation
     while t <= simulation_time:
-        u = K * (xref - x)
-        u0 = float(u[0, 0])
+        y = Cc * x
+        e_y = y_ref - y
+        e_y_integral = e_y_integral + dt * e_y
+
+        u = K_x * (xref - x) + K_e * e_y_integral
+        u0 = float(u[0, 0]) + u_offset
 
         x = process(x, u0)
 
@@ -158,7 +166,7 @@ def main_reference_tracking():
 
     # plot
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.suptitle("LQR Tracking")
+    fig.suptitle("LQI Tracking")
 
     ax1.grid(True)
     ax1.plot(time_history, x1_history, "-b", label="x")
