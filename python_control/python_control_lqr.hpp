@@ -367,7 +367,7 @@ public:
       this->_K = input._K;
       this->_R_inv_solver = input._R_inv_solver;
       this->_V1_inv_solver = input._V1_inv_solver;
-      this->_eig_solver = input.eig_solver;
+      this->_eig_solver = input._eig_solver;
       this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
     return *this;
