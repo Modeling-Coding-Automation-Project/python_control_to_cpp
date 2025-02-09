@@ -368,12 +368,14 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, true> {
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
-    auto solver = PythonNumpy::make_LinalgSolver(
-        PythonNumpy::Matrix<
-            PythonNumpy::DefDiag, T,
-            State_Space_Type::Original_X_Type::COLS>::identity() -
-            state_space.A,
-        state_space.B);
+    auto I_A = PythonNumpy::make_DiagMatrixIdentity<
+                   T, State_Space_Type::Original_X_Type::COLS>() -
+               state_space.A;
+
+    auto solver = PythonNumpy::make_LinalgSolver<decltype(I_A),
+                                                 decltype(state_space.B)>();
+    solver.solve(I_A, state_space.B);
+
     auto I_A_B = solver.get_answer();
 
     auto C_I_A_B = state_space.C * I_A_B;
@@ -397,15 +399,19 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
+    auto I_A = PythonNumpy::make_DiagMatrixIdentity<
+                   T, State_Space_Type::Original_X_Type::COLS>() -
+               state_space.A;
+
     // This is a transfer function, so D is scalar.
-    auto solver = PythonNumpy::make_LinalgSolver(
-        (PythonNumpy::Matrix<
-             PythonNumpy::DefDiag, T,
-             State_Space_Type::Original_X_Type::COLS>::identity() -
-         state_space.A) *
-                state_space.D.template get<0, 0>() +
-            state_space.B * state_space.C,
-        state_space.B * y_steady_state);
+    auto I_A_D_B_C = I_A * state_space.D.template get<0, 0>() +
+                     state_space.B * state_space.C;
+
+    auto B_y = state_space.B * y_steady_state;
+
+    auto solver =
+        PythonNumpy::make_LinalgSolver<decltype(I_A_D_B_C), decltype(B_y)>();
+    solver.solve(I_A_D_B_C, B_y);
 
     state_space.X = solver.get_answer();
 

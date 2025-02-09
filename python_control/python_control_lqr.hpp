@@ -17,7 +17,8 @@ inline void lqr_solve_with_arimoto_potter(const A_Type &A, const B_Type &B,
   using _T = typename A_Type::Value_Type;
   static constexpr std::size_t _State_Size = A_Type::COLS;
 
-  auto R_inv_solver = PythonNumpy::make_LinalgSolver(R);
+  auto R_inv_solver = PythonNumpy::make_LinalgSolverInv<R_Type>();
+  R_inv_solver.inv(R);
   auto R_inv = R_inv_solver.get_answer();
 
   auto Hamiltonian = PythonNumpy::concatenate_horizontally(
@@ -25,7 +26,8 @@ inline void lqr_solve_with_arimoto_potter(const A_Type &A, const B_Type &B,
       PythonNumpy::concatenate_vertically(
           PythonNumpy::A_mul_BTranspose(-B * R_inv, B), -A.transpose()));
 
-  auto eig_solver = PythonNumpy::make_LinalgSolverEig(Hamiltonian);
+  auto eig_solver = PythonNumpy::make_LinalgSolverEig<decltype(Hamiltonian)>();
+  eig_solver.solve_eigen_values(Hamiltonian);
 
   auto eigen_values = eig_solver.get_eigen_values();
 
@@ -57,7 +59,8 @@ inline void lqr_solve_with_arimoto_potter(const A_Type &A, const B_Type &B,
       }
     }
   }
-  auto V1_inv_solver = PythonNumpy::make_LinalgSolver(V1);
+  auto V1_inv_solver = PythonNumpy::make_LinalgSolverInv<decltype(V1)>();
+  V1_inv_solver.inv(V1);
 
   auto P = (V2 * V1_inv_solver.get_answer()).real();
 
@@ -123,7 +126,8 @@ public:
   }
 
   /* Move Constructor */
-  LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
+  LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input)
+  noexcept
       : _A(std::move(input._A)), _B(std::move(input._B)),
         _Q(std::move(input._Q)), _R(std::move(input._R)) {}
 
@@ -242,7 +246,8 @@ public:
   }
 
   /* Move Constructor */
-  LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept
+  LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input)
+  noexcept
       : _A(std::move(input._A)), _B(std::move(input._B)),
         _C(std::move(input._C)), _Q(std::move(input._Q)),
         _R(std::move(input._R)) {}
