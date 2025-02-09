@@ -10,8 +10,7 @@ namespace PythonControl {
 constexpr double STATE_SPACE_DIVISION_MIN = 1.0e-10;
 
 template <typename T, std::size_t Input_Size>
-using StateSpaceInputType =
-    PythonNumpy::Matrix<PythonNumpy::DefDense, T, Input_Size, 1>;
+using StateSpaceInputType = PythonNumpy::DenseMatrix_Type<T, Input_Size, 1>;
 
 namespace MakeStateSpaceInput {
 
@@ -79,10 +78,9 @@ struct SubstituteYRingBuffer<T, Original_Y_Type, Y_with_Delay_Type, 0> {
 /* Substitute row from DenseMatrix to DenseRow */
 template <typename T, std::size_t M, std::size_t N, std::size_t Count>
 struct SubstituteDenseMatrixRow {
-  static void
-  compute(const PythonNumpy::Matrix<PythonNumpy::DefDense, T, M, N> &matrix,
-          PythonNumpy::Matrix<PythonNumpy::DefDense, T, M, 1> &row,
-          const std::size_t &row_index) {
+  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
+                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
+                      const std::size_t &row_index) {
     row.template set<Count, 0>(matrix(Count, row_index));
     SubstituteDenseMatrixRow<T, M, N, (Count - 1)>::compute(matrix, row,
                                                             row_index);
@@ -91,10 +89,9 @@ struct SubstituteDenseMatrixRow {
 
 template <typename T, std::size_t M, std::size_t N>
 struct SubstituteDenseMatrixRow<T, M, N, 0> {
-  static void
-  compute(const PythonNumpy::Matrix<PythonNumpy::DefDense, T, M, N> &matrix,
-          PythonNumpy::Matrix<PythonNumpy::DefDense, T, M, 1> &row,
-          const std::size_t &row_index) {
+  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
+                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
+                      const std::size_t &row_index) {
     row.template set<0, 0>(matrix(0, row_index));
   }
 };
@@ -136,14 +133,11 @@ private:
 
 public:
   using Original_U_Type = PythonControl::StateSpaceInputType<_T, _Input_Size>;
-  using Original_X_Type =
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _State_Size, 1>;
-  using Original_Y_Type =
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _Output_Size, 1>;
+  using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
+  using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
 
   using Y_with_Delay_Type =
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _Output_Size,
-                          (1 + Number_Of_Delay)>;
+      PythonNumpy::DenseMatrix_Type<_T, _Output_Size, (1 + Number_Of_Delay)>;
 
   /* Check Compatibility */
   /* Check Data Type */
@@ -325,6 +319,11 @@ inline auto make_DiscreteStateSpace(A_Type A, B_Type B, C_Type C, D_Type D,
   return DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type, Number_Of_Delay>(
       A, B, C, D, delta_time);
 }
+
+/* Discrete State Space Type */
+template <typename A_Type, typename B_Type, typename C_Type, typename D_Type>
+using DiscreteStateSpace_Type =
+    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type>;
 
 } // namespace PythonControl
 

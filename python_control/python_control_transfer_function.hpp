@@ -6,6 +6,7 @@
 #include "python_numpy.hpp"
 
 #include <type_traits>
+#include <utility>
 
 namespace PythonControl {
 
@@ -13,14 +14,12 @@ constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
 
 /* Numerator and Denominator definition */
 template <typename T, std::size_t Numerator_Size>
-using TransferFunctionNumeratorType =
-    PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Numerator_Size, 1,
-                        PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
+using TransferFunctionNumeratorType = PythonNumpy::SparseMatrix_Type<
+    T, PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
 
 template <typename T, std::size_t Denominator_Size>
-using TransferFunctionDenominatorType =
-    PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Denominator_Size, 1,
-                        PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
+using TransferFunctionDenominatorType = PythonNumpy::SparseMatrix_Type<
+    T, PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
 
 namespace MakeNumerator {
 
@@ -110,46 +109,45 @@ namespace ForDiscreteTransferFunction {
 
 /* Create A type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_A_Type {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, N, N,
+
+  using SparseAvailable_DiscreteStateSpace_A =
       PythonNumpy::ConcatenateSparseAvailableVertically<
           PythonNumpy::DenseAvailable<1, N>,
           PythonNumpy::ConcatenateSparseAvailableHorizontally<
               PythonNumpy::DiagAvailable<N - 1>,
-              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>>;
+              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
+
+  using type =
+      PythonNumpy::SparseMatrix_Type<T, SparseAvailable_DiscreteStateSpace_A>;
 };
 
 /* Create B type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_B_Type {
-  using type =
-      PythonNumpy::Matrix<PythonNumpy::DefSparse, T, N, 1,
-                          PythonNumpy::ConcatenateSparseAvailableVertically<
-                              PythonNumpy::DenseAvailable<1, 1>,
-                              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::ConcatenateSparseAvailableVertically<
+             PythonNumpy::DenseAvailable<1, 1>,
+             PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
 };
 
 /* Create C type definition */
 template <typename T, std::size_t Denominator_Size, std::size_t Den_Num_Dif>
 struct DiscreteStateSpace_C_Type {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::ConcatenateSparseAvailableHorizontally<
-          PythonNumpy::DenseAvailable<1, (Den_Num_Dif - 1)>,
-          PythonNumpy::DenseAvailable<1, (Denominator_Size - Den_Num_Dif)>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::ConcatenateSparseAvailableHorizontally<
+             PythonNumpy::DenseAvailable<1, (Den_Num_Dif - 1)>,
+             PythonNumpy::DenseAvailable<1, (Denominator_Size - Den_Num_Dif)>>>;
 };
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 1> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 0> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
 
 /* Create D type definition */
@@ -157,15 +155,13 @@ template <typename T, bool IsStrictlyProper>
 struct DiscreteStateSpace_D_Type {};
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, true> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, 1,
-      PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<false>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<false>>>;
 };
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, false> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, 1,
-      PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<true>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<true>>>;
 };
 
 /* Set A value */
@@ -368,12 +364,14 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, true> {
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
-    auto solver = PythonNumpy::make_LinalgSolver(
-        PythonNumpy::Matrix<
-            PythonNumpy::DefDiag, T,
-            State_Space_Type::Original_X_Type::COLS>::identity() -
-            state_space.A,
-        state_space.B);
+    auto I_A = PythonNumpy::make_DiagMatrixIdentity<
+                   T, State_Space_Type::Original_X_Type::COLS>() -
+               state_space.A;
+
+    auto solver = PythonNumpy::make_LinalgSolver<decltype(I_A),
+                                                 decltype(state_space.B)>();
+    solver.solve(I_A, state_space.B);
+
     auto I_A_B = solver.get_answer();
 
     auto C_I_A_B = state_space.C * I_A_B;
@@ -397,15 +395,19 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
+    auto I_A = PythonNumpy::make_DiagMatrixIdentity<
+                   T, State_Space_Type::Original_X_Type::COLS>() -
+               state_space.A;
+
     // This is a transfer function, so D is scalar.
-    auto solver = PythonNumpy::make_LinalgSolver(
-        (PythonNumpy::Matrix<
-             PythonNumpy::DefDiag, T,
-             State_Space_Type::Original_X_Type::COLS>::identity() -
-         state_space.A) *
-                state_space.D.template get<0, 0>() +
-            state_space.B * state_space.C,
-        state_space.B * y_steady_state);
+    auto I_A_D_B_C = I_A * state_space.D.template get<0, 0>() +
+                     state_space.B * state_space.C;
+
+    auto B_y = state_space.B * y_steady_state;
+
+    auto solver =
+        PythonNumpy::make_LinalgSolver<decltype(I_A_D_B_C), decltype(B_y)>();
+    solver.solve(I_A_D_B_C, B_y);
 
     state_space.X = solver.get_answer();
 
@@ -478,6 +480,8 @@ private:
 
 public:
   /* Constructor */
+  DiscreteTransferFunction() {}
+
   DiscreteTransferFunction(const Numerator_Type &numerator,
                            const Denominator_Type &denominator, _T delta_time) {
     /* Set A */
@@ -596,6 +600,7 @@ private:
   _State_Space_Type _state_space;
 };
 
+/* make Discrete Transfer Function */
 template <typename Numerator_Type, typename Denominator_Type>
 inline auto
 make_DiscreteTransferFunction(Numerator_Type numerator,
@@ -620,6 +625,12 @@ make_DiscreteTransferFunction(Numerator_Type numerator,
                                   Number_Of_Delay>(numerator, denominator,
                                                    delta_time);
 }
+
+/* Discrete Transfer Function Type */
+template <typename Numerator_Type, typename Denominator_Type,
+          std::size_t Number_Of_Delay>
+using DiscreteTransferFunction_Type =
+    DiscreteTransferFunction<Numerator_Type, Denominator_Type, Number_Of_Delay>;
 
 } // namespace PythonControl
 
