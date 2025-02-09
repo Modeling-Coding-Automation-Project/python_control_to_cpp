@@ -89,6 +89,10 @@ void check_python_control_state_space(void) {
     DiscreteStateSpace_Type<decltype(A), decltype(B), decltype(C), decltype(D)>
         sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
+    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> sys_copy = sys;
+    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> sys_move = std::move(sys_copy);
+    sys = sys_move;
+
     T dt_answer = static_cast<T>(0.01);
 
     tester.expect_near(sys.delta_time, dt_answer, NEAR_LIMIT_STRICT,
@@ -150,7 +154,14 @@ void check_python_control_state_space(void) {
     /* むだ時間 */
     constexpr std::size_t DELAY_STEP = 3;
 
-    auto sys_delay = make_DiscreteStateSpace<DELAY_STEP>(A, B, C, D, dt);
+    DiscreteStateSpace<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
+        sys_delay = make_DiscreteStateSpace<DELAY_STEP>(A, B, C, D, dt);
+
+    DiscreteStateSpace<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
+        sys_delay_copy = sys_delay;
+    DiscreteStateSpace<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
+        sys_delay_move = std::move(sys_delay_copy);
+    sys_delay = sys_delay_move;
 
     tester.expect_near(static_cast<T>(sys_delay.get_number_of_delay()),
         static_cast<T>(DELAY_STEP), NEAR_LIMIT_STRICT,
@@ -308,6 +319,12 @@ void check_python_control_transfer_function(void) {
 
     DiscreteTransferFunction_Type<decltype(numerator_3_4), decltype(denominator_3_4), 0>
         system_3_4 = make_DiscreteTransferFunction(numerator_3_4, denominator_3_4, dt);
+
+    DiscreteTransferFunction_Type<decltype(numerator_3_4), decltype(denominator_3_4), 0>
+        system_3_4_copy = system_3_4;
+    DiscreteTransferFunction_Type<decltype(numerator_3_4), decltype(denominator_3_4), 0>
+        system_3_4_move = std::move(system_3_4_copy);
+    system_3_4 = system_3_4_move;
 
     DenseMatrix_Type<T, 1, TestData::SYSTEM_3_4_STEP_MAX> system_3_4_y;
     DenseMatrix_Type<T, TestData::SYSTEM_3_4_STEP_MAX, 1> system_3_4_y_answer_Trans;
@@ -553,6 +570,9 @@ void check_python_control_pid_controller(void) {
     pid_controller.minimum_output = static_cast<T>(-1e6);
     pid_controller.maximum_output = static_cast<T>(1e6);
 
+    DiscretePID_Controller<T> pid_controller_copy = pid_controller;
+    DiscretePID_Controller<T> pid_controller_move = std::move(pid_controller_copy);
+    pid_controller = pid_controller_move;
 
     /* シミュレーション */
     DenseMatrix_Type<T, 1, TestData::SYSTEM_PID_STEP_MAX> system_PID_y;
@@ -758,6 +778,10 @@ void check_python_control_lqr(void) {
     lqr.set_Q(Q);
     lqr.set_R(R);
 
+    LQR_Type<decltype(Ac), decltype(Bc), decltype(Q), decltype(R)> lqr_copy = lqr;
+    LQR_Type<decltype(Ac), decltype(Bc), decltype(Q), decltype(R)> lqr_move = std::move(lqr_copy);
+    lqr = lqr_move;
+
     /* LQR計算 */
     lqr.set_R_inv_division_min(static_cast<T>(1.0e-10));
     lqr.set_V1_inv_decay_rate(static_cast<T>(0));
@@ -821,6 +845,12 @@ void check_python_control_lqr(void) {
     lqi.set_C(Cc);
     lqi.set_Q(Q_ex);
     lqi.set_R(R_ex);
+
+    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
+        lqi_copy = lqi;
+    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
+        lqi_move = std::move(lqi_copy);
+    lqi = lqi_move;
 
     /* LQI計算 */
     auto K_ex = lqi.solve();

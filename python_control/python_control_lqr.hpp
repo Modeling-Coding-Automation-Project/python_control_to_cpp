@@ -295,12 +295,12 @@ private:
 
   using _A_EX_Type = PythonNumpy::ConcatenateHorizontally_Type<
       PythonNumpy::ConcatenateVertically_Type<A_Type, C_Type>,
-      decltype(PythonNumpy::make_SparseMatrixEmpty<
-               _T, (A_Type::COLS + C_Type::COLS), C_Type::COLS>())>;
+      PythonNumpy::SparseMatrixEmpty_Type<_T, (A_Type::COLS + C_Type::COLS),
+                                          C_Type::COLS>>;
 
   using _B_EX_Type = PythonNumpy::ConcatenateVertically_Type<
-      B_Type, decltype(PythonNumpy::make_SparseMatrixEmpty<_T, C_Type::COLS,
-                                                           B_Type::ROWS>())>;
+      B_Type,
+      PythonNumpy::SparseMatrixEmpty_Type<_T, C_Type::COLS, B_Type::ROWS>>;
 
   using _Hamiltonian_Type =
       typename LQR_Operation::Hamiltonian<_A_EX_Type, _B_EX_Type, Q_Type,
@@ -367,7 +367,7 @@ public:
       this->_K = input._K;
       this->_R_inv_solver = input._R_inv_solver;
       this->_V1_inv_solver = input._V1_inv_solver;
-      this->_eig_solver = input.eig_solver;
+      this->_eig_solver = input._eig_solver;
       this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
     return *this;
