@@ -108,12 +108,16 @@ namespace ForDiscreteTransferFunction {
 
 /* Create A type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_A_Type {
-  using type = PythonNumpy::SparseMatrix_Type<
-      T, PythonNumpy::ConcatenateSparseAvailableVertically<
-             PythonNumpy::DenseAvailable<1, N>,
-             PythonNumpy::ConcatenateSparseAvailableHorizontally<
-                 PythonNumpy::DiagAvailable<N - 1>,
-                 PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>>;
+
+  using SparseAvailable_DiscreteStateSpace_A =
+      PythonNumpy::ConcatenateSparseAvailableVertically<
+          PythonNumpy::DenseAvailable<1, N>,
+          PythonNumpy::ConcatenateSparseAvailableHorizontally<
+              PythonNumpy::DiagAvailable<N - 1>,
+              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
+
+  using type =
+      PythonNumpy::SparseMatrix_Type<T, SparseAvailable_DiscreteStateSpace_A>;
 };
 
 /* Create B type definition */
