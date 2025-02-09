@@ -106,6 +106,8 @@ public:
 
 public:
   /* Constructor */
+  LQR() : _A(), _B(), _Q(), _R() {}
+
   LQR(const A_Type &A, const B_Type &B, const Q_Type &Q, const R_Type &R)
       : _A(A), _B(B), _Q(Q), _R(R) {}
 
@@ -179,6 +181,10 @@ inline auto make_LQR(const A_Type &A, const B_Type &B, const Q_Type &Q,
   return LQR<A_Type, B_Type, Q_Type, R_Type>(A, B, Q, R);
 }
 
+/* LQR Type */
+template <typename A_Type, typename B_Type, typename Q_Type, typename R_Type>
+using LQR_Type = LQR<A_Type, B_Type, Q_Type, R_Type>;
+
 /* Linear Quadratic optimum control with Integral action */
 template <typename A_Type, typename B_Type, typename C_Type, typename Q_Type,
           typename R_Type>
@@ -224,6 +230,8 @@ public:
 
 public:
   /* Constructor */
+  LQI() : _A(), _B(), _C(), _Q(), _R() {}
+
   LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
       const R_Type &R)
       : _A(A), _B(B), _C(C), _Q(Q), _R(R) {}
@@ -314,6 +322,11 @@ inline auto make_LQI(const A_Type &A, const B_Type &B, const C_Type &C,
 
   return LQI<A_Type, B_Type, C_Type, Q_Type, R_Type>(A, B, C, Q, R);
 }
+
+/* LQI Type */
+template <typename A_Type, typename B_Type, typename C_Type, typename Q_Type,
+          typename R_Type>
+using LQI_Type = LQI<A_Type, B_Type, C_Type, Q_Type, R_Type>;
 
 } // namespace PythonControl
 

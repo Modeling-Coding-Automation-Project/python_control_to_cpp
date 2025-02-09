@@ -86,7 +86,8 @@ void check_python_control_state_space(void) {
 
 
     /* State Space シミュレーション */
-    auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
+    DiscreteStateSpace_Type<decltype(A), decltype(B), decltype(C), decltype(D)>
+        sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
     T dt_answer = static_cast<T>(0.01);
 
@@ -305,7 +306,8 @@ void check_python_control_transfer_function(void) {
 
     T dt = static_cast<T>(0.2);
 
-    auto system_3_4 = make_DiscreteTransferFunction(numerator_3_4, denominator_3_4, dt);
+    DiscreteTransferFunction_Type<decltype(numerator_3_4), decltype(denominator_3_4), 0>
+        system_3_4 = make_DiscreteTransferFunction(numerator_3_4, denominator_3_4, dt);
 
     DenseMatrix_Type<T, 1, TestData::SYSTEM_3_4_STEP_MAX> system_3_4_y;
     DenseMatrix_Type<T, TestData::SYSTEM_3_4_STEP_MAX, 1> system_3_4_y_answer_Trans;
@@ -733,7 +735,8 @@ void check_python_control_lqr(void) {
 
 
     /* LQR定義 */
-    auto lqr = make_LQR(Ac, Bc, Q, R);
+    LQR_Type<decltype(Ac), decltype(Bc), decltype(Q), decltype(R)>
+        lqr = make_LQR(Ac, Bc, Q, R);
 
     /* set */
     lqr.set_A(make_SparseMatrix<SparseAvailable_Ac>(
@@ -776,7 +779,8 @@ void check_python_control_lqr(void) {
 
     auto R_ex = make_DiagMatrix<1>(static_cast<T>(1));
 
-    auto lqi = make_LQI(Ac, Bc, Cc, Q_ex, R_ex);
+    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
+        lqi = make_LQI(Ac, Bc, Cc, Q_ex, R_ex);
 
     /* set */
     lqi.set_A(make_SparseMatrix<SparseAvailable_Ac>(

@@ -320,6 +320,11 @@ inline auto make_DiscreteStateSpace(A_Type A, B_Type B, C_Type C, D_Type D,
       A, B, C, D, delta_time);
 }
 
+/* Discrete State Space Type */
+template <typename A_Type, typename B_Type, typename C_Type, typename D_Type>
+using DiscreteStateSpace_Type =
+    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type>;
+
 } // namespace PythonControl
 
 #endif // __PYTHON_CONTROL_STATE_SPACE_HPP__

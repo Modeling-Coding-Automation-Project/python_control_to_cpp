@@ -6,6 +6,7 @@
 #include "python_numpy.hpp"
 
 #include <type_traits>
+#include <utility>
 
 namespace PythonControl {
 
@@ -479,6 +480,8 @@ private:
 
 public:
   /* Constructor */
+  DiscreteTransferFunction() {}
+
   DiscreteTransferFunction(const Numerator_Type &numerator,
                            const Denominator_Type &denominator, _T delta_time) {
     /* Set A */
@@ -597,6 +600,7 @@ private:
   _State_Space_Type _state_space;
 };
 
+/* make Discrete Transfer Function */
 template <typename Numerator_Type, typename Denominator_Type>
 inline auto
 make_DiscreteTransferFunction(Numerator_Type numerator,
@@ -621,6 +625,12 @@ make_DiscreteTransferFunction(Numerator_Type numerator,
                                   Number_Of_Delay>(numerator, denominator,
                                                    delta_time);
 }
+
+/* Discrete Transfer Function Type */
+template <typename Numerator_Type, typename Denominator_Type,
+          std::size_t Number_Of_Delay>
+using DiscreteTransferFunction_Type =
+    DiscreteTransferFunction<Numerator_Type, Denominator_Type, Number_Of_Delay>;
 
 } // namespace PythonControl
 
