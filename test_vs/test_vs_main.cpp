@@ -759,6 +759,15 @@ void check_python_control_lqr(void) {
     lqr.set_R(R);
 
     /* LQR計算 */
+    lqr.set_R_inv_division_min(static_cast<T>(1.0e-10));
+    lqr.set_V1_inv_decay_rate(static_cast<T>(0));
+    lqr.set_V1_inv_division_min(static_cast<T>(1.0e-10));
+    lqr.set_Eigen_solver_iteration_max(10);
+    lqr.set_Eigen_solver_iteration_max_for_eigen_vector(30);
+    lqr.set_Eigen_solver_division_min(static_cast<T>(1.0e-20));
+    lqr.set_Eigen_solver_small_value(static_cast<T>(1.0e-6));
+
+
     auto K = lqr.solve();
     K = lqr.get_K();
 
@@ -770,6 +779,11 @@ void check_python_control_lqr(void) {
 
     tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LQR solve continuous.");
+
+    bool condition = lqr.get_eigen_solver_is_ill();
+
+    tester.expect_near(condition, false, 0,
+        "check LQR eigen solver is not ill.");
 
 
     /* LQI定義 */

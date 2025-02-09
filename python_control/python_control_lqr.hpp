@@ -38,7 +38,8 @@ inline void lqr_solve_with_arimoto_potter(
     K_Type &K, PythonNumpy::LinalgSolverInv_Type<R_Type> &R_inv_solver,
     LQR_Operation::V1_V2_InvSolver_Type<typename A_Type::Value_Type,
                                         A_Type::COLS> &V1_inv_solver,
-    PythonNumpy::LinalgSolverEig_Type<Hamiltonian_Type> &eig_solver) {
+    PythonNumpy::LinalgSolverEig_Type<Hamiltonian_Type> &eig_solver,
+    bool &eigen_solver_is_ill) {
 
   using _T = typename A_Type::Value_Type;
 
@@ -62,6 +63,7 @@ inline void lqr_solve_with_arimoto_potter(
   LQR_Operation::V1_V2_Type<_T, _State_Size> V2;
 
   std::size_t minus_count = 0;
+  eigen_solver_is_ill = true;
   for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * _State_Size);
        i++) {
 
@@ -74,6 +76,7 @@ inline void lqr_solve_with_arimoto_potter(
 
       minus_count++;
       if (_State_Size == minus_count) {
+        eigen_solver_is_ill = false;
         break;
       }
     }
@@ -136,17 +139,18 @@ public:
   /* Constructor */
   LQR()
       : _A(), _B(), _Q(), _R(), _K(), _R_inv_solver(), _V1_inv_solver(),
-        eig_solver() {}
+        eig_solver(), _eigen_solver_is_ill(false) {}
 
   LQR(const A_Type &A, const B_Type &B, const Q_Type &Q, const R_Type &R)
       : _A(A), _B(B), _Q(Q), _R(R), _K(), _R_inv_solver(), _V1_inv_solver(),
-        eig_solver() {}
+        eig_solver(), _eigen_solver_is_ill(false) {}
 
   /* Copy Constructor */
   LQR(const LQR<A_Type, B_Type, Q_Type, R_Type> &input)
       : _A(input._A), _B(input._B), _Q(input._Q), _R(input._R), _K(input._K),
         _R_inv_solver(input._R_inv_solver),
-        _V1_inv_solver(input._V1_inv_solver), eig_solver(input.eig_solver) {}
+        _V1_inv_solver(input._V1_inv_solver), eig_solver(input.eig_solver),
+        _eigen_solver_is_ill(input._eigen_solver_is_ill) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(const LQR<A_Type, B_Type, Q_Type, R_Type> &input) {
@@ -159,6 +163,7 @@ public:
       this->_R_inv_solver = input._R_inv_solver;
       this->_V1_inv_solver = input._V1_inv_solver;
       this->eig_solver = input.eig_solver;
+      this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
     return *this;
   }
@@ -169,7 +174,8 @@ public:
         _Q(std::move(input._Q)), _R(std::move(input._R)),
         _K(std::move(input._K)), _R_inv_solver(std::move(input._R_inv_solver)),
         _V1_inv_solver(std::move(input._V1_inv_solver)),
-        eig_solver(std::move(input.eig_solver)) {}
+        eig_solver(std::move(input.eig_solver)),
+        _eigen_solver_is_ill(std::move(input._eigen_solver_is_ill)) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept {
@@ -182,6 +188,7 @@ public:
       this->_R_inv_solver = std::move(input._R_inv_solver);
       this->_V1_inv_solver = std::move(input._V1_inv_solver);
       this->eig_solver = std::move(input.eig_solver);
+      this->_eigen_solver_is_ill = std::move(input._eigen_solver_is_ill);
     }
     return *this;
   }
@@ -193,12 +200,16 @@ public:
     PythonControl::lqr_solve_with_arimoto_potter<A_Type, B_Type, Q_Type, R_Type,
                                                  K_Type, _Hamiltonian_Type>(
         this->_A, this->_B, this->_Q, this->_R, this->_K, this->_R_inv_solver,
-        this->_V1_inv_solver, this->eig_solver);
+        this->_V1_inv_solver, this->eig_solver, this->_eigen_solver_is_ill);
 
     return this->_K;
   }
 
   inline K_Type get_K() const { return this->_K; }
+
+  inline bool get_eigen_solver_is_ill() const {
+    return this->_eigen_solver_is_ill;
+  }
 
   inline void set_A(const A_Type &A) { this->_A = A; }
 
@@ -208,13 +219,35 @@ public:
 
   inline void set_R(const R_Type &R) { this->_R = R; }
 
-  // inline void set_R_inv_decay_rate(const T &decay_rate_in) {
-  //   this->decay_rate = decay_rate_in;
-  // }
+  inline void set_R_inv_division_min(const _T &division_min_in) {
+    this->_R_inv_solver.set_division_min(division_min_in);
+  }
 
-  // inline void set_R_inv_division_min(const T &division_min_in) {
-  //   this->division_min = division_min_in;
-  // }
+  inline void set_V1_inv_decay_rate(const _T &decay_rate_in) {
+    this->_V1_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void set_V1_inv_division_min(const _T &division_min_in) {
+    this->_V1_inv_solver.set_division_min(division_min_in);
+  }
+
+  inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
+    this->eig_solver.set_iteration_max(iteration_max);
+  }
+
+  inline void set_Eigen_solver_iteration_max_for_eigen_vector(
+      const std::size_t &iteration_max_for_eigen_vector) {
+    this->eig_solver.set_iteration_max_for_eigen_vector(
+        iteration_max_for_eigen_vector);
+  }
+
+  inline void set_Eigen_solver_division_min(const _T &division_min_in) {
+    this->eig_solver.set_division_min(division_min_in);
+  }
+
+  inline void set_Eigen_solver_small_value(const _T &small_value_in) {
+    this->eig_solver.set_small_value(small_value_in);
+  }
 
 private:
   /* Variable */
@@ -227,6 +260,8 @@ private:
   PythonNumpy::LinalgSolverInv_Type<R_Type> _R_inv_solver;
   LQR_Operation::V1_V2_InvSolver_Type<_T, _State_Size> _V1_inv_solver;
   PythonNumpy::LinalgSolverEig_Type<_Hamiltonian_Type> eig_solver;
+
+  bool _eigen_solver_is_ill;
 };
 
 /* Make LQR */
@@ -307,18 +342,19 @@ public:
   /* Constructor */
   LQI()
       : _A(), _B(), _C(), _Q(), _R(), _K(), _R_inv_solver(), _V1_inv_solver(),
-        _eig_solver() {}
+        _eig_solver(), _eigen_solver_is_ill(false) {}
 
   LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
       const R_Type &R)
       : _A(A), _B(B), _C(C), _Q(Q), _R(R), _K(), _R_inv_solver(),
-        _V1_inv_solver(), _eig_solver() {}
+        _V1_inv_solver(), _eig_solver(), _eigen_solver_is_ill(false) {}
 
   /* Copy Constructor */
   LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input)
       : _A(input._A), _B(input._B), _C(input._C), _Q(input._Q), _R(input._R),
         _K(input._K), _R_inv_solver(input._R_inv_solver),
-        _V1_inv_solver(input._V1_inv_solver), _eig_solver(input._eig_solver) {}
+        _V1_inv_solver(input._V1_inv_solver), _eig_solver(input._eig_solver),
+        _eigen_solver_is_ill(input._eigen_solver_is_ill) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input) {
@@ -332,6 +368,7 @@ public:
       this->_R_inv_solver = input._R_inv_solver;
       this->_V1_inv_solver = input._V1_inv_solver;
       this->_eig_solver = input.eig_solver;
+      this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
     return *this;
   }
@@ -343,7 +380,8 @@ public:
         _R(std::move(input._R)), _K(std::move(input._K)),
         _R_inv_solver(std::move(input._R_inv_solver)),
         _V1_inv_solver(std::move(input._V1_inv_solver)),
-        _eig_solver(std::move(input._eig_solver)) {}
+        _eig_solver(std::move(input._eig_solver)),
+        _eigen_solver_is_ill(std::move(input._eigen_solver_is_ill)) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept {
@@ -357,6 +395,7 @@ public:
       this->_R_inv_solver = std::move(input._R_inv_solver);
       this->_V1_inv_solver = std::move(input._V1_inv_solver);
       this->_eig_solver = std::move(input._eig_solver);
+      this->_eigen_solver_is_ill = std::move(input._eigen_solver_is_ill);
     }
     return *this;
   }
@@ -377,12 +416,16 @@ public:
     PythonControl::lqr_solve_with_arimoto_potter<
         _A_EX_Type, _B_EX_Type, Q_Type, R_Type, K_Type, _Hamiltonian_Type>(
         A_ex, B_ex, this->_Q, this->_R, this->_K, this->_R_inv_solver,
-        this->_V1_inv_solver, this->_eig_solver);
+        this->_V1_inv_solver, this->_eig_solver, this->_eigen_solver_is_ill);
 
     return this->_K;
   }
 
   inline K_Type get_K() const { return this->_K; }
+
+  inline bool get_eigen_solver_is_ill() const {
+    return this->_eigen_solver_is_ill;
+  }
 
   inline void set_A(const A_Type &A) { this->_A = A; }
 
@@ -393,6 +436,36 @@ public:
   inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
 
   inline void set_R(const R_Type &R) { this->_R = R; }
+
+  inline void set_R_inv_division_min(const _T &division_min_in) {
+    this->_R_inv_solver.set_division_min(division_min_in);
+  }
+
+  inline void set_V1_inv_decay_rate(const _T &decay_rate_in) {
+    this->_V1_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void set_V1_inv_division_min(const _T &division_min_in) {
+    this->_V1_inv_solver.set_division_min(division_min_in);
+  }
+
+  inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
+    this->eig_solver.set_iteration_max(iteration_max);
+  }
+
+  inline void set_Eigen_solver_iteration_max_for_eigen_vector(
+      const std::size_t &iteration_max_for_eigen_vector) {
+    this->eig_solver.set_iteration_max_for_eigen_vector(
+        iteration_max_for_eigen_vector);
+  }
+
+  inline void set_Eigen_solver_division_min(const _T &division_min_in) {
+    this->eig_solver.set_division_min(division_min_in);
+  }
+
+  inline void set_Eigen_solver_small_value(const _T &small_value_in) {
+    this->eig_solver.set_small_value(small_value_in);
+  }
 
 private:
   /* Variable */
@@ -407,6 +480,8 @@ private:
   LQR_Operation::V1_V2_InvSolver_Type<_T, (_State_Size + _Output_Size)>
       _V1_inv_solver;
   PythonNumpy::LinalgSolverEig_Type<_Hamiltonian_Type> _eig_solver;
+
+  bool _eigen_solver_is_ill;
 };
 
 /* Make LQI */
