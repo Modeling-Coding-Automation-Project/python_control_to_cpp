@@ -771,6 +771,7 @@ void check_python_control_lqr(void) {
     tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LQR solve continuous.");
 
+
     /* LQI定義 */
     auto Q_ex = make_DiagMatrix<6>(
         static_cast<T>(1), static_cast<T>(0.1),
