@@ -13,14 +13,12 @@ constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
 
 /* Numerator and Denominator definition */
 template <typename T, std::size_t Numerator_Size>
-using TransferFunctionNumeratorType =
-    PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Numerator_Size, 1,
-                        PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
+using TransferFunctionNumeratorType = PythonNumpy::SparseMatrix_Type<
+    T, PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
 
 template <typename T, std::size_t Denominator_Size>
-using TransferFunctionDenominatorType =
-    PythonNumpy::Matrix<PythonNumpy::DefSparse, T, Denominator_Size, 1,
-                        PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
+using TransferFunctionDenominatorType = PythonNumpy::SparseMatrix_Type<
+    T, PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
 
 namespace MakeNumerator {
 
@@ -110,46 +108,41 @@ namespace ForDiscreteTransferFunction {
 
 /* Create A type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_A_Type {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, N, N,
-      PythonNumpy::ConcatenateSparseAvailableVertically<
-          PythonNumpy::DenseAvailable<1, N>,
-          PythonNumpy::ConcatenateSparseAvailableHorizontally<
-              PythonNumpy::DiagAvailable<N - 1>,
-              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::ConcatenateSparseAvailableVertically<
+             PythonNumpy::DenseAvailable<1, N>,
+             PythonNumpy::ConcatenateSparseAvailableHorizontally<
+                 PythonNumpy::DiagAvailable<N - 1>,
+                 PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>>;
 };
 
 /* Create B type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_B_Type {
-  using type =
-      PythonNumpy::Matrix<PythonNumpy::DefSparse, T, N, 1,
-                          PythonNumpy::ConcatenateSparseAvailableVertically<
-                              PythonNumpy::DenseAvailable<1, 1>,
-                              PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::ConcatenateSparseAvailableVertically<
+             PythonNumpy::DenseAvailable<1, 1>,
+             PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
 };
 
 /* Create C type definition */
 template <typename T, std::size_t Denominator_Size, std::size_t Den_Num_Dif>
 struct DiscreteStateSpace_C_Type {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::ConcatenateSparseAvailableHorizontally<
-          PythonNumpy::DenseAvailable<1, (Den_Num_Dif - 1)>,
-          PythonNumpy::DenseAvailable<1, (Denominator_Size - Den_Num_Dif)>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::ConcatenateSparseAvailableHorizontally<
+             PythonNumpy::DenseAvailable<1, (Den_Num_Dif - 1)>,
+             PythonNumpy::DenseAvailable<1, (Denominator_Size - Den_Num_Dif)>>>;
 };
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 1> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 0> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, (Denominator_Size - 1),
-      PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
 
 /* Create D type definition */
@@ -157,15 +150,13 @@ template <typename T, bool IsStrictlyProper>
 struct DiscreteStateSpace_D_Type {};
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, true> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, 1,
-      PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<false>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<false>>>;
 };
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, false> {
-  using type = PythonNumpy::Matrix<
-      PythonNumpy::DefSparse, T, 1, 1,
-      PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<true>>>;
+  using type = PythonNumpy::SparseMatrix_Type<
+      T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<true>>>;
 };
 
 /* Set A value */

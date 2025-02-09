@@ -35,11 +35,11 @@ inline void lqr_solve_with_arimoto_potter(const A_Type &A, const B_Type &B,
 
   auto eigen_vectors = eig_solver.get_eigen_vectors();
 
-  PythonNumpy::Matrix<PythonNumpy::DefDense, PythonNumpy::Complex<_T>,
-                      _State_Size, _State_Size>
+  PythonNumpy::DenseMatrix_Type<PythonNumpy::Complex<_T>, _State_Size,
+                                _State_Size>
       V1;
-  PythonNumpy::Matrix<PythonNumpy::DefDense, PythonNumpy::Complex<_T>,
-                      _State_Size, _State_Size>
+  PythonNumpy::DenseMatrix_Type<PythonNumpy::Complex<_T>, _State_Size,
+                                _State_Size>
       V2;
 
   std::size_t minus_count = 0;
@@ -84,8 +84,7 @@ private:
 
 public:
   /* Type */
-  using K_Type =
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _Input_Size, _State_Size>;
+  using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size, _State_Size>;
 
   /* Check Compatibility */
   /* Check Data Type */
@@ -199,8 +198,8 @@ private:
 
 public:
   /* Type */
-  using K_Type = PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _Input_Size,
-                                     (_State_Size + _Output_Size)>;
+  using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size,
+                                               (_State_Size + _Output_Size)>;
 
   /* Check Compatibility */
   /* Check Data Type */
