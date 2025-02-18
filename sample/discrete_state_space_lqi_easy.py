@@ -15,30 +15,13 @@ import scipy.linalg as la
 simulation_time = 10.0
 dt = 0.1
 
-# pendulum model continuous
-Ac = np.matrix([
-    [0.0, 1.0, 0.0, 0.0],
-    [0.0, -0.1, 3.0, 0.0],
-    [0.0, 0.0, 0.0, 1.0],
-    [0.0, -0.5, 30.0, 0.0]
-])
+sys = control.TransferFunction([1.0], [1.0, 2.0, 1.0])
+sys_ss = control.tf2ss(sys)
 
-Bc = np.matrix([
-    [0.0],
-    [2.0],
-    [0.0],
-    [5.0]
-])
-
-Cc = np.matrix([
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 0.0, 1.0, 0.0]
-])
-
-Dc = np.matrix([
-    [0.0],
-    [0.0]
-])
+Ac = sys_ss.A
+Bc = sys_ss.B
+Cc = sys_ss.C
+Dc = sys_ss.D
 
 # Create Expanded State Space Model
 Ac_ex = np.block([
@@ -46,15 +29,15 @@ Ac_ex = np.block([
     [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
 Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
 
-# Discretize the continuous time model
-sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
-Ad = sys_d.A
-Bd = sys_d.B
-Cd = sys_d.C
-Dd = sys_d.D
+sys_ss_d = control.c2d(sys_ss, dt, method='euler')
+
+Ad = sys_ss_d.A
+Bd = sys_ss_d.B
+Cd = sys_ss_d.C
+Dd = sys_ss_d.D
 
 # LQI parameters
-Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
+Q_ex = np.diag([0.0, 2.0, 2.0])
 R_ex = np.diag([1.0])
 
 
@@ -104,9 +87,8 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
 
 
 def main_reference_tracking():
-
+    # design LQR controller
     K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
-    # K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
 
     print("K_ex: ")
     print(K_ex)
@@ -119,32 +101,24 @@ def main_reference_tracking():
 
     x = np.matrix([
         [0.0],
-        [0.0],
-        [0.0],
         [0.0]
     ])
     u = np.matrix([0])
 
     xref = np.matrix([
-        [1.0],
         [0.0],
-        [0.0],
-        [0.0]
+        [1.0]
     ])
 
     y_ref = np.matrix([
-        [1.0],
-        [0.0]
+        [1.0]
     ])
 
-    e_y_integral = np.zeros((2, 1))
+    e_y_integral = np.zeros((1, 1))
 
     time_history = [0.0]
-    x1_history = [x[0, 0]]
-    x2_history = [x[2, 0]]
+    x_history = [x[1, 0]]
     u_history = [0.0]
-
-    u_offset = 0.1
 
     # simulation
     while t <= simulation_time:
@@ -153,28 +127,24 @@ def main_reference_tracking():
         e_y_integral = e_y_integral + dt * e_y
 
         u = K_x * (xref - x) + K_e * e_y_integral
-        u0 = float(u[0, 0]) + u_offset
+        u0 = float(u[0, 0])
 
         x = process(x, u0)
 
-        x1_history.append(x[0, 0])
-        x2_history.append(x[2, 0])
+        x_history.append(x[1, 0])
 
         u_history.append(u0)
         time_history.append(t)
         t += dt
 
-    # plot
     fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.suptitle("LQI Tracking")
+    fig.suptitle("LQR Tracking")
 
     ax1.grid(True)
-    ax1.plot(time_history, x1_history, "-b", label="x")
-    ax1.plot(time_history, x2_history, "-g", label="theta")
-    xref0_h = [xref[0, 0] for i in range(len(time_history))]
-    xref1_h = [xref[2, 0] for i in range(len(time_history))]
-    ax1.plot(time_history, xref0_h, "--b", label="target x")
-    ax1.plot(time_history, xref1_h, "--g", label="target theta")
+    ax1.plot(time_history, x_history, "-b", label="x")
+
+    xref = [xref[1, 0] for i in range(len(time_history))]
+    ax1.plot(time_history, xref, "--b", label="target x")
     ax1.legend()
 
     ax2.plot(time_history, u_history, "-r", label="input")

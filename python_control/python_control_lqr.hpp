@@ -450,21 +450,21 @@ public:
   }
 
   inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
-    this->eig_solver.set_iteration_max(iteration_max);
+    this->_eig_solver.set_iteration_max(iteration_max);
   }
 
   inline void set_Eigen_solver_iteration_max_for_eigen_vector(
       const std::size_t &iteration_max_for_eigen_vector) {
-    this->eig_solver.set_iteration_max_for_eigen_vector(
+    this->_eig_solver.set_iteration_max_for_eigen_vector(
         iteration_max_for_eigen_vector);
   }
 
   inline void set_Eigen_solver_division_min(const _T &division_min_in) {
-    this->eig_solver.set_division_min(division_min_in);
+    this->_eig_solver.set_division_min(division_min_in);
   }
 
   inline void set_Eigen_solver_small_value(const _T &small_value_in) {
-    this->eig_solver.set_small_value(small_value_in);
+    this->_eig_solver.set_small_value(small_value_in);
   }
 
 private:
