@@ -832,8 +832,6 @@ void check_python_control_lqr(void) {
     auto Cc_easy_model = make_SparseMatrix<SparseAvailable_Cc_easy_model>(
         static_cast<T>(1));
 
-    auto Cc_easy_model_dense = Cc_easy_model.create_dense();
-
     constexpr std::size_t Q_EX_SIZE = 3;
 
     auto Q_easy_model_ex = make_DiagMatrix<Q_EX_SIZE>(
