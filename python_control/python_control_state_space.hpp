@@ -280,14 +280,14 @@ private:
         _T, Original_Y_Type, Y_with_Delay_Type,
         (_Output_Size - 1)>::compute(this->Y, (this->C * this->X + this->D * U),
                                      this->_delay_ring_buffer_index);
+
+    ForDiscreteStateSpace::UpdateRingBufferIndex<Number_Of_Delay>::compute(
+        this->_delay_ring_buffer_index);
   }
 
   inline void _calc_state_function(const Original_U_Type &U) {
 
     this->X = this->A * this->X + this->B * U;
-
-    ForDiscreteStateSpace::UpdateRingBufferIndex<Number_Of_Delay>::compute(
-        this->_delay_ring_buffer_index);
   }
 
 public:
