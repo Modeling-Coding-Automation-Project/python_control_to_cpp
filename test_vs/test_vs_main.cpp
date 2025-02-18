@@ -704,7 +704,8 @@ void check_python_control_lqr(void) {
     MCAPTester<T> tester;
 
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    //const T NEAR_LIMIT_SOFT = 1.0e-2F;
+    const T NEAR_LIMIT_SOFT = 3.0e-1F;
+
 
     using SparseAvailable_Ac = SparseAvailable<
         ColumnAvailable<false, true, false, false>,
@@ -873,12 +874,20 @@ void check_python_control_lqr(void) {
     lqi = lqi_move;
 
     /* LQI計算 */
-    lqi.set_Eigen_solver_iteration_max(10);
+    lqi.set_Eigen_solver_iteration_max(Q_EX_SIZE);
+    lqi.set_Eigen_solver_iteration_max_for_eigen_vector(3 * Q_EX_SIZE);
 
     auto K_ex = lqi.solve();
     K_ex = lqi.get_K();
 
-    /* （作成中） */
+    decltype(K_ex) K_ex_answer({ {
+        static_cast<T>(0.95663669),
+        static_cast<T>(2.37085025),
+        static_cast<T>(1.41421356)
+        } });
+
+    tester.expect_near(K_ex.matrix.data, K_ex_answer.matrix.data, NEAR_LIMIT_SOFT,
+        "check LQI solve continuous.");
 
 
     tester.throw_error_if_test_failed();
