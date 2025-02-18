@@ -56,6 +56,9 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
 
     eigen_values, eigen_vectors = la.eig(Hamiltonian)
 
+    result = Hamiltonian @ eigen_vectors - \
+        eigen_vectors @ np.diag(eigen_values)
+
     V1 = None
     V2 = None
 

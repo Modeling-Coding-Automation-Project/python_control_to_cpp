@@ -811,48 +811,70 @@ void check_python_control_lqr(void) {
 
 
     /* LQI定義 */
-    auto Q_ex = make_DiagMatrix<6>(
-        static_cast<T>(1), static_cast<T>(0.1),
-        static_cast<T>(1), static_cast<T>(0.1),
-        static_cast<T>(2), static_cast<T>(0.1));
+    using SparseAvailable_Ac_easy_model = SparseAvailable<
+        ColumnAvailable<true, true>,
+        ColumnAvailable<true, false>>;
 
-    auto R_ex = make_DiagMatrix<1>(static_cast<T>(1));
+    using SparseAvailable_Bc_easy_model = SparseAvailable<
+        ColumnAvailable<true>,
+        ColumnAvailable<false>>;
 
-    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
-        lqi = make_LQI(Ac, Bc, Cc, Q_ex, R_ex);
+    using SparseAvailable_Cc_easy_model = SparseAvailable<
+        ColumnAvailable<false, true>>;
+
+    auto Ac_easy_model = make_SparseMatrix<SparseAvailable_Ac_easy_model>(
+        static_cast<T>(-2), static_cast<T>(-1), static_cast<T>(1));
+
+    auto Bc_easy_model = make_SparseMatrix<SparseAvailable_Bc_easy_model>(
+        static_cast<T>(1));
+
+    auto Cc_easy_model = make_SparseMatrix<SparseAvailable_Cc_easy_model>(
+        static_cast<T>(1));
+
+    auto Cc_easy_model_dense = Cc_easy_model.create_dense();
+
+    constexpr std::size_t Q_EX_SIZE = 3;
+
+    auto Q_easy_model_ex = make_DiagMatrix<Q_EX_SIZE>(
+        static_cast<T>(0), static_cast<T>(2), static_cast<T>(2));
+
+    constexpr std::size_t R_EX_SIZE = 1;
+
+    auto R_easy_model_ex = make_DiagMatrix<R_EX_SIZE>(static_cast<T>(1));
+
+    LQI_Type<decltype(Ac_easy_model), decltype(Bc_easy_model), decltype(Cc_easy_model),
+        decltype(Q_easy_model_ex), decltype(R_easy_model_ex)>
+        lqi = make_LQI(Ac_easy_model, Bc_easy_model, Cc_easy_model,
+            Q_easy_model_ex, R_easy_model_ex);
 
     /* set */
-    lqi.set_A(make_SparseMatrix<SparseAvailable_Ac>(
-        static_cast<T>(0.0), static_cast<T>(0.0),
-        static_cast<T>(0.0), static_cast<T>(0.0),
-        static_cast<T>(0.0), static_cast<T>(0.0)));
+    lqi.set_A(make_SparseMatrixZeros<T, SparseAvailable_Ac_easy_model>());
 
-    lqi.set_B(make_SparseMatrix<SparseAvailable_Bc>(
-        static_cast<T>(0.0), static_cast<T>(0.0)));
+    lqi.set_B(make_SparseMatrixZeros<T, SparseAvailable_Bc_easy_model>());
 
-    lqi.set_C(make_SparseMatrix<SparseAvailable_Cc>(
-        static_cast<T>(0.0), static_cast<T>(0.0)));
+    lqi.set_C(make_SparseMatrixZeros<T, SparseAvailable_Cc_easy_model>());
 
-    lqi.set_Q(make_DiagMatrix<6>(
-        static_cast<T>(0), static_cast<T>(0),
-        static_cast<T>(0), static_cast<T>(0),
-        static_cast<T>(0), static_cast<T>(0)));
+    lqi.set_Q(make_DiagMatrixZeros<T, Q_EX_SIZE>());
 
-    lqi.set_R(make_DiagMatrix<1>(static_cast<T>(0)));
+    lqi.set_R(make_DiagMatrixZeros<T, R_EX_SIZE>());
 
-    lqi.set_A(Ac);
-    lqi.set_B(Bc);
-    lqi.set_C(Cc);
-    lqi.set_Q(Q_ex);
-    lqi.set_R(R_ex);
+    lqi.set_A(Ac_easy_model);
+    lqi.set_B(Bc_easy_model);
+    lqi.set_C(Cc_easy_model);
+    lqi.set_Q(Q_easy_model_ex);
+    lqi.set_R(R_easy_model_ex);
 
-    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
+    LQI_Type<decltype(Ac_easy_model), decltype(Bc_easy_model), decltype(Cc_easy_model),
+        decltype(Q_easy_model_ex), decltype(R_easy_model_ex)>
         lqi_copy = lqi;
-    LQI_Type<decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>
+    LQI_Type<decltype(Ac_easy_model), decltype(Bc_easy_model), decltype(Cc_easy_model),
+        decltype(Q_easy_model_ex), decltype(R_easy_model_ex)>
         lqi_move = std::move(lqi_copy);
     lqi = lqi_move;
 
     /* LQI計算 */
+    lqi.set_Eigen_solver_iteration_max(10);
+
     auto K_ex = lqi.solve();
     K_ex = lqi.get_K();
 
