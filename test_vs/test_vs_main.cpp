@@ -743,10 +743,10 @@ void check_python_control_lqr(void) {
     //    ColumnAvailable<false>,
     //    ColumnAvailable<true>>>(static_cast<T>(0.2), static_cast<T>(0.5));
 
-    using SparseAvailable_Cc = SparseAvailable<
-        ColumnAvailable<true, false, false, false>,
-        ColumnAvailable<false, false, true, false>>;
-    auto Cc = make_SparseMatrix<SparseAvailable_Cc>(static_cast<T>(1.0), static_cast<T>(1.0));
+    //using SparseAvailable_Cc = SparseAvailable<
+    //    ColumnAvailable<true, false, false, false>,
+    //    ColumnAvailable<false, false, true, false>>;
+    //auto Cc = make_SparseMatrix<SparseAvailable_Cc>(static_cast<T>(1.0), static_cast<T>(1.0));
 
     auto Q = make_DiagMatrix<4>(
         static_cast<T>(1), static_cast<T>(0),
