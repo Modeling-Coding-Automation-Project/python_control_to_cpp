@@ -37,7 +37,7 @@ Cd = sys_ss_d.C
 Dd = sys_ss_d.D
 
 # LQI parameters
-Q_ex = np.diag([0.0, 2.0, 1.0])
+Q_ex = np.diag([0.0, 2.0, 2.0])
 R_ex = np.diag([1.0])
 
 
