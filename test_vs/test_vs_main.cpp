@@ -85,7 +85,7 @@ void check_python_control_state_space(void) {
         "check DiscreteStateSpace 4 arguments.");
 
 
-    /* State Space シミュレーション */
+    /* State Space 機能 */
     DiscreteStateSpace_Type<decltype(A), decltype(B), decltype(C), decltype(D)>
         sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
@@ -98,6 +98,32 @@ void check_python_control_state_space(void) {
     tester.expect_near(sys.delta_time, dt_answer, NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delta_time.");
 
+    auto u_0 = make_StateSpaceInput<1>(static_cast<T>(1.0));
+    auto x_0 = sys.get_X();
+    x_0(0, 0) = static_cast<T>(0.1);
+    x_0(1, 0) = static_cast<T>(0.2);
+
+    auto x_1 = sys.state_function(x_0, u_0);
+
+    decltype(x_1) x_1_answer({
+        {static_cast<T>(0.21)},
+        {static_cast<T>(0.33)}
+        });
+
+    tester.expect_near(x_1.matrix.data, x_1_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace state function.");
+
+    auto y_1 = sys.output_function(x_0, u_0);
+
+    decltype(y_1) y_1_answer({
+        {static_cast<T>(0.2)}
+        });
+
+    tester.expect_near(y_1.matrix.data, y_1_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace output function.");
+
+
+    /* State Space シミュレーション */
     DenseMatrix_Type<T, 2, TestData::SIM_SS_STEP_MAX> X_results;
     DenseMatrix_Type<T, 1, TestData::SIM_SS_STEP_MAX> Y_results;
 

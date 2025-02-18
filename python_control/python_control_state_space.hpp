@@ -272,13 +272,31 @@ public:
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
+  inline auto output_function(const Original_X_Type &X_in,
+                              const Original_U_Type &U) const
+      -> Original_Y_Type {
+
+    Original_Y_Type Y_out = this->C * X_in + this->D * U;
+
+    return Y_out;
+  }
+
+  inline auto state_function(const Original_X_Type &X_in,
+                             const Original_U_Type &U) const
+      -> Original_X_Type {
+
+    Original_X_Type X_out = this->A * X_in + this->B * U;
+
+    return X_out;
+  }
+
 private:
   /* Function */
   inline void _calc_output_function(const Original_U_Type &U) {
 
     ForDiscreteStateSpace::SubstituteYRingBuffer<
         _T, Original_Y_Type, Y_with_Delay_Type,
-        (_Output_Size - 1)>::compute(this->Y, (this->C * this->X + this->D * U),
+        (_Output_Size - 1)>::compute(this->Y, this->output_function(this->X, U),
                                      this->_delay_ring_buffer_index);
 
     ForDiscreteStateSpace::UpdateRingBufferIndex<Number_Of_Delay>::compute(
@@ -287,7 +305,7 @@ private:
 
   inline void _calc_state_function(const Original_U_Type &U) {
 
-    this->X = this->A * this->X + this->B * U;
+    this->X = this->state_function(this->X, U);
   }
 
 public:
