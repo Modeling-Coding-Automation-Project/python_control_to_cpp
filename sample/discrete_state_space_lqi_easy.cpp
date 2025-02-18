@@ -59,7 +59,7 @@ int main(void) {
   std::cout << "K: ";
   std::cout << K(0, 0) << ", ";
   std::cout << K(0, 1) << ", ";
-  std::cout << K(0, 2) << ", ";
+  std::cout << K(0, 2);
   std::cout << std::endl << std::endl;
 
   /* Simulation */
