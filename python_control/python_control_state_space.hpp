@@ -246,9 +246,9 @@ public:
     return NUMBER_OF_DELAY;
   }
 
-  auto get_X(void) const -> Original_X_Type { return this->X; }
+  inline auto get_X(void) const -> Original_X_Type { return this->X; }
 
-  auto get_Y(void) const -> Original_Y_Type {
+  inline auto get_Y(void) const -> Original_Y_Type {
     Original_Y_Type result;
 
     ForDiscreteStateSpace::SubstituteDenseMatrixRow<
@@ -263,20 +263,32 @@ public:
     return this->_delay_ring_buffer_index;
   }
 
-  void update(const Original_U_Type &U) {
+  inline void update(const Original_U_Type &U) {
+
+    this->_calc_output_function(U);
+
+    this->_calc_state_function(U);
+  }
+
+  inline void reset_state(void) { this->X = this->X_initial; }
+
+private:
+  /* Function */
+  inline void _calc_output_function(const Original_U_Type &U) {
 
     ForDiscreteStateSpace::SubstituteYRingBuffer<
         _T, Original_Y_Type, Y_with_Delay_Type,
         (_Output_Size - 1)>::compute(this->Y, (this->C * this->X + this->D * U),
                                      this->_delay_ring_buffer_index);
+  }
+
+  inline void _calc_state_function(const Original_U_Type &U) {
 
     this->X = this->A * this->X + this->B * U;
 
     ForDiscreteStateSpace::UpdateRingBufferIndex<Number_Of_Delay>::compute(
         this->_delay_ring_buffer_index);
   }
-
-  void reset_state(void) { this->X = this->X_initial; }
 
 public:
   /* Constant */
