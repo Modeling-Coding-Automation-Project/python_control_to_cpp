@@ -23,6 +23,12 @@ Bc = sys_ss.B
 Cc = sys_ss.C
 Dc = sys_ss.D
 
+# Create Expanded State Space Model
+Ac_ex = np.block([
+    [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
+    [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
+Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+
 sys_ss_d = control.c2d(sys_ss, dt, method='euler')
 
 Ad = sys_ss_d.A
@@ -30,9 +36,9 @@ Bd = sys_ss_d.B
 Cd = sys_ss_d.C
 Dd = sys_ss_d.D
 
-# LQR parameters
-Q = np.diag([0.0, 2.0])
-R = np.diag([1.0])
+# LQI parameters
+Q_ex = np.diag([0.0, 2.0, 1.0])
+R_ex = np.diag([1.0])
 
 
 def process(x, u):
@@ -79,24 +85,33 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
 
 def main_reference_tracking():
     # design LQR controller
-    K = lqr_with_arimoto_potter(Ac, Bc, Q, R)
+    K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
 
-    print("K: ")
-    print(K)
+    print("K_ex: ")
+    print(K_ex)
+
+    K_x = K_ex[:, 0:Ac.shape[0]]
+    K_e = K_ex[:, Ac.shape[0]:(Ac.shape[0] + Cc.shape[0])]
 
     # prepare simulation
     t = 0.0
 
     x = np.matrix([
         [0.0],
-        [0.0],
+        [0.0]
     ])
     u = np.matrix([0])
 
     xref = np.matrix([
         [0.0],
-        [1.0],
+        [1.0]
     ])
+
+    y_ref = np.matrix([
+        [1.0]
+    ])
+
+    e_y_integral = np.zeros((1, 1))
 
     time_history = [0.0]
     x_history = [x[1, 0]]
@@ -104,7 +119,11 @@ def main_reference_tracking():
 
     # simulation
     while t <= simulation_time:
-        u = K * (xref - x)
+        y = Cc * x
+        e_y = y_ref - y
+        e_y_integral = e_y_integral + dt * e_y
+
+        u = K_x * (xref - x) + K_e * e_y_integral
         u0 = float(u[0, 0])
 
         x = process(x, u0)

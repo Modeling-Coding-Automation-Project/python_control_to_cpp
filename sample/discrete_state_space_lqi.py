@@ -111,8 +111,8 @@ def main_reference_tracking():
     print("K_ex: ")
     print(K_ex)
 
-    K_x = K_ex[:, 0:4]
-    K_e = K_ex[:, 4:6]
+    K_x = K_ex[:, 0:Ac.shape[0]]
+    K_e = K_ex[:, Ac.shape[0]:(Ac.shape[0] + Cc.shape[0])]
 
     # prepare simulation
     t = 0.0
