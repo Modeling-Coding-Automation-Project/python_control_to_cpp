@@ -917,6 +917,20 @@ void check_python_control_lqr(void) {
     tester.throw_error_if_test_failed();
 }
 
+template <typename T>
+void check_python_control_kalman_filter(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    const T NEAR_LIMIT_SOFT = 3.0e-1F;
+
+
+    tester.throw_error_if_test_failed();
+}
+
 
 int main(void) {
 
@@ -935,6 +949,10 @@ int main(void) {
     check_python_control_lqr<double>();
 
     check_python_control_lqr<float>();
+
+    check_python_control_kalman_filter<double>();
+
+    check_python_control_kalman_filter<float>();
 
 
     return 0;
