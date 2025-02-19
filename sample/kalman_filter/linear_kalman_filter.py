@@ -89,20 +89,25 @@ if __name__ == "__main__":
     x_true = np.zeros((A.shape[0], num_steps, 1))
     x_estimate = np.zeros((A.shape[0], num_steps, 1))
     y_measured = np.zeros((C.shape[0], num_steps, 1))
-    x_true[:, 0, 0] = kf.x_hat.flatten()
+    x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
 
     for k in range(1, num_steps):
+        u = u_data[:, k-1].reshape(-1, 1)
         # system response
-        w = np.random.multivariate_normal(np.zeros(4), Q)
-        v = np.random.multivariate_normal(np.zeros(2), R)
-        x_true[:, k, 0] = A @ x_true[:, k-1, 0] + B @ u_data[:, k-1] + w
-        y_measured[:, k, 0] = C @ x_true[:, k, 0] + v
+        w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q)
+        v = np.random.multivariate_normal(np.zeros(C.shape[0]), R)
+        # w = np.zeros(A.shape[0])
+        # v = np.zeros(C.shape[0])
+
+        x_true[:, k, 0] = (A @ x_true[:, k-1,
+                                      0].reshape(-1, 1) + B @ u + w.reshape(-1, 1)).flatten()
+        y_measured[:, k, 0] = (
+            C @ x_true[:, k, 0].reshape(-1, 1) + v.reshape(-1, 1)).flatten()
 
         # Kalman filter
-        # u = u_data[k-1]
-        # kf.predict(u)
-        # kf.update(y_measured[k])
-        # x_estimate[k] = kf.get_x_hat().T
+        kf.predict(u)
+        kf.update(y_measured[:, k, 0].reshape(-1, 1))
+        x_estimate[:, k, 0] = kf.get_x_hat().flatten()
 
     # Plot
     plt.figure()
