@@ -1,35 +1,10 @@
-import matplotlib.pyplot as plt
+import os
+import sys
+sys.path.append(os.getcwd())
+
 import numpy as np
-
-
-class LinearKalmanFilter:
-    def __init__(self, A, B, C, Q, R):
-        self.A = A
-        self.B = B
-        self.C = C
-        self.Q = Q
-        self.R = R
-        self.x_hat = np.zeros((A.shape[0], 1))
-        self.P = np.ones(A.shape[0])
-
-    def predict(self, u):
-        self.x_hat = self.A @ self.x_hat + self.B @ u
-        self.P = self.A @ self.P @ self.A.T + self.Q
-
-    def update(self, y):
-        P_CT = self.P @ self.C.T
-
-        S = self.C @ P_CT + self.R
-        G = P_CT @ np.linalg.inv(S)
-        self.x_hat = self.x_hat + G @ self.calc_y_dif(y)
-        self.P = (np.eye(A.shape[0]) - G @ self.C) @ self.P
-
-    def calc_y_dif(self, y):
-        y_dif = y - self.C @ self.x_hat
-        return y_dif
-
-    def get_x_hat(self):
-        return self.x_hat
+import matplotlib.pyplot as plt
+from python_control.kalman_filter import LinearKalmanFilter
 
 
 # Example
@@ -92,14 +67,15 @@ if __name__ == "__main__":
     x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
 
     for k in range(1, num_steps):
-        u = u_data[:, k-1].reshape(-1, 1)
+        u = u_data[:, k - 1].reshape(-1, 1)
+
         # system response
         w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q)
         v = np.random.multivariate_normal(np.zeros(C.shape[0]), R)
         # w = np.zeros(A.shape[0])
         # v = np.zeros(C.shape[0])
 
-        x_true[:, k, 0] = (A @ x_true[:, k-1,
+        x_true[:, k, 0] = (A @ x_true[:, k - 1,
                                       0].reshape(-1, 1) + B @ u + w.reshape(-1, 1)).flatten()
         y_measured[:, k, 0] = (
             C @ x_true[:, k, 0].reshape(-1, 1) + v.reshape(-1, 1)).flatten()

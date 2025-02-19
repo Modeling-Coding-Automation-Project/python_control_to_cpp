@@ -53,5 +53,9 @@
         "xstring": "cpp",
         "xtr1common": "cpp",
         "xutility": "cpp"
-    }
+    },
+    "autopep8.args": [
+        "--ignore",
+        "E402"
+    ]
 }
