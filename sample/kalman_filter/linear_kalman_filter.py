@@ -80,59 +80,72 @@ if __name__ == "__main__":
     # Generate input signal
     taps = [2, 3]
     m_sequence = generate_m_sequence(num_steps * 2, taps)
-    u_data = m_sequence.reshape(num_steps, 2) - 0.5
+    u_data_T = m_sequence.reshape(num_steps, 2) - 0.5
+    u_data = u_data_T.T
 
     # Generate data
     np.random.seed(0)
 
-    x_data = np.zeros((num_steps, A.shape[0]))
-    y_data = np.zeros((num_steps, C.shape[0]))
-    x_data[0] = kf.x_hat.T
+    x_true = np.zeros((A.shape[0], num_steps, 1))
+    x_estimate = np.zeros((A.shape[0], num_steps, 1))
+    y_measured = np.zeros((C.shape[0], num_steps, 1))
+    x_true[:, 0, 0] = kf.x_hat.flatten()
 
     for k in range(1, num_steps):
+        # system response
         w = np.random.multivariate_normal(np.zeros(4), Q)
         v = np.random.multivariate_normal(np.zeros(2), R)
-        x_data[k] = A @ x_data[k-1] + B @ u_data[k-1] + w
-        y_data[k] = C @ x_data[k] + v
+        x_true[:, k, 0] = A @ x_true[:, k-1, 0] + B @ u_data[:, k-1] + w
+        y_measured[:, k, 0] = C @ x_true[:, k, 0] + v
+
+        # Kalman filter
+        # u = u_data[k-1]
+        # kf.predict(u)
+        # kf.update(y_measured[k])
+        # x_estimate[k] = kf.get_x_hat().T
 
     # Plot
     plt.figure()
     plt.title("True state and observation")
 
     plt.subplot(3, 2, 1)
-    plt.plot(x_data[:, 0], label="True x0")
-    plt.plot(y_data[:, 0], label="Observation y0")
+    plt.plot(x_true[0, :, 0], label="True x0")
+    plt.plot(x_estimate[0, :, 0], label="Estimated x0")
+    plt.plot(y_measured[0, :, 0], label="Measured y0")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
 
     plt.subplot(3, 2, 3)
-    plt.plot(x_data[:, 2], label="True x2")
-    plt.plot(y_data[:, 1], label="Observation y1")
+    plt.plot(x_true[2, :, 0], label="True x2")
+    plt.plot(x_estimate[2, :, 0], label="Estimated x2")
+    plt.plot(y_measured[1, :, 0], label="Measured y1")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
 
     plt.subplot(3, 2, 2)
-    plt.plot(u_data[:, 0], label="Input u0")
+    plt.plot(u_data[0, :], label="Input u0")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
 
     plt.subplot(3, 2, 4)
-    plt.plot(u_data[:, 1], label="Input u1")
+    plt.plot(u_data[1, :], label="Input u1")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
 
     plt.subplot(3, 2, 5)
-    plt.plot(x_data[:, 1], label="True x1")
+    plt.plot(x_true[1, :, 0], label="True x1")
+    plt.plot(x_estimate[1, :, 0], label="Estimated x1")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
 
     plt.subplot(3, 2, 6)
-    plt.plot(x_data[:, 3], label="True x3")
+    plt.plot(x_true[3, :, 0], label="True x3")
+    plt.plot(x_estimate[3, :, 0], label="Estimated x3")
     plt.legend()
     plt.xlabel("Time")
     plt.ylabel("Value")
