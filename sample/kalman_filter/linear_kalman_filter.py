@@ -80,9 +80,7 @@ if __name__ == "__main__":
         u = u_data[:, k - 1].reshape(-1, 1)
 
         w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q_real)
-        # w = np.zeros(A.shape[0])
         v = np.random.multivariate_normal(np.zeros(C.shape[0]), R_real)
-        # v = np.zeros(C.shape[0])
 
         # system response
         x_true[:, k, 0] = (A @ x_true[:, k - 1,
