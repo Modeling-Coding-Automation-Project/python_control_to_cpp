@@ -36,11 +36,11 @@ if __name__ == "__main__":
     C = np.array([[1.0, 0.0, 0.0, 0.0],
                   [0.0, 0.0, 1.0, 0.0]])
 
-    Number_of_Delay = 1
+    Number_of_Delay = 0
 
     # System noise and observation noise parameters
-    Q = np.diag([1.0, 1.0, 1.0, 10.0])
-    R = np.eye(2) * 0.1
+    Q = np.diag([1.0, 1.0, 1.0, 2.0])
+    R = np.eye(2) * 1.0
 
     # Define Kalman filter
     kf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
@@ -69,6 +69,7 @@ if __name__ == "__main__":
 
     x_true = np.zeros((A.shape[0], num_steps, 1))
     x_estimate = np.zeros((A.shape[0], num_steps, 1))
+    x_estimate[:, 0, 0] = kf.get_x_hat().flatten()
     y_measured = np.zeros((C.shape[0], num_steps, 1))
     x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
 
