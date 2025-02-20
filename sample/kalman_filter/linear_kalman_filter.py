@@ -36,12 +36,14 @@ if __name__ == "__main__":
     C = np.array([[1.0, 0.0, 0.0, 0.0],
                   [0.0, 0.0, 1.0, 0.0]])
 
+    Number_of_Delay = 1
+
     # System noise and observation noise parameters
     Q = np.diag([1.0, 1.0, 1.0, 10.0])
     R = np.eye(2) * 0.1
 
     # Define Kalman filter
-    kf = LinearKalmanFilter(A, B, C, Q, R)
+    kf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
 
     # Initial state
     kf.x_hat = np.array([[0],
@@ -70,19 +72,29 @@ if __name__ == "__main__":
     y_measured = np.zeros((C.shape[0], num_steps, 1))
     x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
 
+    y_store = np.zeros((C.shape[0], Number_of_Delay + 1))
+    delay_index = 0
+
     for k in range(1, num_steps):
         u = u_data[:, k - 1].reshape(-1, 1)
 
-        # system response
         w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q_real)
         # w = np.zeros(A.shape[0])
         v = np.random.multivariate_normal(np.zeros(C.shape[0]), R_real)
         # v = np.zeros(C.shape[0])
 
+        # system response
         x_true[:, k, 0] = (A @ x_true[:, k - 1,
                                       0].reshape(-1, 1) + B @ u + w.reshape(-1, 1)).flatten()
-        y_measured[:, k, 0] = (
+        y_store[:, delay_index] = (
             C @ x_true[:, k, 0].reshape(-1, 1) + v.reshape(-1, 1)).flatten()
+
+        # system delay
+        delay_index += 1
+        if delay_index > Number_of_Delay:
+            delay_index = 0
+
+        y_measured[:, k, 0] = y_store[:, delay_index]
 
         # Kalman filter
         kf.predict(u)
