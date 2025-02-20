@@ -48,6 +48,10 @@ class LinearKalmanFilter:
         self.y_store.push(self.C @ self.x_hat)
 
         y_dif = y - self.y_store.get()
+
+        # When there is no delay, you can use below.
+        # y_dif = y - self.C @ self.x_hat
+
         return y_dif
 
     def get_x_hat(self):
