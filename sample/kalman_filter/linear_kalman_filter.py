@@ -101,6 +101,9 @@ if __name__ == "__main__":
         kf.predict_and_update(u, y_measured[:, k, 0].reshape(-1, 1))
         x_estimate[:, k, 0] = kf.get_x_hat().flatten()
 
+    # Kalman Gain
+    print("Kalman Gain:\n", kf.G)
+
     # Plot
     plt.figure()
     plt.title("True state and observation")

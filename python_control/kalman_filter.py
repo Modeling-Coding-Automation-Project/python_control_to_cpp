@@ -27,6 +27,7 @@ class LinearKalmanFilter:
         self.R = R
         self.x_hat = np.zeros((A.shape[0], 1))
         self.P = np.ones(A.shape[0])
+        self.G = None
 
         self.Number_of_Delay = Number_of_Delay
         self.y_store = DelayedVectorObject(C.shape[0], Number_of_Delay)
@@ -39,10 +40,10 @@ class LinearKalmanFilter:
         P_CT = self.P @ self.C.T
 
         S = self.C @ P_CT + self.R
-        G = P_CT @ np.linalg.inv(S)
-        self.x_hat = self.x_hat + G @ self.calc_y_dif(y)
+        self.G = P_CT @ np.linalg.inv(S)
+        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
 
-        self.P = (np.eye(self.A.shape[0]) - G @ self.C) @ self.P
+        self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
     def calc_y_dif(self, y):
         self.y_store.push(self.C @ self.x_hat)
