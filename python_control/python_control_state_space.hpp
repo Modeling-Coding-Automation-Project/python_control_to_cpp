@@ -9,6 +9,165 @@ namespace PythonControl {
 
 constexpr double STATE_SPACE_DIVISION_MIN = 1.0e-10;
 
+namespace ForDelayedVector {
+
+/* Substitute Vector values to Ring Buffer */
+template <typename T, typename Original_Vector_Type,
+          typename Vector_with_Delay_Type, std::size_t Count>
+struct SubstituteVectorRingBuffer {
+  static void compute(Vector_with_Delay_Type &Vector_buffer,
+                      const Original_Vector_Type &Vector,
+                      const std::size_t &buffer_index) {
+
+    Vector_buffer(Count, buffer_index) = Vector.template get<Count, 0>();
+    SubstituteVectorRingBuffer<T, Original_Vector_Type, Vector_with_Delay_Type,
+                               (Count - 1)>::compute(Vector_buffer, Vector,
+                                                     buffer_index);
+  }
+};
+
+template <typename T, typename Original_Vector_Type,
+          typename Vector_with_Delay_Type>
+struct SubstituteVectorRingBuffer<T, Original_Vector_Type,
+                                  Vector_with_Delay_Type, 0> {
+
+  static void compute(Vector_with_Delay_Type &Vector_buffer,
+                      const Original_Vector_Type &Vector,
+                      const std::size_t &buffer_index) {
+    Vector_buffer(0, buffer_index) = Vector.template get<0, 0>();
+  }
+};
+
+/* Substitute row from DenseMatrix to DenseRow */
+template <typename T, std::size_t M, std::size_t N, std::size_t Count>
+struct SubstituteDenseMatrixRow {
+  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
+                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
+                      const std::size_t &row_index) {
+    row.template set<Count, 0>(matrix(Count, row_index));
+    SubstituteDenseMatrixRow<T, M, N, (Count - 1)>::compute(matrix, row,
+                                                            row_index);
+  }
+};
+
+template <typename T, std::size_t M, std::size_t N>
+struct SubstituteDenseMatrixRow<T, M, N, 0> {
+  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
+                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
+                      const std::size_t &row_index) {
+    row.template set<0, 0>(matrix(0, row_index));
+  }
+};
+
+/* Update Ring Buffer Index */
+template <std::size_t Number_Of_Buffer> struct UpdateRingBufferIndex {
+  static void compute(std::size_t &index) {
+    if (index < Number_Of_Buffer) {
+      index++;
+    } else {
+      index = static_cast<std::size_t>(0);
+    }
+  }
+};
+
+template <> struct UpdateRingBufferIndex<0> {
+  static void compute(std::size_t &index) {
+    /* Do Nothing */
+    static_cast<void>(index);
+  }
+};
+
+} // namespace ForDelayedVector
+
+/* Delayed Vector Object */
+template <typename Vector_Type, std::size_t Number_Of_Delay>
+class DelayedVectorObject {
+private:
+  /* Type */
+  using _T = typename Vector_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Matrix value data type must be float or double.");
+
+  using _Vector_with_Delay_Type =
+      PythonNumpy::DenseMatrix_Type<_T, Vector_Type::COLS,
+                                    (1 + Number_Of_Delay)>;
+
+public:
+  /* Constructor */
+  DelayedVectorObject() : _store(), _delay_ring_buffer_index(0) {}
+
+  /* Copy Constructor */
+  DelayedVectorObject(
+      const DelayedVectorObject<Vector_Type, Number_Of_Delay> &input)
+      : _store(input._store),
+        _delay_ring_buffer_index(input._delay_ring_buffer_index) {}
+
+  DelayedVectorObject<Vector_Type, Number_Of_Delay> &
+  operator=(const DelayedVectorObject<Vector_Type, Number_Of_Delay> &input) {
+    if (this != &input) {
+      this->_store = input._store;
+      this->_delay_ring_buffer_index = input._delay_ring_buffer_index;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  DelayedVectorObject(
+      DelayedVectorObject<Vector_Type, Number_Of_Delay> &&input) noexcept
+      : _store(std::move(input._store)),
+        _delay_ring_buffer_index(std::move(input._delay_ring_buffer_index)) {}
+
+  DelayedVectorObject<Vector_Type, Number_Of_Delay> &operator=(
+      DelayedVectorObject<Vector_Type, Number_Of_Delay> &&input) noexcept {
+    if (this != &input) {
+      this->_store = std::move(input._store);
+      this->_delay_ring_buffer_index =
+          std::move(input._delay_ring_buffer_index);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void push(const Vector_Type &vector) {
+
+    ForDelayedVector::SubstituteVectorRingBuffer<
+        _T, Vector_Type, _Vector_with_Delay_Type,
+        (Vector_Type::COLS - 1)>::compute(this->_store, vector,
+                                          this->_delay_ring_buffer_index);
+
+    ForDelayedVector::UpdateRingBufferIndex<Number_Of_Delay>::compute(
+        this->_delay_ring_buffer_index);
+  }
+
+  inline auto get(void) const -> Vector_Type {
+
+    Vector_Type result;
+
+    ForDelayedVector::SubstituteDenseMatrixRow<
+        _T, Vector_Type::COLS, (1 + Number_Of_Delay),
+        (Vector_Type::COLS - 1)>::compute(this->_store, result,
+                                          this->_delay_ring_buffer_index);
+
+    return result;
+  }
+
+  inline const std::size_t get_delay_ring_buffer_index(void) const {
+    return this->_delay_ring_buffer_index;
+  }
+
+public:
+  /* Constant */
+  static constexpr std::size_t Vector_Size = Vector_Type::COLS;
+  static constexpr std::size_t Number_Of_Delay = Number_Of_Delay;
+
+private:
+  /* Variable */
+  _Vector_with_Delay_Type _store;
+  std::size_t _delay_ring_buffer_index;
+};
+
 template <typename T, std::size_t Input_Size>
 using StateSpaceInputType = PythonNumpy::DenseMatrix_Type<T, Input_Size, 1>;
 
@@ -52,69 +211,6 @@ inline auto make_StateSpaceInput(T value_1, Args... args)
 
   return input;
 }
-
-namespace ForDiscreteStateSpace {
-
-/* Substitute Y values to Ring Buffer */
-template <typename T, typename Original_Y_Type, typename Y_with_Delay_Type,
-          std::size_t Count>
-struct SubstituteYRingBuffer {
-  static void compute(Y_with_Delay_Type &Y_buffer, const Original_Y_Type &Y,
-                      const std::size_t &buffer_index) {
-    Y_buffer(Count, buffer_index) = Y.template get<Count, 0>();
-    SubstituteYRingBuffer<T, Original_Y_Type, Y_with_Delay_Type,
-                          (Count - 1)>::compute(Y_buffer, Y, buffer_index);
-  }
-};
-
-template <typename T, typename Original_Y_Type, typename Y_with_Delay_Type>
-struct SubstituteYRingBuffer<T, Original_Y_Type, Y_with_Delay_Type, 0> {
-  static void compute(Y_with_Delay_Type &Y_buffer, const Original_Y_Type &Y,
-                      const std::size_t &buffer_index) {
-    Y_buffer(0, buffer_index) = Y.template get<0, 0>();
-  }
-};
-
-/* Substitute row from DenseMatrix to DenseRow */
-template <typename T, std::size_t M, std::size_t N, std::size_t Count>
-struct SubstituteDenseMatrixRow {
-  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
-                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
-                      const std::size_t &row_index) {
-    row.template set<Count, 0>(matrix(Count, row_index));
-    SubstituteDenseMatrixRow<T, M, N, (Count - 1)>::compute(matrix, row,
-                                                            row_index);
-  }
-};
-
-template <typename T, std::size_t M, std::size_t N>
-struct SubstituteDenseMatrixRow<T, M, N, 0> {
-  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
-                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
-                      const std::size_t &row_index) {
-    row.template set<0, 0>(matrix(0, row_index));
-  }
-};
-
-/* Update Ring Buffer Index */
-template <std::size_t Number_Of_Buffer> struct UpdateRingBufferIndex {
-  static void compute(std::size_t &index) {
-    if (index < Number_Of_Buffer) {
-      index++;
-    } else {
-      index = static_cast<std::size_t>(0);
-    }
-  }
-};
-
-template <> struct UpdateRingBufferIndex<0> {
-  static void compute(std::size_t &index) {
-    /* Do Nothing */
-    static_cast<void>(index);
-  }
-};
-
-} // namespace ForDiscreteStateSpace
 
 /* Discrete State Space */
 template <typename A_Type, typename B_Type, typename C_Type, typename D_Type,
@@ -162,41 +258,35 @@ public:
   /* Constructor */
   DiscreteStateSpace()
       : A(), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
 
   DiscreteStateSpace(const A_Type &A_in)
       : A(A_in), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in)
       : A(A_in), B(B_in), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in)
       : A(A_in), B(B_in), C(C_in), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
                      const D_Type &D_in)
       : A(A_in), B(B_in), C(C_in), D(D_in),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
                      const D_Type &D_in, const _T &delta_time)
-      : A(A_in), B(B_in), C(C_in), D(D_in), delta_time(delta_time),
-        _delay_ring_buffer_index(static_cast<std::size_t>(0)) {}
+      : A(A_in), B(B_in), C(C_in), D(D_in), delta_time(delta_time) {}
 
   /* Copy Constructor */
   DiscreteStateSpace(
       const DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &input)
       : A(input.A), B(input.B), C(input.C), D(input.D),
         delta_time(input.delta_time), X(input.X), X_initial(input.X_initial),
-        Y(input.Y), _delay_ring_buffer_index(input._delay_ring_buffer_index) {}
+        Y(input.Y) {}
 
   DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &
   operator=(const DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &input) {
@@ -209,7 +299,6 @@ public:
       this->X = input.X;
       this->X_initial = input.X_initial;
       this->Y = input.Y;
-      this->_delay_ring_buffer_index = input._delay_ring_buffer_index;
     }
     return *this;
   }
@@ -220,8 +309,7 @@ public:
       : A(std::move(input.A)), B(std::move(input.B)), C(std::move(input.C)),
         D(std::move(input.D)), delta_time(std::move(input.delta_time)),
         X(std::move(input.X)), X_initial(std::move(input.X_initial)),
-        Y(std::move(input.Y)),
-        _delay_ring_buffer_index(std::move(input._delay_ring_buffer_index)) {}
+        Y(std::move(input.Y)) {}
 
   DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &operator=(
       DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &&input) noexcept {
@@ -234,8 +322,6 @@ public:
       this->X = std::move(input.X);
       this->X_initial = std::move(input.X_initial);
       this->Y = std::move(input.Y);
-      this->_delay_ring_buffer_index =
-          std::move(input._delay_ring_buffer_index);
     }
     return *this;
   }
@@ -248,19 +334,10 @@ public:
 
   inline auto get_X(void) const -> Original_X_Type { return this->X; }
 
-  inline auto get_Y(void) const -> Original_Y_Type {
-    Original_Y_Type result;
+  inline auto get_Y(void) const -> Original_Y_Type { return this->Y.get(); }
 
-    ForDiscreteStateSpace::SubstituteDenseMatrixRow<
-        _T, _Output_Size, (1 + Number_Of_Delay),
-        (_Output_Size - 1)>::compute(this->Y, result,
-                                     this->_delay_ring_buffer_index);
-
-    return result;
-  }
-
-  const std::size_t get_delay_ring_buffer_index(void) const {
-    return this->_delay_ring_buffer_index;
+  inline const std::size_t get_delay_ring_buffer_index(void) const {
+    return this->Y.get_delay_ring_buffer_index();
   }
 
   inline void update(const Original_U_Type &U) {
@@ -294,13 +371,7 @@ private:
   /* Function */
   inline void _calc_output_function(const Original_U_Type &U) {
 
-    ForDiscreteStateSpace::SubstituteYRingBuffer<
-        _T, Original_Y_Type, Y_with_Delay_Type,
-        (_Output_Size - 1)>::compute(this->Y, this->output_function(this->X, U),
-                                     this->_delay_ring_buffer_index);
-
-    ForDiscreteStateSpace::UpdateRingBufferIndex<Number_Of_Delay>::compute(
-        this->_delay_ring_buffer_index);
+    this->Y.push(this->output_function(this->X, U));
   }
 
   inline void _calc_state_function(const Original_U_Type &U) {
@@ -323,11 +394,7 @@ public:
   Original_X_Type X;
   Original_X_Type X_initial;
 
-  Y_with_Delay_Type Y;
-
-private:
-  /* Variable */
-  std::size_t _delay_ring_buffer_index;
+  DelayedVectorObject<Original_Y_Type, Number_Of_Delay> Y;
 };
 
 /* Make Discrete State Space */

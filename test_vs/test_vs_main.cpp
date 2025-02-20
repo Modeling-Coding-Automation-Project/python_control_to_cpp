@@ -153,7 +153,7 @@ void check_python_control_state_space(void) {
 
         X_results(0, sim_step) = sys.X(0, 0);
         X_results(1, sim_step) = sys.get_X()(1, 0);
-        Y_results(0, sim_step) = sys.Y(0, 0);
+        Y_results(0, sim_step) = sys.get_Y()(0, 0);
     }
 
     //for (std::size_t sim_step = 0; sim_step < TestData::SIM_SS_STEP_MAX; ++sim_step) {
