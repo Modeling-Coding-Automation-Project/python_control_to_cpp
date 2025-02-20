@@ -36,11 +36,11 @@ if __name__ == "__main__":
     C = np.array([[1.0, 0.0, 0.0, 0.0],
                   [0.0, 0.0, 1.0, 0.0]])
 
-    Number_of_Delay = 0
+    Number_of_Delay = 2
 
     # System noise and observation noise parameters
     Q = np.diag([1.0, 1.0, 1.0, 2.0])
-    R = np.eye(2) * 1.0
+    R = np.eye(2) * 10.0
 
     # Define Kalman filter
     kf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
