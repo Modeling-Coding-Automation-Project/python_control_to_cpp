@@ -54,5 +54,20 @@ class LinearKalmanFilter:
 
         return y_dif
 
+    def predict_and_update(self, u, y):
+        self.predict(u)
+        self.update(y)
+
+    # If G is known, you can use below.
+    def predict_with_fixed_G(self, u):
+        self.x_hat = self.A @ self.x_hat + self.B @ u
+
+    def update_with_fixed_G(self, y):
+        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
+
+    def predict_and_update_with_fixed_G(self, u, y):
+        self.predict_with_fixed_G(u)
+        self.update_with_fixed_G(y)
+
     def get_x_hat(self):
         return self.x_hat

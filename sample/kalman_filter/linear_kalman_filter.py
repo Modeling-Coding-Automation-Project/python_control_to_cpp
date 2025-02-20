@@ -98,8 +98,7 @@ if __name__ == "__main__":
         y_measured[:, k, 0] = y_store[:, delay_index]
 
         # Kalman filter
-        kf.predict(u)
-        kf.update(y_measured[:, k, 0].reshape(-1, 1))
+        kf.predict_and_update(u, y_measured[:, k, 0].reshape(-1, 1))
         x_estimate[:, k, 0] = kf.get_x_hat().flatten()
 
     # Plot
