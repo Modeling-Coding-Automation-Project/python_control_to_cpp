@@ -36,9 +36,9 @@ if __name__ == "__main__":
     C = np.array([[1.0, 0.0, 0.0, 0.0],
                   [0.0, 0.0, 1.0, 0.0]])
 
-    # System noise and observation noise
-    Q = np.eye(4) * 0.1
-    R = np.eye(2) * 10.0
+    # System noise and observation noise parameters
+    Q = np.diag([1.0, 1.0, 1.0, 10.0])
+    R = np.eye(2) * 0.1
 
     # Define Kalman filter
     kf = LinearKalmanFilter(A, B, C, Q, R)
@@ -50,13 +50,17 @@ if __name__ == "__main__":
                          [0]])
 
     # Simulation steps
-    num_steps = 100
+    num_steps = 50
 
     # Generate input signal
     taps = [2, 3]
     m_sequence = generate_m_sequence(num_steps * 2, taps)
     u_data_T = m_sequence.reshape(num_steps, 2) - 0.5
     u_data = u_data_T.T
+
+    # System noise and observation noise real
+    Q_real = np.diag([1.0, 1.0, 1.0, 1.0]) * 0.0
+    R_real = np.eye(2) * 0.0
 
     # Generate data
     np.random.seed(0)
@@ -70,9 +74,9 @@ if __name__ == "__main__":
         u = u_data[:, k - 1].reshape(-1, 1)
 
         # system response
-        w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q)
-        v = np.random.multivariate_normal(np.zeros(C.shape[0]), R)
+        w = np.random.multivariate_normal(np.zeros(A.shape[0]), Q_real)
         # w = np.zeros(A.shape[0])
+        v = np.random.multivariate_normal(np.zeros(C.shape[0]), R_real)
         # v = np.zeros(C.shape[0])
 
         x_true[:, k, 0] = (A @ x_true[:, k - 1,
