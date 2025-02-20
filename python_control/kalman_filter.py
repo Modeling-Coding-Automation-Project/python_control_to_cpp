@@ -59,7 +59,7 @@ class LinearKalmanFilter:
         self.predict(u)
         self.update(y)
 
-    # If G is known, you can use below.
+    # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u):
         self.x_hat = self.A @ self.x_hat + self.B @ u
 
