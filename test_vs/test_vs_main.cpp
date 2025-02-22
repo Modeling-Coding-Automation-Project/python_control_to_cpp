@@ -992,23 +992,18 @@ void check_python_control_kalman_filter(void) {
         static_cast<T>(0.0)));
 
     // data set
-    auto x_true = make_DenseMatrixZeros<T, STATE_SIZE, TestData::LKF_SIM_STEP_MAX>();
-    x_true(0, 0) = static_cast<T>(0.0);
-    x_true(1, 0) = static_cast<T>(0.0);
-    x_true(2, 0) = static_cast<T>(0.0);
-    x_true(3, 0) = static_cast<T>(0.1);
-    auto x = make_DenseMatrixZeros<T, STATE_SIZE, 1>();
-    for (std::size_t i = 0; i < STATE_SIZE; i++) {
-        x(i, 0) = x_true(i, 0);
-    }
+    std::array<DenseMatrix_Type<T, STATE_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> x_true;
+    x_true[0](0, 0) = static_cast<T>(0.0);
+    x_true[0](1, 0) = static_cast<T>(0.0);
+    x_true[0](2, 0) = static_cast<T>(0.0);
+    x_true[0](3, 0) = static_cast<T>(0.1);
+    DenseMatrix_Type<T, STATE_SIZE, 1> x = x_true[0];
 
-    auto x_estimate = make_DenseMatrixZeros<T, STATE_SIZE, TestData::LKF_SIM_STEP_MAX>();
-    for (std::size_t i = 0; i < STATE_SIZE; i++) {
-        x_estimate(i, 0) = lkf.get_x_hat()(i, 0);
-    }
+    std::array<DenseMatrix_Type<T, STATE_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> x_estimate;
+    x_estimate[0] = lkf.get_x_hat();
 
-    auto y_measured = make_DenseMatrixZeros<T, OUTPUT_SIZE, TestData::LKF_SIM_STEP_MAX>();
-    auto y_store = make_DenseMatrixZeros<T, OUTPUT_SIZE, (NUMBER_OF_DELAY + 1)>();
+    std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> y_measured;
+    std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
@@ -1024,9 +1019,7 @@ void check_python_control_kalman_filter(void) {
         auto x_next = A * x + B * u;
         auto y_next = C * x_next + D * u;
 
-        for (std::size_t j = 0; j < OUTPUT_SIZE; j++) {
-            y_store(j, delay_index) = y_next(j, 0);
-        }
+        y_store[delay_index] = y_next;
 
         // system delay
         delay_index++;
@@ -1034,19 +1027,14 @@ void check_python_control_kalman_filter(void) {
             delay_index = 0;
         }
 
-        auto y_next_delay = make_DenseMatrixZeros<T, OUTPUT_SIZE, 1>();
-        for (std::size_t j = 0; j < OUTPUT_SIZE; j++) {
-            y_next_delay(j, 0) = y_store(j, delay_index);
-            y_measured(j, i) = y_next_delay(j, 0);
-        }
+        auto y_next_delay = y_store[delay_index];
+        y_measured[i] = y_next_delay;
 
         // kalman filter
         lkf.predict_and_update(u, y_next_delay);
 
-        for (std::size_t j = 0; j < STATE_SIZE; j++) {
-            x(j, 0) = lkf.get_x_hat()(j, 0);
-            x_estimate(j, i) = lkf.get_x_hat()(j, 0);
-        }
+        x = lkf.get_x_hat();
+        x_estimate[i] = x;
     }
 
 

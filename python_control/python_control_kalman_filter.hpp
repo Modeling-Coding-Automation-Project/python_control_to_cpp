@@ -133,8 +133,6 @@ public:
   update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
-    // auto P_CT =
-    //     PythonNumpy::make_DenseMatrixZeros<_T, _STATE_SIZE, _OUTPUT_SIZE>();
 
     auto C_P_CT_R = this->state_space.C * P_CT + this->R;
     this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
