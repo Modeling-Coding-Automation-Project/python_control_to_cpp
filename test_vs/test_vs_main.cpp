@@ -293,8 +293,8 @@ void check_python_control_state_space(void) {
 
         sys_dc.update(u);
 
-        DC_motor_Y_results(0, sim_step) = sys_dc.get_Y()(0, 0);
-        DC_motor_Y_results(1, sim_step) = sys_dc.get_Y()(1, 0);
+        DC_motor_Y_results(0, sim_step) = sys_dc.access_Y<0>();
+        DC_motor_Y_results(1, sim_step) = sys_dc.access_Y<1>();
     }
 
 

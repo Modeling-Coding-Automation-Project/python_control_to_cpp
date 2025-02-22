@@ -153,6 +153,13 @@ public:
     return result;
   }
 
+  template <std::size_t Index> inline auto access(void) -> _T & {
+    static_assert(Index < Vector_Type::COLS,
+                  "Index must be less than vector size.");
+
+    return this->_store.access(Index, this->_delay_ring_buffer_index);
+  }
+
   inline const std::size_t get_delay_ring_buffer_index(void) const {
     return this->_delay_ring_buffer_index;
   }
@@ -335,6 +342,12 @@ public:
   inline auto get_X(void) const -> Original_X_Type { return this->X; }
 
   inline auto get_Y(void) const -> Original_Y_Type { return this->Y.get(); }
+
+  template <std::size_t Index> inline auto access_Y(void) -> _T & {
+    static_assert(Index < _Output_Size, "Index must be less than output size.");
+
+    return this->Y.access<Index>();
+  }
 
   inline const std::size_t get_delay_ring_buffer_index(void) const {
     return this->Y.get_delay_ring_buffer_index();
