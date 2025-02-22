@@ -16,6 +16,7 @@ C++11
 - 離散時間のPID制御器
 - 離散時間の状態空間モデル
 - 線形二次レギュレータ (Linear Quadratic Regulator, LQR)
+- カルマンフィルタ
 
 ## 使い方
 
