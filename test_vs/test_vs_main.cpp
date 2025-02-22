@@ -85,7 +85,7 @@ void check_python_control_state_space(void) {
         "check DiscreteStateSpace 4 arguments.");
 
 
-    /* State Space シミュレーション */
+    /* State Space 機能 */
     DiscreteStateSpace_Type<decltype(A), decltype(B), decltype(C), decltype(D)>
         sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
@@ -98,6 +98,32 @@ void check_python_control_state_space(void) {
     tester.expect_near(sys.delta_time, dt_answer, NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delta_time.");
 
+    auto u_0 = make_StateSpaceInput<1>(static_cast<T>(1.0));
+    auto x_0 = sys.get_X();
+    x_0(0, 0) = static_cast<T>(0.1);
+    x_0(1, 0) = static_cast<T>(0.2);
+
+    auto x_1 = sys.state_function(x_0, u_0);
+
+    decltype(x_1) x_1_answer({
+        {static_cast<T>(0.21)},
+        {static_cast<T>(0.33)}
+        });
+
+    tester.expect_near(x_1.matrix.data, x_1_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace state function.");
+
+    auto y_1 = sys.output_function(x_0, u_0);
+
+    decltype(y_1) y_1_answer({
+        {static_cast<T>(0.2)}
+        });
+
+    tester.expect_near(y_1.matrix.data, y_1_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace output function.");
+
+
+    /* State Space シミュレーション */
     DenseMatrix_Type<T, 2, TestData::SIM_SS_STEP_MAX> X_results;
     DenseMatrix_Type<T, 1, TestData::SIM_SS_STEP_MAX> Y_results;
 
@@ -127,7 +153,7 @@ void check_python_control_state_space(void) {
 
         X_results(0, sim_step) = sys.X(0, 0);
         X_results(1, sim_step) = sys.get_X()(1, 0);
-        Y_results(0, sim_step) = sys.Y(0, 0);
+        Y_results(0, sim_step) = sys.get_Y()(0, 0);
     }
 
     //for (std::size_t sim_step = 0; sim_step < TestData::SIM_SS_STEP_MAX; ++sim_step) {
@@ -267,8 +293,8 @@ void check_python_control_state_space(void) {
 
         sys_dc.update(u);
 
-        DC_motor_Y_results(0, sim_step) = sys_dc.get_Y()(0, 0);
-        DC_motor_Y_results(1, sim_step) = sys_dc.get_Y()(1, 0);
+        DC_motor_Y_results(0, sim_step) = sys_dc.template access_Y<0>();
+        DC_motor_Y_results(1, sim_step) = sys_dc.template access_Y<1>();
     }
 
 
@@ -704,7 +730,7 @@ void check_python_control_lqr(void) {
     MCAPTester<T> tester;
 
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    const T NEAR_LIMIT_SOFT = 3.0e-1F;
+    constexpr T NEAR_LIMIT_SOFT = 3.0e-1F;
 
 
     using SparseAvailable_Ac = SparseAvailable<
@@ -891,6 +917,208 @@ void check_python_control_lqr(void) {
     tester.throw_error_if_test_failed();
 }
 
+template <typename T>
+void check_python_control_kalman_filter(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+
+    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-3F;
+
+
+    using SparseAvailable_A = SparseAvailable<
+        ColumnAvailable<true, true, false, false>,
+        ColumnAvailable<false, true, true, false>,
+        ColumnAvailable<false, false, true, true>,
+        ColumnAvailable<false, false, false, true>>;
+
+    auto A = make_SparseMatrix<SparseAvailable_A>(
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0));
+
+    using SparseAvailable_B = SparseAvailable<
+        ColumnAvailable<false, false>,
+        ColumnAvailable<true, false>,
+        ColumnAvailable<false, true>,
+        ColumnAvailable<false, false>>;
+
+    auto B = make_SparseMatrix<SparseAvailable_B>(
+        static_cast<T>(0.1),
+        static_cast<T>(0.1));
+
+    using SparseAvailable_C = SparseAvailable<
+        ColumnAvailable<true, false, false, false>,
+        ColumnAvailable<false, false, true, false>>;
+
+    auto C = make_SparseMatrix<SparseAvailable_C>(
+        static_cast<T>(1.0),
+        static_cast<T>(1.0));
+
+    auto D = make_SparseMatrixEmpty<T, 2, 2>();
+
+    T dt = static_cast<T>(0.1);
+
+    constexpr std::size_t STATE_SIZE = decltype(A)::COLS;
+    constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;
+    constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;
+
+    auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
+
+    auto Q = make_DiagMatrix<STATE_SIZE>(
+        static_cast<T>(1), static_cast<T>(1),
+        static_cast<T>(1), static_cast<T>(2));
+
+    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+        static_cast<T>(10), static_cast<T>(10));
+
+    /* カルマンフィルタ定義 */
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)>
+        lkf = make_LinearKalmanFilter(sys, Q, R);
+
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_copy = lkf;
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_move = std::move(lkf_copy);
+    lkf = lkf_move;
+
+    lkf.set_decay_rate_for_C_P_CT_R_inv_solver(static_cast<T>(0.0));
+    lkf.set_division_min_for_C_P_CT_R_inv_solver(static_cast<T>(1.0e-10));
+
+    /* シミュレーション準備 */
+    lkf.set_x_hat(make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0)));
+
+    // data set
+    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_true;
+    x_true[0](0, 0) = static_cast<T>(0.0);
+    x_true[0](1, 0) = static_cast<T>(0.0);
+    x_true[0](2, 0) = static_cast<T>(0.0);
+    x_true[0](3, 0) = static_cast<T>(0.1);
+
+    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_estimate;
+    x_estimate[0] = lkf.get_x_hat();
+
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, TestData::LKF_SIM_STEP_MAX> y_measured;
+
+    /* シミュレーション */
+    for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        auto u = make_StateSpaceInput<INPUT_SIZE>(
+            static_cast<T>(TestData::lkf_test_input(i - 1, 0)),
+            static_cast<T>(TestData::lkf_test_input(i - 1, 1))
+        );
+
+        // system response
+        x_true[i] = A * x_true[i - 1] + B * u;
+        y_measured[i] = C * x_true[i] + D * u;
+
+        // kalman filter
+        lkf.predict_and_update(u, y_measured[i]);
+        x_estimate[i] = lkf.get_x_hat();
+    }
+
+    for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        tester.expect_near(x_true[i].matrix.data, x_estimate[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check LinearKalmanFilter simulation x estimate.");
+    }
+
+    /* 遅れ込みのシミュレーション準備 */
+    constexpr std::size_t NUMBER_OF_DELAY = 2;
+
+    auto sys_delay = make_DiscreteStateSpace<NUMBER_OF_DELAY>(A, B, C, D, dt);
+    auto lkf_delay = make_LinearKalmanFilter(sys_delay, Q, R);
+
+    lkf_delay.set_x_hat(make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0)));
+
+    x_estimate[0] = lkf_delay.get_x_hat();
+
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+
+    std::size_t delay_index = 0;
+
+    /* 遅れ込みのシミュレーション */
+    for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        auto u = make_StateSpaceInput<INPUT_SIZE>(
+            static_cast<T>(TestData::lkf_test_input(i - 1, 0)),
+            static_cast<T>(TestData::lkf_test_input(i - 1, 1))
+        );
+
+        // system response
+        x_true[i] = A * x_true[i - 1] + B * u;
+        auto y_next = C * x_true[i] + D * u;
+
+        y_store[delay_index] = y_next;
+
+        // system delay
+        delay_index++;
+        if (delay_index > NUMBER_OF_DELAY) {
+            delay_index = 0;
+        }
+
+        y_measured[i] = y_store[delay_index];
+
+        // kalman filter
+        lkf_delay.predict_and_update(u, y_measured[i]);
+        x_estimate[i] = lkf_delay.get_x_hat();
+    }
+
+    for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        tester.expect_near(x_true[i].matrix.data, x_estimate[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check LinearKalmanFilter with delay simulation x estimate.");
+    }
+
+    /* カルマンゲイン固定 */
+    auto lkf_fixed = make_LinearKalmanFilter(sys, Q, R);
+
+    lkf_fixed.set_x_hat(make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(3.7633576),
+        static_cast<T>(2.15584246),
+        static_cast<T>(0.73995903),
+        static_cast<T>(0.09986581)));
+
+    lkf_fixed.G = make_DenseMatrix<STATE_SIZE, OUTPUT_SIZE>(
+        static_cast<T>(0.33396284), static_cast<T>(0.00470285),
+        static_cast<T>(0.27013879), static_cast<T>(0.06743136),
+        static_cast<T>(0.00470287), static_cast<T>(0.3521885),
+        static_cast<T>(-0.00624555), static_cast<T>(0.35992883)
+    );
+
+    auto u = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(0),
+        static_cast<T>(0)
+    );
+
+    auto y = make_StateSpaceOutput<OUTPUT_SIZE>(
+        static_cast<T>(3.7634),
+        static_cast<T>(0.74)
+    );
+
+    lkf_fixed.predict_and_update_with_fixed_G(u, y);
+
+    auto x_hat_fixed = lkf_fixed.get_x_hat();
+
+    auto x_hat_fixed_answer = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(3.90691211),
+        static_cast<T>(2.1709415),
+        static_cast<T>(0.74542922),
+        static_cast<T>(0.09763228)
+    );
+
+    tester.expect_near(x_hat_fixed.matrix.data, x_hat_fixed_answer.matrix.data, NEAR_LIMIT_SOFT,
+        "check LinearKalmanFilter with fixed G x estimate.");
+
+
+    tester.throw_error_if_test_failed();
+}
+
 
 int main(void) {
 
@@ -909,6 +1137,10 @@ int main(void) {
     check_python_control_lqr<double>();
 
     check_python_control_lqr<float>();
+
+    check_python_control_kalman_filter<double>();
+
+    check_python_control_kalman_filter<float>();
 
 
     return 0;

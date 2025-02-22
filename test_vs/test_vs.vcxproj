@@ -133,6 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\python_control\python_control.hpp" />
+    <ClInclude Include="..\python_control\python_control_kalman_filter.hpp" />
     <ClInclude Include="..\python_control\python_control_lqr.hpp" />
     <ClInclude Include="..\python_control\python_control_pid_controller.hpp" />
     <ClInclude Include="..\python_control\python_control_state_space.hpp" />
