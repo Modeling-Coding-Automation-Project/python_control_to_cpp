@@ -12,12 +12,20 @@ constexpr double KALMAN_FILTER_DIVISION_MIN = 1.0e-10;
 
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 class LinearKalmanFilter {
-public:
+private:
   /* Type */
   using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
+
+  using _P_Type = PythonNumpy::DenseMatrix_Type<
+      _T, DiscreteStateSpace_Type::Original_X_Type::COLS,
+      DiscreteStateSpace_Type::Original_X_Type::COLS>;
+
+  using _G_Type = PythonNumpy::DenseMatrix_Type<
+      _T, DiscreteStateSpace_Type::Original_X_Type::COLS,
+      DiscreteStateSpace_Type::Original_Y_Type::COLS>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -41,13 +49,77 @@ public:
 
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
-      : _state_space(DiscreteStateSpace), _Q(Q), _R(R) {}
+      : state_space(DiscreteStateSpace), Q(Q), R(R), P(), G() {}
 
-private:
+  /* Copy Constructor */
+  LinearKalmanFilter(
+      const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
+      : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
+        G(input.G) {}
+
+  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
+  operator=(const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                &input) {
+    if (this != &input) {
+      this->state_space = input.state_space;
+      this->Q = input.Q;
+      this->R = input.R;
+      this->P = input.P;
+      this->G = input.G;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  LinearKalmanFilter(
+      LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &&input)
+      : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
+        R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)) {}
+
+  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &operator=(
+      LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &&input) {
+    if (this != &input) {
+      this->state_space = std::move(input.state_space);
+      this->Q = std::move(input.Q);
+      this->R = std::move(input.R);
+      this->P = std::move(input.P);
+      this->G = std::move(input.G);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void
+  predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
+
+    this->state_space.X =
+        this->state_space.A * this->state_space.X + this->state_space.B * U;
+    this->state_space.P =
+        this->state_space.A * PythonNumpy::A_mul_BTranspose(
+                                  this->state_space.P * this->state_space.A) +
+        this->Q;
+  }
+
+  /* Get */
+  inline auto get_x_hat(void) const ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    return this->state_space.get_X();
+  }
+
+  /* Set */
+  inline void
+  set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
+    this->state_space.X = x_hat;
+  }
+
+public:
   /* Variable */
-  DiscreteStateSpace_Type _state_space;
-  Q_Type _Q;
-  R_Type _R;
+  DiscreteStateSpace_Type state_space;
+  Q_Type Q;
+  R_Type R;
+  _P_Type P;
+  _G_Type G;
 };
 
 /* make Linear Kalman Filter */

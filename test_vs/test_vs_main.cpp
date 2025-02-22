@@ -293,8 +293,8 @@ void check_python_control_state_space(void) {
 
         sys_dc.update(u);
 
-        DC_motor_Y_results(0, sim_step) = sys_dc.access_Y<0>();
-        DC_motor_Y_results(1, sim_step) = sys_dc.access_Y<1>();
+        DC_motor_Y_results(0, sim_step) = sys_dc.template access_Y<0>();
+        DC_motor_Y_results(1, sim_step) = sys_dc.template access_Y<1>();
     }
 
 
@@ -974,6 +974,10 @@ void check_python_control_kalman_filter(void) {
     /* カルマンフィルタ定義 */
     LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)>
         lkf = make_LinearKalmanFilter(sys, Q, R);
+
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_copy = lkf;
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_move = std::move(lkf_copy);
+    lkf = lkf_move;
 
 
     tester.throw_error_if_test_failed();

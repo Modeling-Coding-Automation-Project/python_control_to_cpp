@@ -166,8 +166,8 @@ public:
 
 public:
   /* Constant */
-  static constexpr std::size_t Vector_Size = Vector_Type::COLS;
-  static constexpr std::size_t Number_Of_Delay = Number_Of_Delay;
+  static constexpr std::size_t VECTOR_SIZE = Vector_Type::COLS;
+  static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
 private:
   /* Variable */
@@ -346,7 +346,7 @@ public:
   template <std::size_t Index> inline auto access_Y(void) -> _T & {
     static_assert(Index < _Output_Size, "Index must be less than output size.");
 
-    return this->Y.access<Index>();
+    return this->Y.template access<Index>();
   }
 
   inline const std::size_t get_delay_ring_buffer_index(void) const {
