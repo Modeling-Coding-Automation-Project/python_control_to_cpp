@@ -928,6 +928,54 @@ void check_python_control_kalman_filter(void) {
     const T NEAR_LIMIT_SOFT = 3.0e-1F;
 
 
+    using SparseAvailable_A = SparseAvailable<
+        ColumnAvailable<true, true, false, false>,
+        ColumnAvailable<false, true, true, false>,
+        ColumnAvailable<false, false, true, true>,
+        ColumnAvailable<false, false, false, true>>;
+
+    auto A = make_SparseMatrix<SparseAvailable_A>(
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(1.0));
+
+    using SparseAvailable_B = SparseAvailable<
+        ColumnAvailable<false, false>,
+        ColumnAvailable<true, false>,
+        ColumnAvailable<false, true>,
+        ColumnAvailable<false, false>>;
+
+    auto B = make_SparseMatrix<SparseAvailable_B>(
+        static_cast<T>(0.1),
+        static_cast<T>(0.1));
+
+    using SparseAvailable_C = SparseAvailable<
+        ColumnAvailable<true, false, false, false>,
+        ColumnAvailable<false, false, true, false>>;
+
+    auto C = make_SparseMatrix<SparseAvailable_C>(
+        static_cast<T>(1.0),
+        static_cast<T>(1.0));
+
+    auto D = make_SparseMatrixEmpty<T, 2, 2>();
+
+    T dt = static_cast<T>(0.1);
+
+    auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
+
+    auto Q = make_DiagMatrix<4>(
+        static_cast<T>(1), static_cast<T>(1),
+        static_cast<T>(1), static_cast<T>(2));
+
+    auto R = make_DiagMatrix<2>(
+        static_cast<T>(10), static_cast<T>(10));
+
+    /* カルマンフィルタ定義 */
+    LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)>
+        lkf = make_LinearKalmanFilter(sys, Q, R);
+
+
     tester.throw_error_if_test_failed();
 }
 

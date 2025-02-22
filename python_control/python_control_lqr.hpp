@@ -99,12 +99,6 @@ private:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
-  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
   using _Hamiltonian_Type =
       typename LQR_Operation::Hamiltonian<A_Type, B_Type, Q_Type, R_Type>::Type;
 
@@ -118,6 +112,12 @@ public:
   using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size, _State_Size>;
 
   /* Check Compatibility */
+  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
+                "Q matrix must be diagonal matrix.");
+
+  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
+                "R matrix must be diagonal matrix.");
+
   /* Check Data Type */
   static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
                 "Data type of B matrix must be same type as A matrix.");
@@ -287,12 +287,6 @@ private:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
-  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
   using _A_EX_Type = PythonNumpy::ConcatenateHorizontally_Type<
       PythonNumpy::ConcatenateVertically_Type<A_Type, C_Type>,
       PythonNumpy::SparseMatrixEmpty_Type<_T, (A_Type::COLS + C_Type::COLS),
@@ -318,6 +312,12 @@ public:
                                                (_State_Size + _Output_Size)>;
 
   /* Check Compatibility */
+  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
+                "Q matrix must be diagonal matrix.");
+
+  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
+                "R matrix must be diagonal matrix.");
+
   /* Check Data Type */
   static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
                 "Data type of B matrix must be same type as A matrix.");
