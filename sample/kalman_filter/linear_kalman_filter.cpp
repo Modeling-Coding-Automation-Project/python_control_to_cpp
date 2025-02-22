@@ -77,6 +77,13 @@ int main(void) {
     std::cout << lkf.get_x_hat()(2, 0) << ",";
     std::cout << lkf.get_x_hat()(3, 0) << std::endl;
   }
+  std::cout << std::endl;
+
+  std::cout << "x_true: ";
+  std::cout << x_true(0, 0) << ",";
+  std::cout << x_true(1, 0) << ",";
+  std::cout << x_true(2, 0) << ",";
+  std::cout << x_true(3, 0) << std::endl;
 
   return 0;
 }
