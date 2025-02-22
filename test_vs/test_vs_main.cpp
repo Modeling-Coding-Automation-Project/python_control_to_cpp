@@ -925,7 +925,7 @@ void check_python_control_kalman_filter(void) {
     MCAPTester<T> tester;
 
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    const T NEAR_LIMIT_SOFT = 3.0e-1F;
+    // const T NEAR_LIMIT_SOFT = 3.0e-1F;
 
 
     using SparseAvailable_A = SparseAvailable<
@@ -962,13 +962,18 @@ void check_python_control_kalman_filter(void) {
 
     T dt = static_cast<T>(0.1);
 
+    constexpr std::size_t NUMBER_OF_DELAY = 0;
+    constexpr std::size_t STATE_SIZE = decltype(A)::COLS;
+    constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;
+    constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;
+
     auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
-    auto Q = make_DiagMatrix<4>(
+    auto Q = make_DiagMatrix<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1), static_cast<T>(2));
 
-    auto R = make_DiagMatrix<2>(
+    auto R = make_DiagMatrix<OUTPUT_SIZE>(
         static_cast<T>(10), static_cast<T>(10));
 
     /* カルマンフィルタ定義 */
@@ -978,6 +983,43 @@ void check_python_control_kalman_filter(void) {
     LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_copy = lkf;
     LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_move = std::move(lkf_copy);
     lkf = lkf_move;
+
+    /* シミュレーション準備 */
+    lkf.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0)));
+
+    constexpr std::size_t NUM_STEPS = 50;
+
+    //System noise and observation noise real
+    auto Q_real = make_DiagMatrixIdentity<T, STATE_SIZE>() * static_cast<T>(0.0);
+    auto R_real = make_DiagMatrixIdentity<T, OUTPUT_SIZE>() * static_cast<T>(0.0);
+
+    // data set
+    auto x_true = make_DenseMatrixZeros<T, STATE_SIZE, NUM_STEPS>();
+    x_true(0, 0) = static_cast<T>(0.0);
+    x_true(1, 0) = static_cast<T>(0.0);
+    x_true(2, 0) = static_cast<T>(0.0);
+    x_true(3, 0) = static_cast<T>(0.1);
+
+    auto x_estimate = make_DenseMatrixZeros<T, STATE_SIZE, NUM_STEPS>();
+    for (std::size_t i = 0; i < STATE_SIZE; i++) {
+        x_estimate(i, 0) = lkf.get_x_hat()(i, 0);
+    }
+
+    auto y_measured = make_DenseMatrixZeros<T, OUTPUT_SIZE, NUM_STEPS>();
+    auto y_store = make_DenseMatrixZeros<T, OUTPUT_SIZE, (NUMBER_OF_DELAY + 1)>();
+
+    std::size_t delay_index = 0;
+
+    /* シミュレーション */
+    for (std::size_t i = 0; i < NUM_STEPS; i++) {
+        
+
+    }
+
 
 
     tester.throw_error_if_test_failed();
