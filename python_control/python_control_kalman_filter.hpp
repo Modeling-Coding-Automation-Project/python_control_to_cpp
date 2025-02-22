@@ -58,8 +58,9 @@ public:
 
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
-      : state_space(DiscreteStateSpace), Q(Q), R(R), P(), G(),
-        _C_P_CT_R_inv_solver() {}
+      : state_space(DiscreteStateSpace), Q(Q), R(R),
+        P(PythonNumpy::make_DenseMatrixOnes<_T, _STATE_SIZE, _STATE_SIZE>()),
+        G(), _C_P_CT_R_inv_solver() {}
 
   /* Copy Constructor */
   LinearKalmanFilter(

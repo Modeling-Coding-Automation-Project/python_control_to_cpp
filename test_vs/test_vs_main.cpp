@@ -730,7 +730,7 @@ void check_python_control_lqr(void) {
     MCAPTester<T> tester;
 
     constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    const T NEAR_LIMIT_SOFT = 3.0e-1F;
+    constexpr T NEAR_LIMIT_SOFT = 3.0e-1F;
 
 
     using SparseAvailable_Ac = SparseAvailable<
@@ -924,8 +924,8 @@ void check_python_control_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    // const T NEAR_LIMIT_SOFT = 3.0e-1F;
+    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-3F;
 
 
     using SparseAvailable_A = SparseAvailable<
@@ -997,7 +997,6 @@ void check_python_control_kalman_filter(void) {
     x_true[0](1, 0) = static_cast<T>(0.0);
     x_true[0](2, 0) = static_cast<T>(0.0);
     x_true[0](3, 0) = static_cast<T>(0.1);
-    DenseMatrix_Type<T, STATE_SIZE, 1> x = x_true[0];
 
     std::array<DenseMatrix_Type<T, STATE_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> x_estimate;
     x_estimate[0] = lkf.get_x_hat();
@@ -1009,15 +1008,15 @@ void check_python_control_kalman_filter(void) {
 
 
     /* シミュレーション */
-    for (std::size_t i = 0; i < TestData::LKF_SIM_STEP_MAX; i++) {
+    for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
         auto u = make_StateSpaceInput<INPUT_SIZE>(
-            static_cast<T>(TestData::lkf_test_input(i, 0)),
-            static_cast<T>(TestData::lkf_test_input(i, 1))
+            static_cast<T>(TestData::lkf_test_input(i - 1, 0)),
+            static_cast<T>(TestData::lkf_test_input(i - 1, 1))
         );
 
         // system response
-        auto x_next = A * x + B * u;
-        auto y_next = C * x_next + D * u;
+        x_true[i] = A * x_true[i - 1] + B * u;
+        auto y_next = C * x_true[i] + D * u;
 
         y_store[delay_index] = y_next;
 
@@ -1027,14 +1026,16 @@ void check_python_control_kalman_filter(void) {
             delay_index = 0;
         }
 
-        auto y_next_delay = y_store[delay_index];
-        y_measured[i] = y_next_delay;
+        y_measured[i] = y_store[delay_index];
 
         // kalman filter
-        lkf.predict_and_update(u, y_next_delay);
+        lkf.predict_and_update(u, y_measured[i]);
+        x_estimate[i] = lkf.get_x_hat();
+    }
 
-        x = lkf.get_x_hat();
-        x_estimate[i] = x;
+    for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        tester.expect_near(x_true[i].matrix.data, x_estimate[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check LinearKalmanFilter simulation x estimate.");
     }
 
 

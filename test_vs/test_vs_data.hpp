@@ -472,7 +472,7 @@ Matrix <DefDense, double, SYSTEM_PID_STEP_MAX, 1> system_PID_y_answer({
 
     constexpr std::size_t LKF_SIM_STEP_MAX = 50;
 
-    Matrix <DefDense, double, LKF_SIM_STEP_MAX, 1> lkf_test_input({
+    Matrix <DefDense, double, LKF_SIM_STEP_MAX, 2> lkf_test_input({
         {0.5, 0.5},
         { 0.5, 0.5 },
         { -0.5, -0.5 },
