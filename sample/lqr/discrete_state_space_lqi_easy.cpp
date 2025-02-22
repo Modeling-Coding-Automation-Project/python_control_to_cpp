@@ -63,10 +63,10 @@ int main(void) {
   std::cout << std::endl << std::endl;
 
   /* Simulation */
-  auto x_ref = make_DenseMatrix<2, 1>(0.0, 1.0);
-  auto y_ref = make_DenseMatrix<1, 1>(1.0);
+  auto x_ref = make_StateSpaceState<State_Num>(0.0, 1.0);
+  auto y_ref = make_StateSpaceOutput<Output_Num>(1.0);
 
-  auto e_y_integral = make_DenseMatrix<1, 1>(0.0);
+  auto e_y_integral = make_StateSpaceOutput<Output_Num>(0.0);
 
   for (int i = 0; i < 100; i++) {
     auto x = plant.get_X();
