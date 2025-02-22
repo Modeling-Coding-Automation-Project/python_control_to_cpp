@@ -3,6 +3,7 @@
 
 #include "python_numpy.hpp"
 
+#include <array>
 #include <type_traits>
 
 namespace PythonControl {
@@ -19,7 +20,7 @@ struct SubstituteVectorRingBuffer {
                       const Original_Vector_Type &Vector,
                       const std::size_t &buffer_index) {
 
-    Vector_buffer(Count, buffer_index) = Vector.template get<Count, 0>();
+    Vector_buffer[buffer_index](Count, 0) = Vector.template get<Count, 0>();
     SubstituteVectorRingBuffer<T, Original_Vector_Type, Vector_with_Delay_Type,
                                (Count - 1)>::compute(Vector_buffer, Vector,
                                                      buffer_index);
@@ -34,28 +35,7 @@ struct SubstituteVectorRingBuffer<T, Original_Vector_Type,
   static void compute(Vector_with_Delay_Type &Vector_buffer,
                       const Original_Vector_Type &Vector,
                       const std::size_t &buffer_index) {
-    Vector_buffer(0, buffer_index) = Vector.template get<0, 0>();
-  }
-};
-
-/* Substitute row from DenseMatrix to DenseRow */
-template <typename T, std::size_t M, std::size_t N, std::size_t Count>
-struct SubstituteDenseMatrixRow {
-  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
-                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
-                      const std::size_t &row_index) {
-    row.template set<Count, 0>(matrix(Count, row_index));
-    SubstituteDenseMatrixRow<T, M, N, (Count - 1)>::compute(matrix, row,
-                                                            row_index);
-  }
-};
-
-template <typename T, std::size_t M, std::size_t N>
-struct SubstituteDenseMatrixRow<T, M, N, 0> {
-  static void compute(const PythonNumpy::DenseMatrix_Type<T, M, N> &matrix,
-                      PythonNumpy::DenseMatrix_Type<T, M, 1> &row,
-                      const std::size_t &row_index) {
-    row.template set<0, 0>(matrix(0, row_index));
+    Vector_buffer[buffer_index](0, 0) = Vector.template get<0, 0>();
   }
 };
 
@@ -90,8 +70,8 @@ private:
                 "Matrix value data type must be float or double.");
 
   using _Vector_with_Delay_Type =
-      PythonNumpy::DenseMatrix_Type<_T, Vector_Type::COLS,
-                                    (1 + Number_Of_Delay)>;
+      std::array<PythonNumpy::DenseMatrix_Type<_T, Vector_Type::COLS, 1>,
+                 (1 + Number_Of_Delay)>;
 
 public:
   /* Constructor */
@@ -143,21 +123,14 @@ public:
 
   inline auto get(void) const -> Vector_Type {
 
-    Vector_Type result;
-
-    ForDelayedVector::SubstituteDenseMatrixRow<
-        _T, Vector_Type::COLS, (1 + Number_Of_Delay),
-        (Vector_Type::COLS - 1)>::compute(this->_store, result,
-                                          this->_delay_ring_buffer_index);
-
-    return result;
+    return this->_store[this->_delay_ring_buffer_index];
   }
 
   template <std::size_t Index> inline auto access(void) -> _T & {
     static_assert(Index < Vector_Type::COLS,
                   "Index must be less than vector size.");
 
-    return this->_store.access(Index, this->_delay_ring_buffer_index);
+    return this->_store[this->_delay_ring_buffer_index].access(Index, 0);
   }
 
   inline const std::size_t get_delay_ring_buffer_index(void) const {
