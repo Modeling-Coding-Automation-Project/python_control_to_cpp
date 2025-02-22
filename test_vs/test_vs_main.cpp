@@ -983,6 +983,9 @@ void check_python_control_kalman_filter(void) {
     LinearKalmanFilter_Type<decltype(sys), decltype(Q), decltype(R)> lkf_move = std::move(lkf_copy);
     lkf = lkf_move;
 
+    lkf.set_decay_rate_for_C_P_CT_R_inv_solver(static_cast<T>(0.0));
+    lkf.set_division_min_for_C_P_CT_R_inv_solver(static_cast<T>(1.0e-10));
+
     /* シミュレーション準備 */
     lkf.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
         static_cast<T>(0.0),
@@ -1072,6 +1075,45 @@ void check_python_control_kalman_filter(void) {
             "check LinearKalmanFilter with delay simulation x estimate.");
     }
 
+    /* カルマンゲイン固定 */
+    auto lkf_fixed = make_LinearKalmanFilter(sys, Q, R);
+
+    lkf_fixed.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+        static_cast<T>(3.7633576),
+        static_cast<T>(2.15584246),
+        static_cast<T>(0.73995903),
+        static_cast<T>(0.09986581)));
+
+    lkf_fixed.G = make_DenseMatrix<STATE_SIZE, OUTPUT_SIZE>(
+        static_cast<T>(0.33396284), static_cast<T>(0.00470285),
+        static_cast<T>(0.27013879), static_cast<T>(0.06743136),
+        static_cast<T>(0.00470287), static_cast<T>(0.3521885),
+        static_cast<T>(-0.00624555), static_cast<T>(0.35992883)
+    );
+
+    auto u = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(0),
+        static_cast<T>(0)
+    );
+
+    auto y = make_DenseMatrix<OUTPUT_SIZE, 1>(
+        static_cast<T>(3.7634),
+        static_cast<T>(0.74)
+    );
+
+    lkf_fixed.predict_and_update_with_fixed_G(u, y);
+
+    auto x_hat_fixed = lkf_fixed.get_x_hat();
+
+    auto x_hat_fixed_answer = make_DenseMatrix<STATE_SIZE, 1>(
+        static_cast<T>(3.90691211),
+        static_cast<T>(2.1709415),
+        static_cast<T>(0.74542922),
+        static_cast<T>(0.09763228)
+    );
+
+    tester.expect_near(x_hat_fixed.matrix.data, x_hat_fixed_answer.matrix.data, NEAR_LIMIT_SOFT,
+        "check LinearKalmanFilter with fixed G x estimate.");
 
 
     tester.throw_error_if_test_failed();

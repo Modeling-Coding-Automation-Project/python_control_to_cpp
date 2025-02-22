@@ -189,6 +189,15 @@ public:
     this->state_space.X = x_hat;
   }
 
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
+    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void
+  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
+    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  }
+
 public:
   /* Variable */
   DiscreteStateSpace_Type state_space;
