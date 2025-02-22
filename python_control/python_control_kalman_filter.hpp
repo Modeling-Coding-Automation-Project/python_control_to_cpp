@@ -26,9 +26,28 @@ public:
   static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
                 "R matrix must be diagonal matrix.");
 
+  /* Check Data Type */
+  static_assert(
+      std::is_same<typename Q_Type::Value_Type, _T>::value,
+      "Data type of Q matrix must be same type as DiscreteStateSpace.");
+
+  static_assert(
+      std::is_same<typename R_Type::Value_Type, _T>::value,
+      "Data type of R matrix must be same type as DiscreteStateSpace.");
+
 public:
   /* Constructor */
   LinearKalmanFilter(){};
+
+  LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
+                     const Q_Type &Q, const R_Type &R)
+      : _state_space(DiscreteStateSpace), _Q(Q), _R(R) {}
+
+private:
+  /* Variable */
+  DiscreteStateSpace_Type _state_space;
+  Q_Type _Q;
+  R_Type _R;
 };
 
 /* make Linear Kalman Filter */
