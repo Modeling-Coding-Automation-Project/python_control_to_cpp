@@ -962,7 +962,6 @@ void check_python_control_kalman_filter(void) {
 
     T dt = static_cast<T>(0.1);
 
-    constexpr std::size_t NUMBER_OF_DELAY = 0;
     constexpr std::size_t STATE_SIZE = decltype(A)::COLS;
     constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;
     constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;
@@ -1002,12 +1001,47 @@ void check_python_control_kalman_filter(void) {
     x_estimate[0] = lkf.get_x_hat();
 
     std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> y_measured;
+
+    /* シミュレーション */
+    for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        auto u = make_StateSpaceInput<INPUT_SIZE>(
+            static_cast<T>(TestData::lkf_test_input(i - 1, 0)),
+            static_cast<T>(TestData::lkf_test_input(i - 1, 1))
+        );
+
+        // system response
+        x_true[i] = A * x_true[i - 1] + B * u;
+        y_measured[i] = C * x_true[i] + D * u;
+
+        // kalman filter
+        lkf.predict_and_update(u, y_measured[i]);
+        x_estimate[i] = lkf.get_x_hat();
+    }
+
+    for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
+        tester.expect_near(x_true[i].matrix.data, x_estimate[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check LinearKalmanFilter simulation x estimate.");
+    }
+
+    /* 遅れ込みのシミュレーション準備 */
+    constexpr std::size_t NUMBER_OF_DELAY = 2;
+
+    auto sys_delay = make_DiscreteStateSpace<NUMBER_OF_DELAY>(A, B, C, D, dt);
+    auto lkf_delay = make_LinearKalmanFilter(sys_delay, Q, R);
+
+    lkf_delay.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0),
+        static_cast<T>(0.0)));
+
+    x_estimate[0] = lkf_delay.get_x_hat();
+
     std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
-
-    /* シミュレーション */
+    /* 遅れ込みのシミュレーション */
     for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
         auto u = make_StateSpaceInput<INPUT_SIZE>(
             static_cast<T>(TestData::lkf_test_input(i - 1, 0)),
@@ -1029,14 +1063,15 @@ void check_python_control_kalman_filter(void) {
         y_measured[i] = y_store[delay_index];
 
         // kalman filter
-        lkf.predict_and_update(u, y_measured[i]);
-        x_estimate[i] = lkf.get_x_hat();
+        lkf_delay.predict_and_update(u, y_measured[i]);
+        x_estimate[i] = lkf_delay.get_x_hat();
     }
 
     for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
         tester.expect_near(x_true[i].matrix.data, x_estimate[i].matrix.data, NEAR_LIMIT_SOFT,
-            "check LinearKalmanFilter simulation x estimate.");
+            "check LinearKalmanFilter with delay simulation x estimate.");
     }
+
 
 
     tester.throw_error_if_test_failed();

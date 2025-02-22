@@ -43,10 +43,10 @@ if __name__ == "__main__":
     R = np.eye(2) * 10.0
 
     # Define Kalman filter
-    kf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
+    lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
 
     # Initial state
-    kf.x_hat = np.array([[0],
+    lkf.x_hat = np.array([[0],
                          [0],
                          [0],
                          [0]])
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     x_true = np.zeros((A.shape[0], num_steps, 1))
     x_estimate = np.zeros((A.shape[0], num_steps, 1))
-    x_estimate[:, 0, 0] = kf.get_x_hat().flatten()
+    x_estimate[:, 0, 0] = lkf.get_x_hat().flatten()
     y_measured = np.zeros((C.shape[0], num_steps, 1))
     x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
 
@@ -96,11 +96,11 @@ if __name__ == "__main__":
         y_measured[:, k, 0] = y_store[:, delay_index]
 
         # Kalman filter
-        kf.predict_and_update(u, y_measured[:, k, 0].reshape(-1, 1))
-        x_estimate[:, k, 0] = kf.get_x_hat().flatten()
+        lkf.predict_and_update(u, y_measured[:, k, 0].reshape(-1, 1))
+        x_estimate[:, k, 0] = lkf.get_x_hat().flatten()
 
     # Kalman Gain
-    print("Kalman Gain:\n", kf.G)
+    print("Kalman Gain:\n", lkf.G)
 
     # Plot
     plt.figure()
