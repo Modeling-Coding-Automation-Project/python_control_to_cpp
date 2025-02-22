@@ -987,23 +987,23 @@ void check_python_control_kalman_filter(void) {
     lkf.set_division_min_for_C_P_CT_R_inv_solver(static_cast<T>(1.0e-10));
 
     /* シミュレーション準備 */
-    lkf.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+    lkf.set_x_hat(make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(0.0),
         static_cast<T>(0.0),
         static_cast<T>(0.0),
         static_cast<T>(0.0)));
 
     // data set
-    std::array<DenseMatrix_Type<T, STATE_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> x_true;
+    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_true;
     x_true[0](0, 0) = static_cast<T>(0.0);
     x_true[0](1, 0) = static_cast<T>(0.0);
     x_true[0](2, 0) = static_cast<T>(0.0);
     x_true[0](3, 0) = static_cast<T>(0.1);
 
-    std::array<DenseMatrix_Type<T, STATE_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> x_estimate;
+    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_estimate;
     x_estimate[0] = lkf.get_x_hat();
 
-    std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, TestData::LKF_SIM_STEP_MAX> y_measured;
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, TestData::LKF_SIM_STEP_MAX> y_measured;
 
     /* シミュレーション */
     for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
@@ -1032,7 +1032,7 @@ void check_python_control_kalman_filter(void) {
     auto sys_delay = make_DiscreteStateSpace<NUMBER_OF_DELAY>(A, B, C, D, dt);
     auto lkf_delay = make_LinearKalmanFilter(sys_delay, Q, R);
 
-    lkf_delay.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+    lkf_delay.set_x_hat(make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(0.0),
         static_cast<T>(0.0),
         static_cast<T>(0.0),
@@ -1040,7 +1040,7 @@ void check_python_control_kalman_filter(void) {
 
     x_estimate[0] = lkf_delay.get_x_hat();
 
-    std::array<DenseMatrix_Type<T, OUTPUT_SIZE, 1>, (NUMBER_OF_DELAY + 1)> y_store;
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
@@ -1078,7 +1078,7 @@ void check_python_control_kalman_filter(void) {
     /* カルマンゲイン固定 */
     auto lkf_fixed = make_LinearKalmanFilter(sys, Q, R);
 
-    lkf_fixed.set_x_hat(make_DenseMatrix<STATE_SIZE, 1>(
+    lkf_fixed.set_x_hat(make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(3.7633576),
         static_cast<T>(2.15584246),
         static_cast<T>(0.73995903),
@@ -1096,7 +1096,7 @@ void check_python_control_kalman_filter(void) {
         static_cast<T>(0)
     );
 
-    auto y = make_DenseMatrix<OUTPUT_SIZE, 1>(
+    auto y = make_StateSpaceOutput<OUTPUT_SIZE>(
         static_cast<T>(3.7634),
         static_cast<T>(0.74)
     );
@@ -1105,7 +1105,7 @@ void check_python_control_kalman_filter(void) {
 
     auto x_hat_fixed = lkf_fixed.get_x_hat();
 
-    auto x_hat_fixed_answer = make_DenseMatrix<STATE_SIZE, 1>(
+    auto x_hat_fixed_answer = make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(3.90691211),
         static_cast<T>(2.1709415),
         static_cast<T>(0.74542922),
