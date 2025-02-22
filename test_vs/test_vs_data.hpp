@@ -474,6 +474,7 @@ Matrix <DefDense, double, SYSTEM_PID_STEP_MAX, 1> system_PID_y_answer({
 
     Matrix <DefDense, double, LKF_SIM_STEP_MAX, 2> lkf_test_input({
         {0.5, 0.5},
+        {0.5, 0.5},
         { 0.5, 0.5 },
         { -0.5, -0.5 },
         { -0.5, 0.5 },
