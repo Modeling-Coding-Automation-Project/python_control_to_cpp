@@ -26,8 +26,9 @@ private:
   static constexpr std::size_t _OUTPUT_SIZE =
       DiscreteStateSpace_Type::Original_Y_Type::COLS;
 
-  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
+  using _C_P_CT_R_Inv_Type =
+      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
+          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
 public:
   /* Type  */
@@ -107,10 +108,9 @@ public:
 
     this->state_space.X =
         this->state_space.A * this->state_space.X + this->state_space.B * U;
-    this->state_space.P =
-        this->state_space.A * PythonNumpy::A_mul_BTranspose(
-                                  this->state_space.P * this->state_space.A) +
-        this->Q;
+    this->P = this->state_space.A *
+                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
+              this->Q;
   }
 
   inline auto
@@ -133,6 +133,8 @@ public:
   update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
+    // auto P_CT =
+    //     PythonNumpy::make_DenseMatrixZeros<_T, _STATE_SIZE, _OUTPUT_SIZE>();
 
     auto C_P_CT_R = this->state_space.C * P_CT + this->R;
     this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
@@ -141,10 +143,9 @@ public:
 
     this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
 
-    this->state_space.P =
-        (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-         this->G * this->state_space.C) *
-        this->state_space.P;
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->state_space.C) *
+              this->P;
   }
 
   inline void predict_and_update(
