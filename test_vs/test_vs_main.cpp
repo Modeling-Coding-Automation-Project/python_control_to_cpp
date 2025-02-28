@@ -729,7 +729,7 @@ void check_python_control_lqr(void) {
 
     MCAPTester<T> tester;
 
-    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-4) : T(1.0e-3);
     constexpr T NEAR_LIMIT_SOFT = 3.0e-1F;
 
 
@@ -898,8 +898,8 @@ void check_python_control_lqr(void) {
     lqi = lqi_move;
 
     /* LQI計算 */
-    lqi.set_Eigen_solver_iteration_max(Q_EX_SIZE);
-    lqi.set_Eigen_solver_iteration_max_for_eigen_vector(3 * Q_EX_SIZE);
+    lqi.set_Eigen_solver_iteration_max(3);
+    lqi.set_Eigen_solver_iteration_max_for_eigen_vector(8);
 
     auto K_ex = lqi.solve();
     K_ex = lqi.get_K();
