@@ -46,9 +46,9 @@ class KalmanFilterDeploy:
         code_text += "def function(X"
 
         if U is not None:
-            code_text += ", U):\n\n"
+            code_text += ", U, Parameters=None):\n\n"
         else:
-            code_text += "):\n\n"
+            code_text += ", Parameters=None):\n\n"
 
         for i in range(X.shape[0]):
             if X[i] in sym_symbols:
@@ -62,10 +62,10 @@ class KalmanFilterDeploy:
                     sym_symbols.remove(U[i])
 
         code_text += "\n"
-        code_text += "    # You need to set appropriate parameters in below:\n"
 
         for symbol in sym_symbols:
-            code_text += f"    {symbol} = 0.0\n"
+            code_text += f"    {symbol} = "
+            code_text += f"Parameters.{symbol}\n"
 
         code_text += "\n"
 

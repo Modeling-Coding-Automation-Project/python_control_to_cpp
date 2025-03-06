@@ -61,8 +61,19 @@ KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 
 # %% design EKF
 
-parameter_dt = 1.0
-parameter_wheelbase = 0.5
+landmark = np.array([[0.0], [0.0]])
+
+
+class Parameters:
+    def __init__(self, delta_time, wheelbase, p_x, p_y):
+        self.delta_time = delta_time
+        self.wheelbase = wheelbase
+        self.p_x = p_x
+        self.p_y = p_y
+
+
+Parameters_ekf = Parameters(
+    delta_time=1.0, wheelbase=0.5, p_x=landmark[0, 0], p_y=landmark[1, 0])
 
 Q_ekf = np.diag([0.1, 0.1, 0.1])
 R_ekf = np.diag([0.1, 0.1])
@@ -73,7 +84,8 @@ import hx
 import hx_jacobian
 ekf = ExtendedKalmanFilter(fxu.function, hx.function,
                            fxu_jacobian.function, hx_jacobian.function,
-                           Q_ekf, R_ekf)
+                           Q_ekf, R_ekf, Parameters_ekf)
+
 
 # %% bicycle model simulation
 
@@ -108,8 +120,8 @@ def run_localization(landmarks, std_vel, std_steer,
 
     track = []
     for i in range(200):
-        sim_pos = move(sim_pos, u, parameter_dt / 10.0,
-                       parameter_wheelbase)  # simulate robot
+        sim_pos = move(sim_pos, u, Parameters_ekf.delta_time / 10.0,
+                       Parameters_ekf.wheelbase)  # simulate robot
         track.append(sim_pos)
 
     track = np.array(track)
@@ -119,8 +131,6 @@ def run_localization(landmarks, std_vel, std_steer,
     if ylim is not None:
         plt.ylim(*ylim)
 
-
-landmark = np.array([[0.0, 0.0]])
 
 run_localization(
     landmark, std_vel=0.1, std_steer=np.radians(1),
