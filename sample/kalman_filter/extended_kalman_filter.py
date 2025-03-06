@@ -92,7 +92,6 @@ def run_localization(landmarks, std_vel, std_steer,
     sim_pos = np.array([[2.0], [6.0], [0.3]])  # x, y, 旋回角
     u = np.array([[1.1], [0.01]])  # 操縦コマンド (速度と旋回角)
     plt.figure()
-    plt.scatter(landmarks[:, 0], landmarks[:, 1], marker='s', s=60)
 
     track = []
     for i in range(200):
@@ -107,10 +106,10 @@ def run_localization(landmarks, std_vel, std_steer,
         plt.ylim(*ylim)
 
 
-landmarks = np.array([[5, 10], [10, 5], [15, 15]])
+landmark = np.array([[0.0, 0.0]])
 
 run_localization(
-    landmarks, std_vel=0.1, std_steer=np.radians(1),
+    landmark, std_vel=0.1, std_steer=np.radians(1),
     std_range=0.3, std_bearing=0.1)
 
 plt.show()
