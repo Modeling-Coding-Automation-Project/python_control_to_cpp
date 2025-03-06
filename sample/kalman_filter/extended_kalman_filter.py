@@ -126,8 +126,8 @@ def move(x, u, dt, wheelbase):
 
 def run_simulation():
 
-    x = np.array([[2.0], [6.0], [0.3]])  # x, y, 旋回角
-    u = np.array([[1.1], [0.1]])  # 操縦コマンド (速度と旋回角)
+    x = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
+    u = np.array([[1.1], [0.1]])  # inputs v, steering_angle
 
     x_true = []
     y_true = []
