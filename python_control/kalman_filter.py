@@ -72,3 +72,58 @@ class LinearKalmanFilter:
 
     def get_x_hat(self):
         return self.x_hat
+
+
+class ExtendedKalmanFilter:
+    def __init__(self, state_function, measurement_function,
+                 state_function_jacobian, measurement_function_jacobian,
+                 Q, R, Number_of_Delay=0):
+        self.state_function = state_function
+        self.measurement_function = measurement_function
+        self.state_function_jacobian = state_function_jacobian
+        self.measurement_function_jacobian = measurement_function_jacobian
+
+        self.A = np.zeros(Q.shape[0])
+        self.C = np.zeros((R.shape[0], Q.shape[0]))
+        self.Q = Q
+        self.R = R
+
+        self.x_hat = np.zeros((Q.shape[0], 1))
+        self.P = np.ones(Q.shape[0])
+        self.G = None
+
+        self.Number_of_Delay = Number_of_Delay
+        self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
+
+    def predict(self, u):
+        self.A = self.state_function_jacobian(self.x_hat, u)
+        self.x_hat = self.state_function(self.x_hat, u)
+        self.P = self.A @ self.P @ self.A.T + self.Q
+
+    def update(self, y):
+        self.C = self.measurement_function_jacobian(self.x_hat)
+
+        P_CT = self.P @ self.C.T
+
+        S = self.C @ P_CT + self.R
+        self.G = P_CT @ np.linalg.inv(S)
+        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
+
+        self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
+
+    def calc_y_dif(self, y):
+        self.y_store.push(self.measurement_function(self.x_hat))
+
+        y_dif = y - self.y_store.get()
+
+        # When there is no delay, you can use below.
+        # y_dif = y - self.measurement_function(self.x_hat)
+
+        return y_dif
+
+    def predict_and_update(self, u, y):
+        self.predict(u)
+        self.update(y)
+
+    def get_x_hat(self):
+        return self.x_hat
