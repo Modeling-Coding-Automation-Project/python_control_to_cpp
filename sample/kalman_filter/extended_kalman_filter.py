@@ -111,35 +111,49 @@ def move(x, u, dt, wheelbase):
         dx = np.array([[dist * math.cos(hdg)],
                        [dist * math.sin(hdg)],
                        [0]])
-    return x + dx
+
+    x_next = x + dx
+
+    x_dif = (landmark[0, 0] - x_next[0, 0])
+    y_dif = (landmark[1, 0] - x_next[1, 0])
+    theta = x_next[2, 0]
+    r = math.sqrt(x_dif * x_dif + y_dif * y_dif)
+    phi = math.atan2(y_dif, x_dif) - theta
+    y_next = np.array([[r], [phi]])
+
+    return x_next, y_next
 
 
 def run_simulation():
 
-    sim_pos = np.array([[2.0], [6.0], [0.3]])  # x, y, 旋回角
+    x = np.array([[2.0], [6.0], [0.3]])  # x, y, 旋回角
     u = np.array([[1.1], [0.1]])  # 操縦コマンド (速度と旋回角)
 
-    track = []
+    x_true = []
+    y_true = []
     time = np.arange(0, simulation_time, sim_delta_time)
     for i in range(round(simulation_time / sim_delta_time)):
-        sim_pos = move(sim_pos, u, sim_delta_time,
-                       sim_wheelbase)  # simulate robot
-        track.append(sim_pos)
+        x, y = move(x, u, sim_delta_time,
+                    sim_wheelbase)  # simulate robot
 
-    track = np.array(track)
+        x_true.append(x)
+        y_true.append(y)
+
+    x_true = np.array(x_true)
+    y_true = np.array(y_true)
 
     # plot
     fig, axs = plt.subplots(3, 1)
 
-    axs[0].plot(time, track[:, 0, 0])
+    axs[0].plot(time, x_true[:, 0, 0])
     axs[0].set_ylabel('x position')
     axs[0].grid()
 
-    axs[1].plot(time, track[:, 1, 0])
+    axs[1].plot(time, x_true[:, 1, 0])
     axs[1].set_ylabel('y position')
     axs[1].grid()
 
-    axs[2].plot(time, track[:, 2, 0])
+    axs[2].plot(time, x_true[:, 2, 0])
     axs[2].set_ylabel('theta')
     axs[2].set_xlabel('time')
     axs[2].grid()
