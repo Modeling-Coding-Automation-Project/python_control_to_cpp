@@ -75,8 +75,8 @@ class Parameters:
 Parameters_ekf = Parameters(
     delta_time=0.1, wheelbase=0.5, p_x=landmark[0, 0], p_y=landmark[1, 0])
 
-Q_ekf = np.diag([0.1, 0.1, 0.1])
-R_ekf = np.diag([0.1, 0.1])
+Q_ekf = np.diag([1.0, 1.0, 1.0])
+R_ekf = np.diag([10.0, 10.0])
 
 import fxu
 import fxu_jacobian
@@ -91,7 +91,7 @@ ekf = ExtendedKalmanFilter(fxu.function, hx.function,
 
 sim_delta_time = 0.1
 sim_wheelbase = Parameters_ekf.wheelbase
-simulation_time = 20.0
+simulation_time = 50.0
 
 
 def move(x, u, dt, wheelbase):
