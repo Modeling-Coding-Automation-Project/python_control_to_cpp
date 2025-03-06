@@ -73,18 +73,7 @@ class KalmanFilterDeploy:
             f.write(code_text)
 
     @staticmethod
-    def write_state_function_code_from_sympy(sym_object, X, U=None):
-        # Get the caller's frame
-        frame = inspect.currentframe().f_back
-        # Get the caller's local variables
-        caller_locals = frame.f_locals
-        # Find the variable name that matches the matrix_in value
-        sym_object_name = None
-        for name, value in caller_locals.items():
-            if value is sym_object:
-                sym_object_name = name
-                break
-
+    def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
         header_code = "import numpy as np\nfrom math import *\n\n\n"
 
         sympy_function_code, arguments_text = \
@@ -97,3 +86,35 @@ class KalmanFilterDeploy:
 
         KalmanFilterDeploy.write_code_to_file(
             total_code, f"{sym_object_name}.py")
+
+    @staticmethod
+    def write_state_function_code_from_sympy(sym_object, X, U=None):
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the variable name that matches the matrix_in value
+        sym_object_name = None
+        for name, value in caller_locals.items():
+            if value is sym_object:
+                sym_object_name = name
+                break
+
+        KalmanFilterDeploy.write_function_code_from_sympy(
+            sym_object, sym_object_name, X, U)
+
+    @staticmethod
+    def write_measurement_function_code_from_sympy(sym_object, X):
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the variable name that matches the matrix_in value
+        sym_object_name = None
+        for name, value in caller_locals.items():
+            if value is sym_object:
+                sym_object_name = name
+                break
+
+        KalmanFilterDeploy.write_function_code_from_sympy(
+            sym_object, sym_object_name, X, U=None)
