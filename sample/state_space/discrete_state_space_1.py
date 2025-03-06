@@ -1,5 +1,13 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
 import numpy as np
+import control
 import matplotlib.pyplot as plt
+
+from python_control.state_space_deploy import StateSpaceDeploy
+
 
 # define state-space model
 A = np.array([[0.7, 0.2],
@@ -8,6 +16,10 @@ B = np.array([[0.1],
               [0.2]])
 C = np.array([[2, 0]])
 D = np.array([[0]])
+
+# generate state-space cpp code
+sys = control.ss(A, B, C, D)
+StateSpaceDeploy.generate_state_space_cpp_code(sys)
 
 # initialize state and input
 x = np.array([[0],
