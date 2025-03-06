@@ -1,6 +1,12 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
 import numpy as np
 import control
 import matplotlib.pyplot as plt
+
+from python_control.state_space_deploy import StateSpaceDeploy
 
 
 def plot_y_response(T, y):
@@ -55,8 +61,13 @@ T, yout = control.step_response(sys)
 plot_y_response(T, yout)
 
 # convert to discrete state-space model
-sys_d = sys.sample(Ts=0.01, method='euler')
+dt = 0.01
+sys_d = sys.sample(Ts=dt, method='euler')
 T_d, yout_d = control.step_response(sys_d)
+
+# You can create cpp header which can easily define state space as C++ code
+sys = control.ss(A, B, C, D, dt)
+StateSpaceDeploy.generate_state_space_cpp_code(sys)
 
 plot_y_response(T_d, yout_d)
 
