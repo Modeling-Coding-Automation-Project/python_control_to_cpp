@@ -159,7 +159,13 @@ def run_simulation():
     axs[2, 0].set_xlabel('time')
     axs[2, 0].grid(True)
 
-    plt.tight_layout()
+    axs[0, 1].plot(time, y_measured[:, 0, 0])
+    axs[0, 1].set_ylabel('r_p')
+    axs[0, 1].grid(True)
+
+    axs[1, 1].plot(time, y_measured[:, 1, 0])
+    axs[1, 1].set_ylabel('angle_p')
+    axs[1, 1].grid(True)
 
 
 run_simulation()
