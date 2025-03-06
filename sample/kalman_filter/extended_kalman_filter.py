@@ -73,7 +73,7 @@ class Parameters:
 
 
 Parameters_ekf = Parameters(
-    delta_time=1.0, wheelbase=0.5, p_x=landmark[0, 0], p_y=landmark[1, 0])
+    delta_time=0.1, wheelbase=0.5, p_x=landmark[0, 0], p_y=landmark[1, 0])
 
 Q_ekf = np.diag([0.1, 0.1, 0.1])
 R_ekf = np.diag([0.1, 0.1])
@@ -88,6 +88,10 @@ ekf = ExtendedKalmanFilter(fxu.function, hx.function,
 
 
 # %% bicycle model simulation
+
+sim_delta_time = 0.1
+sim_wheelbase = Parameters_ekf.wheelbase
+simulation_time = 20.0
 
 
 def move(x, u, dt, wheelbase):
@@ -110,30 +114,39 @@ def move(x, u, dt, wheelbase):
     return x + dx
 
 
-def run_localization(landmarks, std_vel, std_steer,
-                     std_range, std_bearing,
-                     step=10, ellipse_step=20, ylim=None):
+def run_simulation():
 
     sim_pos = np.array([[2.0], [6.0], [0.3]])  # x, y, 旋回角
-    u = np.array([[1.1], [0.01]])  # 操縦コマンド (速度と旋回角)
-    plt.figure()
+    u = np.array([[1.1], [0.1]])  # 操縦コマンド (速度と旋回角)
 
     track = []
-    for i in range(200):
-        sim_pos = move(sim_pos, u, Parameters_ekf.delta_time / 10.0,
-                       Parameters_ekf.wheelbase)  # simulate robot
+    time = np.arange(0, simulation_time, sim_delta_time)
+    for i in range(round(simulation_time / sim_delta_time)):
+        sim_pos = move(sim_pos, u, sim_delta_time,
+                       sim_wheelbase)  # simulate robot
         track.append(sim_pos)
 
     track = np.array(track)
-    plt.plot(track[:, 0], track[:, 1], color='k', lw=2)
-    plt.axis('equal')
-    plt.title("EKF Robot localization")
-    if ylim is not None:
-        plt.ylim(*ylim)
+
+    # plot
+    fig, axs = plt.subplots(3, 1)
+
+    axs[0].plot(time, track[:, 0, 0])
+    axs[0].set_ylabel('x position')
+    axs[0].grid()
+
+    axs[1].plot(time, track[:, 1, 0])
+    axs[1].set_ylabel('y position')
+    axs[1].grid()
+
+    axs[2].plot(time, track[:, 2, 0])
+    axs[2].set_ylabel('theta')
+    axs[2].set_xlabel('time')
+    axs[2].grid()
+
+    plt.tight_layout()
 
 
-run_localization(
-    landmark, std_vel=0.1, std_steer=np.radians(1),
-    std_range=0.3, std_bearing=0.1)
+run_simulation()
 
 plt.show()
