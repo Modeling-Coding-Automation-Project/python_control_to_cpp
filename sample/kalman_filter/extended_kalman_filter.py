@@ -129,7 +129,10 @@ def run_simulation():
     x = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
     u = np.array([[1.1], [0.1]])  # inputs v, steering_angle
 
+    ekf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
+
     x_true = []
+    x_estimated = []
     y_measured = []
     time = np.arange(0, simulation_time, sim_delta_time)
     for i in range(round(simulation_time / sim_delta_time)):
@@ -139,22 +142,35 @@ def run_simulation():
         x_true.append(x)
         y_measured.append(y)
 
+        # estimate
+        ekf.predict(u)
+        ekf.update(y)
+
+        x_estimated.append(ekf.x_hat)
+
     x_true = np.array(x_true)
     y_measured = np.array(y_measured)
+    x_estimated = np.array(x_estimated)
 
     # plot
     fig, axs = plt.subplots(3, 2)
     fig.suptitle("EKF for bicycle model results")
 
-    axs[0, 0].plot(time, x_true[:, 0, 0])
+    axs[0, 0].plot(time, x_true[:, 0, 0], label='true')
+    axs[0, 0].plot(time, x_estimated[:, 0, 0], label='estimated')
+    axs[0, 0].legend()
     axs[0, 0].set_ylabel('x position')
     axs[0, 0].grid(True)
 
-    axs[1, 0].plot(time, x_true[:, 1, 0])
+    axs[1, 0].plot(time, x_true[:, 1, 0], label='true')
+    axs[1, 0].plot(time, x_estimated[:, 1, 0], label='estimated')
+    axs[1, 0].legend()
     axs[1, 0].set_ylabel('y position')
     axs[1, 0].grid(True)
 
-    axs[2, 0].plot(time, x_true[:, 2, 0])
+    axs[2, 0].plot(time, x_true[:, 2, 0], label='true')
+    axs[2, 0].plot(time, x_estimated[:, 2, 0], label='estimated')
+    axs[2, 0].legend()
     axs[2, 0].set_ylabel('theta')
     axs[2, 0].set_xlabel('time')
     axs[2, 0].grid(True)
