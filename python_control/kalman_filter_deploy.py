@@ -3,6 +3,8 @@ import sys
 sys.path.append(os.getcwd())
 
 import inspect
+import ast
+import astor
 
 from python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter import ExtendedKalmanFilter
@@ -26,7 +28,13 @@ class KalmanFilterDeploy:
 
         code_text += arguments_text + "):\n\n"
 
-        code_text += f"    return np.array({sym_object.tolist()})\n\n\n"
+        power_replacer = PowerToMultiplication()
+
+        calculation_code = f"{sym_object.tolist()}"
+        calculation_code_replaced = power_replacer.transform_code(
+            calculation_code)
+
+        code_text += f"    return np.array({calculation_code_replaced})\n\n\n"
 
         return code_text, arguments_text
 
@@ -76,8 +84,8 @@ class KalmanFilterDeploy:
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
         header_code = "import numpy as np\nfrom math import *\n\n\n"
 
-        sympy_function_code, arguments_text = \
-            KalmanFilterDeploy.create_sympy_code(sym_object)
+        sympy_function_code, arguments_text = KalmanFilterDeploy.create_sympy_code(
+            sym_object)
 
         interface_code = KalmanFilterDeploy.create_interface_code(
             sym_object, arguments_text, X, U)
@@ -118,3 +126,18 @@ class KalmanFilterDeploy:
 
         KalmanFilterDeploy.write_function_code_from_sympy(
             sym_object, sym_object_name, X, U=None)
+
+
+class PowerToMultiplication(ast.NodeTransformer):
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and node.right.value == 2:
+
+            return ast.BinOp(left=node.left, op=ast.Mult(), right=node.left)
+        return node
+
+    def transform_code(self, source_code):
+        tree = ast.parse(source_code)
+        transformer = PowerToMultiplication()
+        transformed_tree = transformer.visit(tree)
+        return astor.to_source(transformed_tree)

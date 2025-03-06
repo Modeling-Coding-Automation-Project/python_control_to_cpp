@@ -46,7 +46,7 @@ fxu = sympy.Matrix([[x - r * sympy.sin(theta) + r * sympy.sin(theta + beta)],
 fxu_jacobian = fxu.jacobian(X)
 print("fxu_jacobian:\n", fxu_jacobian)
 
-hx = sympy.Matrix([[sympy.sqrt((p_x - x)**2 + (p_y - y)**2)],
+hx = sympy.Matrix([[sympy.sqrt((p_x - x) * (p_x - x) + (p_y - y) * (p_y - y))],
                    [sympy.atan2(p_y - y, p_x - x) - theta]])
 hx_jacobian = hx.jacobian(X)
 print("hx_jacobian:\n", hx_jacobian)
