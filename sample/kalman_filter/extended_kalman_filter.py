@@ -47,7 +47,7 @@ fxu = sympy.Matrix([[x - r * sympy.sin(theta) + r * sympy.sin(theta + beta)],
 fxu_jacobian = fxu.jacobian(X)
 print("fxu_jacobian:\n", fxu_jacobian)
 
-hx = sympy.Matrix([[sympy.sqrt((p_x - x) * (p_x - x) + (p_y - y) * (p_y - y))],
+hx = sympy.Matrix([[sympy.sqrt((p_x - x) ** 2 + (p_y - y) ** 2)],
                    [sympy.atan2(p_y - y, p_x - x) - theta]])
 hx_jacobian = hx.jacobian(X)
 print("hx_jacobian:\n", hx_jacobian)
@@ -59,10 +59,23 @@ KalmanFilterDeploy.write_state_function_code_from_sympy(fxu_jacobian, X, U)
 KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx, X)
 KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 
-# %% bicycle model simulation
+# %% design EKF
 
-dt = 1.0
-wheelbase = 0.5
+parameter_dt = 1.0
+parameter_wheelbase = 0.5
+
+Q_ekf = np.diag([0.1, 0.1, 0.1])
+R_ekf = np.diag([0.1, 0.1])
+
+import fxu
+import fxu_jacobian
+import hx
+import hx_jacobian
+ekf = ExtendedKalmanFilter(fxu.function, hx.function,
+                           fxu_jacobian.function, hx_jacobian.function,
+                           Q_ekf, R_ekf)
+
+# %% bicycle model simulation
 
 
 def move(x, u, dt, wheelbase):
@@ -95,7 +108,8 @@ def run_localization(landmarks, std_vel, std_steer,
 
     track = []
     for i in range(200):
-        sim_pos = move(sim_pos, u, dt / 10.0, wheelbase)  # simulate robot
+        sim_pos = move(sim_pos, u, parameter_dt / 10.0,
+                       parameter_wheelbase)  # simulate robot
         track.append(sim_pos)
 
     track = np.array(track)
