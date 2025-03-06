@@ -5,7 +5,7 @@ sys.path.append(os.getcwd())
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy
-from sympy import symbols
+from sympy import symbols, lambdify
 
 from python_control.kalman_filter import ExtendedKalmanFilter
 
@@ -25,7 +25,7 @@ theta = symbols('theta')
 p_x = symbols('p_x')
 p_y = symbols('p_y')
 
-time = symbols('t')
+time = symbols('time')
 d = v * time
 beta = (d / wheelbase) * sympy.tan(alpha)
 r = wheelbase / sympy.tan(alpha)
@@ -40,3 +40,9 @@ hx = sympy.Matrix([[sympy.sqrt((p_x - x)**2 + (p_y - y)**2)],
                    [sympy.atan2(p_y - y, p_x - x) - theta]])
 hx_jacobian = hx.jacobian(sympy.Matrix([x, y, theta]))
 print("hx_jacobian:\n", hx_jacobian)
+
+
+# Save functions to separate files
+with open('fxu_func.py', 'w') as f:
+    f.write(f"import numpy as np\nfrom math import *\n\ndef fxu_func(x, y, theta, v, alpha, wheelbase, time):\n")
+    f.write(f"    return np.array({fxu.tolist()})\n")
