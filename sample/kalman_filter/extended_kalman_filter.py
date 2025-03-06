@@ -130,33 +130,34 @@ def run_simulation():
     u = np.array([[1.1], [0.1]])  # inputs v, steering_angle
 
     x_true = []
-    y_true = []
+    y_measured = []
     time = np.arange(0, simulation_time, sim_delta_time)
     for i in range(round(simulation_time / sim_delta_time)):
         x, y = move(x, u, sim_delta_time,
                     sim_wheelbase)  # simulate robot
 
         x_true.append(x)
-        y_true.append(y)
+        y_measured.append(y)
 
     x_true = np.array(x_true)
-    y_true = np.array(y_true)
+    y_measured = np.array(y_measured)
 
     # plot
-    fig, axs = plt.subplots(3, 1)
+    fig, axs = plt.subplots(3, 2)
+    fig.suptitle("EKF for bicycle model results")
 
-    axs[0].plot(time, x_true[:, 0, 0])
-    axs[0].set_ylabel('x position')
-    axs[0].grid()
+    axs[0, 0].plot(time, x_true[:, 0, 0])
+    axs[0, 0].set_ylabel('x position')
+    axs[0, 0].grid(True)
 
-    axs[1].plot(time, x_true[:, 1, 0])
-    axs[1].set_ylabel('y position')
-    axs[1].grid()
+    axs[1, 0].plot(time, x_true[:, 1, 0])
+    axs[1, 0].set_ylabel('y position')
+    axs[1, 0].grid(True)
 
-    axs[2].plot(time, x_true[:, 2, 0])
-    axs[2].set_ylabel('theta')
-    axs[2].set_xlabel('time')
-    axs[2].grid()
+    axs[2, 0].plot(time, x_true[:, 2, 0])
+    axs[2, 0].set_ylabel('theta')
+    axs[2, 0].set_xlabel('time')
+    axs[2, 0].grid(True)
 
     plt.tight_layout()
 
