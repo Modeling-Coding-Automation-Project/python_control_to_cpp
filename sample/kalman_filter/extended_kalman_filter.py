@@ -21,7 +21,7 @@ from python_control.kalman_filter_deploy import KalmanFilterDeploy
 # input U: [v, alpha]
 # observation Y: [r_p, angle_p]
 
-time = symbols('time')
+delta_time = symbols('delta_time')
 alpha = symbols('alpha')
 x = symbols('x')
 y = symbols('y')
@@ -36,20 +36,21 @@ p_y = symbols('p_y')
 X = sympy.Matrix([[x], [y], [theta]])
 U = sympy.Matrix([[v], [alpha]])
 
-d = v * time
+d = v * delta_time
 beta = (d / wheelbase) * sympy.tan(alpha)
 r = wheelbase / sympy.tan(alpha)
 
 fxu = sympy.Matrix([[x - r * sympy.sin(theta) + r * sympy.sin(theta + beta)],
                     [y + r * sympy.cos(theta) - r * sympy.cos(theta + beta)],
                     [theta + beta]])
-fxu_jacobian = fxu.jacobian(sympy.Matrix([x, y, theta]))
+fxu_jacobian = fxu.jacobian(X)
 print("fxu_jacobian:\n", fxu_jacobian)
 
 hx = sympy.Matrix([[sympy.sqrt((p_x - x)**2 + (p_y - y)**2)],
                    [sympy.atan2(p_y - y, p_x - x) - theta]])
-hx_jacobian = hx.jacobian(sympy.Matrix([x, y, theta]))
+hx_jacobian = hx.jacobian(X)
 print("hx_jacobian:\n", hx_jacobian)
 
 # Save functions to separate files
 KalmanFilterDeploy.write_state_function_code_from_sympy(fxu, X, U)
+KalmanFilterDeploy.write_state_function_code_from_sympy(fxu_jacobian, X, U)

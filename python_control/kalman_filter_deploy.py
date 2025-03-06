@@ -43,13 +43,15 @@ class KalmanFilterDeploy:
             code_text += "):\n\n"
 
         for i in range(X.shape[0]):
-            code_text += f"    {X[i]} = X[{i}, 0]\n"
-            sym_symbols.remove(X[i])
+            if X[i] in sym_symbols:
+                code_text += f"    {X[i]} = X[{i}, 0]\n"
+                sym_symbols.remove(X[i])
 
         if U is not None:
             for i in range(U.shape[0]):
-                code_text += f"    {U[i]} = U[{i}, 0]\n"
-                sym_symbols.remove(U[i])
+                if U[i] in sym_symbols:
+                    code_text += f"    {U[i]} = U[{i}, 0]\n"
+                    sym_symbols.remove(U[i])
 
         code_text += "\n"
         code_text += "    # You need to set appropriate parameters in below:\n"
