@@ -28,13 +28,9 @@ class KalmanFilterDeploy:
 
         code_text += arguments_text + "):\n\n"
 
-        power_replacer = PowerToMultiplication()
-
         calculation_code = f"{sym_object.tolist()}"
-        calculation_code_replaced = power_replacer.transform_code(
-            calculation_code)
 
-        code_text += f"    return np.array({calculation_code_replaced})\n\n\n"
+        code_text += f"    return np.array({calculation_code})\n\n\n"
 
         return code_text, arguments_text
 
@@ -128,7 +124,7 @@ class KalmanFilterDeploy:
             sym_object, sym_object_name, X, U=None)
 
 
-class PowerToMultiplication(ast.NodeTransformer):
+class PowerReplacer(ast.NodeTransformer):
     def visit_BinOp(self, node):
         self.generic_visit(node)
         if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and node.right.value == 2:
@@ -138,6 +134,6 @@ class PowerToMultiplication(ast.NodeTransformer):
 
     def transform_code(self, source_code):
         tree = ast.parse(source_code)
-        transformer = PowerToMultiplication()
+        transformer = ast.NodeTransformer()
         transformed_tree = transformer.visit(tree)
         return astor.to_source(transformed_tree)
