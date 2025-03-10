@@ -5,23 +5,16 @@ sys.path.append(os.getcwd())
 import inspect
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
+from python_control.control_deploy import ControlDeploy
 
 
-class StateSpaceDeploy:
+class StateSpaceDeploy(ControlDeploy):
     def __init__(self):
-        pass
-
-    @staticmethod
-    def check_data_type(state_space):
-        if state_space.A.dtype.name == 'float64':
-            return True
-        elif state_space.A.dtype.name == 'float32':
-            return True
-        else:
-            return False
+        super().__init__()
 
     @staticmethod
     def generate_state_space_cpp_code(state_space):
+        deployed_file_names = []
 
         if not StateSpaceDeploy.check_data_type(state_space):
             raise ValueError(
@@ -56,6 +49,11 @@ class StateSpaceDeploy:
         exec(f"{variable_name}_D = state_space.D")
         D_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D)")
+
+        deployed_file_names.append(A_file_name)
+        deployed_file_names.append(B_file_name)
+        deployed_file_names.append(C_file_name)
+        deployed_file_names.append(D_file_name)
 
         A_file_name_no_extension = A_file_name.split(".")[0]
         B_file_name_no_extension = B_file_name.split(".")[0]
@@ -103,8 +101,9 @@ class StateSpaceDeploy:
         code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
             "_HPP__\n"
 
-        # write to file
-        with open(code_file_name_ext, "w") as f:
-            f.write(code_text)
+        code_file_name_ext = StateSpaceDeploy.write_to_file(
+            code_text, code_file_name_ext)
 
-        return code_file_name_ext
+        deployed_file_names.append(code_file_name_ext)
+
+        return deployed_file_names
