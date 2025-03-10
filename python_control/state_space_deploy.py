@@ -8,15 +8,15 @@ from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import Num
 from python_control.control_deploy import ControlDeploy
 
 
-class StateSpaceDeploy(ControlDeploy):
+class StateSpaceDeploy:
     def __init__(self):
-        super().__init__()
+        pass
 
     @staticmethod
     def generate_state_space_cpp_code(state_space):
         deployed_file_names = []
 
-        if not StateSpaceDeploy.check_data_type(state_space):
+        if not ControlDeploy.check_data_type(state_space):
             raise ValueError(
                 "Data type not supported. Please use float32 or float64")
 
@@ -101,7 +101,7 @@ class StateSpaceDeploy(ControlDeploy):
         code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
             "_HPP__\n"
 
-        code_file_name_ext = StateSpaceDeploy.write_to_file(
+        code_file_name_ext = ControlDeploy.write_to_file(
             code_text, code_file_name_ext)
 
         deployed_file_names.append(code_file_name_ext)
