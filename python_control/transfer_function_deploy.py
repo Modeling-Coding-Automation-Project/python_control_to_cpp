@@ -16,7 +16,8 @@ class TransferFunctionDeploy(ControlDeploy):
     def generate_transfer_function_cpp_code(transfer_function):
         deployed_file_names = []
 
-        ControlDeploy.restrict_data_type(transfer_function)
+        ControlDeploy.restrict_data_type(
+            transfer_function.den[0][0].dtype.name)
 
         type_name = NumpyDeploy.check_dtype(transfer_function.A)
 
