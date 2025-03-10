@@ -16,7 +16,7 @@ class StateSpaceDeploy:
     def generate_state_space_cpp_code(state_space):
         deployed_file_names = []
 
-        ControlDeploy.restrict_data_type(state_space)
+        ControlDeploy.restrict_data_type(state_space.A.dtype.name)
 
         type_name = NumpyDeploy.check_dtype(state_space.A)
 
