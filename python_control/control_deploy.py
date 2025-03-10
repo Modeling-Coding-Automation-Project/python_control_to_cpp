@@ -12,11 +12,11 @@ class ControlDeploy:
         pass
 
     @staticmethod
-    def restrict_data_type(state_space):
+    def restrict_data_type(type_name):
         flag = False
-        if state_space.A.dtype.name == 'float64':
+        if type_name == 'float64':
             flag = True
-        elif state_space.A.dtype.name == 'float32':
+        elif type_name == 'float32':
             flag = True
         else:
             flag = False
