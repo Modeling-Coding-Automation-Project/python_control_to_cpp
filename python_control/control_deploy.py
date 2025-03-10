@@ -12,13 +12,18 @@ class ControlDeploy:
         pass
 
     @staticmethod
-    def check_data_type(state_space):
+    def restrict_data_type(state_space):
+        flag = False
         if state_space.A.dtype.name == 'float64':
-            return True
+            flag = True
         elif state_space.A.dtype.name == 'float32':
-            return True
+            flag = True
         else:
-            return False
+            flag = False
+
+        if not flag:
+            raise ValueError(
+                "Data type not supported. Please use float32 or float64")
 
     @staticmethod
     def write_to_file(code_text, code_file_name_ext):

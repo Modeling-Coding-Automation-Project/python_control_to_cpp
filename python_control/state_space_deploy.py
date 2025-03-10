@@ -16,9 +16,7 @@ class StateSpaceDeploy:
     def generate_state_space_cpp_code(state_space):
         deployed_file_names = []
 
-        if not ControlDeploy.check_data_type(state_space):
-            raise ValueError(
-                "Data type not supported. Please use float32 or float64")
+        ControlDeploy.restrict_data_type(state_space)
 
         type_name = NumpyDeploy.check_dtype(state_space.A)
 
