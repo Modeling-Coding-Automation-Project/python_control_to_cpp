@@ -83,7 +83,7 @@ class ExtendedKalmanFilter:
         self.state_function_jacobian = state_function_jacobian
         self.measurement_function_jacobian = measurement_function_jacobian
 
-        self.A = np.zeros(Q.shape[0])
+        self.A = np.zeros(Q.shape)
         self.C = np.zeros((R.shape[0], Q.shape[0]))
         self.Q = Q
         self.R = R

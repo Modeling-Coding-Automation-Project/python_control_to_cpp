@@ -96,6 +96,9 @@ ekf = ExtendedKalmanFilter(fxu.function, hx.function,
                            fxu_jacobian.function, hx_jacobian.function,
                            Q_ekf, R_ekf, Parameters_ekf)
 
+# You can create cpp header which can easily define state space as C++ code
+deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(ekf)
+print(deployed_file_names)
 
 # %% bicycle model simulation
 

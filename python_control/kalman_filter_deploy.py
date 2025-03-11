@@ -226,6 +226,116 @@ class KalmanFilterDeploy:
 
         return deployed_file_names
 
+    @staticmethod
+    def generate_EKF_cpp_code(ekf):
+        deployed_file_names = []
+
+        ControlDeploy.restrict_data_type(ekf.A.dtype.name)
+
+        type_name = NumpyDeploy.check_dtype(ekf.A)
+
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the variable name that matches the matrix_in value
+        variable_name = None
+        for name, value in caller_locals.items():
+            if value is ekf:
+                variable_name = name
+                break
+
+        code_file_name = "python_control_gen_" + variable_name
+        code_file_name_ext = code_file_name + ".hpp"
+
+        exec(f"{variable_name}_A = ekf.A")
+        A_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
+        exec(f"{variable_name}_C = ekf.C")
+        C_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
+
+        deployed_file_names.append(A_file_name)
+        deployed_file_names.append(C_file_name)
+
+        A_file_name_no_extension = A_file_name.split(".")[0]
+        C_file_name_no_extension = C_file_name.split(".")[0]
+
+        # create state-space cpp code
+        code_text = ""
+
+        file_header_macro_name = "__PYTHON_CONTROL_GEN_" + variable_name.upper() + \
+            "_HPP__"
+
+        code_text += "#ifndef " + file_header_macro_name + "\n"
+        code_text += "#define " + file_header_macro_name + "\n\n"
+
+        code_text += f"#include \"{A_file_name}\"\n"
+        code_text += f"#include \"{C_file_name}\"\n\n"
+        code_text += "#include \"python_control.hpp\"\n\n"
+
+        namespace_name = "python_control_gen_" + variable_name
+
+        code_text += "namespace " + namespace_name + " {\n\n"
+
+        code_text += "using namespace PythonNumpy;\n"
+        code_text += "using namespace PythonControl;\n\n"
+
+        code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
+
+        code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
+
+        code_text += f"using U_Type = ;\n\n"
+
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::COLS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(State::INPUT_SIZE)::ROWS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;\n\n"
+
+        code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
+        for i in range(ekf.Q.shape[0]):
+            code_text += "    static_cast<" + \
+                type_name + ">(" + str(ekf.Q[i, i]) + ")"
+            if i == ekf.Q.shape[0] - 1:
+                code_text += "\n"
+                break
+            else:
+                code_text += ",\n"
+        code_text += ");\n\n"
+
+        code_text += "auto R = make_DiagMatrix<OUTPUT_SIZE>(\n"
+        for i in range(ekf.R.shape[0]):
+            code_text += "    static_cast<" + \
+                type_name + ">(" + str(ekf.R[i, i]) + ")"
+            if i == ekf.R.shape[0] - 1:
+                code_text += "\n"
+                break
+            else:
+                code_text += ",\n"
+        code_text += ");\n\n"
+
+        code_text += "using type = ExtendedKalmanFilter_Type<" + \
+            "decltype(A), decltype(C), U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += "    return ExtendedKalmanFilter_Type<\n" + \
+            "decltype(A), decltype(C), U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "Q, R, state_function, state_function_jacobian, measurement_function," + \
+            " measurement_function_jacobian, parameters);\n\n"
+
+        code_text += "}\n\n"
+
+        code_text += "} // namespace " + namespace_name + "\n\n"
+
+        code_text += "#endif // " + file_header_macro_name + "\n"
+
+        code_file_name_ext = ControlDeploy.write_to_file(
+            code_text, code_file_name_ext)
+
+        deployed_file_names.append(code_file_name_ext)
+
+        return deployed_file_names
+
 
 class PowerReplacer(ast.NodeTransformer):
     def visit_BinOp(self, node):
