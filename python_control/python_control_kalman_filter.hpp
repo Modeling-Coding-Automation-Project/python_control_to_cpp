@@ -60,7 +60,8 @@ public:
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
       : state_space(DiscreteStateSpace), Q(Q), R(R),
-        P(PythonNumpy::make_DenseMatrixOnes<_T, _STATE_SIZE, _STATE_SIZE>()),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
         G(), _C_P_CT_R_inv_solver() {}
 
   /* Copy Constructor */
@@ -315,7 +316,8 @@ public:
       _MeasurementFunctionJacobian_Object &measurement_function_jacobian,
       const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
-        P(PythonNumpy::make_DenseMatrixOnes<_T, _STATE_SIZE, _STATE_SIZE>()),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
         G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
         _state_function(state_function),
         _state_function_jacobian(state_function_jacobian),

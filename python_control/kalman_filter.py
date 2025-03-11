@@ -26,7 +26,7 @@ class LinearKalmanFilter:
         self.Q = Q
         self.R = R
         self.x_hat = np.zeros((A.shape[0], 1))
-        self.P = np.ones(A.shape)
+        self.P = np.eye(A.shape[0])
         self.G = None
 
         self.Number_of_Delay = Number_of_Delay
@@ -89,7 +89,7 @@ class ExtendedKalmanFilter:
         self.R = R
 
         self.x_hat = np.zeros((Q.shape[0], 1))
-        self.P = np.ones(Q.shape)
+        self.P = np.eye(Q.shape[0])
         self.G = None
 
         self.Parameters = Parameters
