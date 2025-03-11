@@ -176,11 +176,11 @@ class KalmanFilterDeploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += f"auto state_space = {ss_file_name_no_extension}::make();\n\n"
+        code_text += f"auto lkf_state_space = {ss_file_name_no_extension}::make();\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(state_space.A)::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(state_space.B)::ROWS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(state_space.C)::COLS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(lkf_state_space.A)::COLS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(lkf_state_space.B)::ROWS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(lkf_state_space.C)::COLS;\n\n"
 
         code_text += "auto Q = make_DiagMatrix<STATE_SIZE>("
         for i in range(lkf.Q.shape[0]):
@@ -201,11 +201,11 @@ class KalmanFilterDeploy:
         code_text += ");\n\n"
 
         code_text += "using type = LinearKalmanFilter_Type<" + \
-            "decltype(state_space), decltype(Q), decltype(R)>;\n\n"
+            "decltype(lkf_state_space), decltype(Q), decltype(R)>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
-        code_text += "    return make_LinearKalmanFilter(state_space, Q, R);\n\n"
+        code_text += "    return make_LinearKalmanFilter(lkf_state_space, Q, R);\n\n"
 
         code_text += "}\n\n"
 
