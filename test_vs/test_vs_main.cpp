@@ -1206,6 +1206,13 @@ void check_python_control_extended_kalman_filter(void) {
         ekf(Q, R, state_function, state_function_jacobian,
             measurement_function, measurement_function_jacobian, parameters);
 
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+        ekf_copy = ekf;
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+        ekf_move = std::move(ekf_copy);
+    ekf = ekf_move;
+
+
 
     tester.throw_error_if_test_failed();
 }

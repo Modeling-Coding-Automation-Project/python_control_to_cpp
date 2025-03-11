@@ -489,6 +489,14 @@ private:
   _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
 };
 
+/* Extended Kalman Filter Type */
+template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
+          typename R_Type, typename Parameter_Type,
+          std::size_t Number_Of_Delay = 0>
+using ExtendedKalmanFilter_Type =
+    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
+                         Number_Of_Delay>;
+
 } // namespace PythonControl
 
 #endif // __PYTHON_CONTROL_KALMAN_FILTER_HPP__

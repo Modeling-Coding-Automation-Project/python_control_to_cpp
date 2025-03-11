@@ -432,9 +432,10 @@ inline auto make_DiscreteStateSpace(A_Type A, B_Type B, C_Type C, D_Type D,
 }
 
 /* Discrete State Space Type */
-template <typename A_Type, typename B_Type, typename C_Type, typename D_Type>
+template <typename A_Type, typename B_Type, typename C_Type, typename D_Type,
+          std::size_t Number_Of_Delay = 0>
 using DiscreteStateSpace_Type =
-    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type>;
+    DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type, Number_Of_Delay>;
 
 } // namespace PythonControl
 
