@@ -71,7 +71,9 @@ class StateSpaceDeploy:
         code_text += f"#include \"{D_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        code_text += "namespace python_control_gen_" + variable_name + " {\n\n"
+        namespace_name = "python_control_gen_" + variable_name
+
+        code_text += "namespace " + namespace_name + " {\n\n"
 
         code_text += "using namespace PythonControl;\n\n"
 
@@ -83,7 +85,7 @@ class StateSpaceDeploy:
 
         code_text += f"auto D = {D_file_name_no_extension}::make();\n\n"
 
-        code_text += f"{type_name} dt = {state_space.dt};\n\n"
+        code_text += f"{type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
 
         code_text += "using type = " + "DiscreteStateSpace_Type<" + \
             "decltype(A), decltype(B), decltype(C), decltype(D)>;\n\n"
@@ -94,7 +96,7 @@ class StateSpaceDeploy:
 
         code_text += "}\n\n"
 
-        code_text += "} // namespace python_numpy_gen_" + variable_name + "\n\n"
+        code_text += "} // namespace " + namespace_name + "\n\n"
 
         code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
             "_HPP__\n"

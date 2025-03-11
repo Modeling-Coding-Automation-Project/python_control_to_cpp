@@ -15,11 +15,13 @@ class TransferFunctionDeploy(ControlDeploy):
     @staticmethod
     def generate_transfer_function_cpp_code(transfer_function):
         deployed_file_names = []
+        den_factors = transfer_function.den[0][0]
+        num_factors = transfer_function.num[0][0]
 
         ControlDeploy.restrict_data_type(
-            transfer_function.den[0][0].dtype.name)
+            den_factors.dtype.name)
 
-        type_name = NumpyDeploy.check_dtype(transfer_function.A)
+        type_name = NumpyDeploy.check_dtype(den_factors)
 
         # Get the caller's frame
         frame = inspect.currentframe().f_back
@@ -35,25 +37,6 @@ class TransferFunctionDeploy(ControlDeploy):
         code_file_name = "python_control_gen_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
-        # create A, B, C, D matrices
-        exec(f"{variable_name}_A = transfer_function.A")
-        A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
-        exec(f"{variable_name}_B = transfer_function.B")
-        B_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B)")
-        exec(f"{variable_name}_C = transfer_function.C")
-        C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
-        exec(f"{variable_name}_D = transfer_function.D")
-        D_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D)")
-
-        A_file_name_no_extension = A_file_name.split(".")[0]
-        B_file_name_no_extension = B_file_name.split(".")[0]
-        C_file_name_no_extension = C_file_name.split(".")[0]
-        D_file_name_no_extension = D_file_name.split(".")[0]
-
         # create state-space cpp code
         code_text = ""
         code_text += "#ifndef __PYTHON_CONTROL_GEN_" + variable_name.upper() + \
@@ -61,36 +44,44 @@ class TransferFunctionDeploy(ControlDeploy):
         code_text += "#define __PYTHON_CONTROL_GEN_" + \
             variable_name.upper() + "_HPP__\n\n"
 
-        code_text += f"#include \"{A_file_name}\"\n"
-        code_text += f"#include \"{B_file_name}\"\n"
-        code_text += f"#include \"{C_file_name}\"\n"
-        code_text += f"#include \"{D_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        code_text += "namespace python_control_gen_" + variable_name + " {\n\n"
+        namespace_name = "namespace python_control_gen_" + variable_name
+
+        code_text += namespace_name + " {\n\n"
 
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
+        code_text += f"auto numerator = make_TransferFunctionNumerator<{num_factors.shape[0]}>(\n"
 
-        code_text += f"auto B = {B_file_name_no_extension}::make();\n\n"
+        for i in range(num_factors.shape[0]):
+            code_text += f"  static_cast<{type_name}>({num_factors[i]})"
+            if i < num_factors.shape[0] - 1:
+                code_text += ",\n"
+            else:
+                code_text += "\n);\n\n"
 
-        code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
+        code_text += f"auto denominator = make_TransferFunctionDenominator<{den_factors.shape[0]}>(\n"
 
-        code_text += f"auto D = {D_file_name_no_extension}::make();\n\n"
+        for i in range(den_factors.shape[0]):
+            code_text += f"  static_cast<{type_name}>({den_factors[i]})"
+            if i < den_factors.shape[0] - 1:
+                code_text += ",\n"
+            else:
+                code_text += "\n);\n\n"
 
-        code_text += f"{type_name} dt = {transfer_function.dt};\n\n"
+        code_text += f"{type_name} dt = static_cast<{type_name}>({transfer_function.dt});\n\n"
 
-        code_text += "using type = " + "DiscreteStateSpace_Type<" + \
-            "decltype(A), decltype(B), decltype(C), decltype(D)>;\n\n"
+        code_text += "using type = " + "DiscreteTransferFunction<" + \
+            "decltype(numerator), decltype(denominator)>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
-        code_text += f"  return make_DiscreteStateSpace(A, B, C, D, dt);\n\n"
+        code_text += f"  return make_DiscreteTransferFunction(numerator, denominator, dt);\n\n"
 
         code_text += "}\n\n"
 
-        code_text += "} // namespace python_numpy_gen_" + variable_name + "\n\n"
+        code_text += "} // namespace " + namespace_name + "\n\n"
 
         code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
             "_HPP__\n"

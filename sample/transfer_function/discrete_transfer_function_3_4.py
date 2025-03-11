@@ -26,8 +26,9 @@ plt.grid(True)
 # convert to discrete transfer function
 sys_d = sys.sample(Ts=0.2, method='zoh')
 print("\nDiscrete transfer function:\n", sys_d)
+
 deployed_file_names = TransferFunctionDeploy.generate_transfer_function_cpp_code(
-    sys)
+    sys_d)
 print(deployed_file_names, "\n")
 
 # step response
