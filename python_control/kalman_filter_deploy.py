@@ -173,6 +173,7 @@ class KalmanFilterDeploy:
 
         code_text += "namespace " + namespace_name + " {\n\n"
 
+        code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
         code_text += f"auto state_space = {ss_file_name_no_extension}::make();\n\n"
@@ -202,7 +203,7 @@ class KalmanFilterDeploy:
         code_text += "using type = LinearKalmanFilter_Type<" + \
             "decltype(state_space), decltype(Q), decltype(R)>;\n\n"
 
-        code_text += "auto make() {\n\n"
+        code_text += "auto make() -> type {\n\n"
 
         code_text += "    return make_LinearKalmanFilter(state_space, Q, R);\n\n"
 
