@@ -161,10 +161,12 @@ class KalmanFilterDeploy:
 
         # create state-space cpp code
         code_text = ""
-        code_text += "#ifndef __PYTHON_CONTROL_GEN_" + variable_name.upper() + \
-            "_HPP__\n"
-        code_text += "#define __PYTHON_CONTROL_GEN_" + \
-            variable_name.upper() + "_HPP__\n\n"
+
+        file_header_macro_name = "__PYTHON_CONTROL_GEN_" + variable_name.upper() + \
+            "_HPP__"
+
+        code_text += "#ifndef " + file_header_macro_name + "\n"
+        code_text += "#define " + file_header_macro_name + "\n\n"
 
         code_text += f"#include \"{ss_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
@@ -211,8 +213,7 @@ class KalmanFilterDeploy:
 
         code_text += "} // namespace " + namespace_name + "\n\n"
 
-        code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
-            "_HPP__\n"
+        code_text += "#endif // " + file_header_macro_name + "\n"
 
         code_file_name_ext = ControlDeploy.write_to_file(
             code_text, code_file_name_ext)
