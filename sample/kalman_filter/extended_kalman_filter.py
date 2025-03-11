@@ -30,8 +30,10 @@ v = symbols('v')
 wheelbase = symbols('wheelbase')
 radius = symbols('radius')
 theta = symbols('theta')
-p_x = symbols('p_x')
-p_y = symbols('p_y')
+landmark_1_x = symbols('landmark_1_x')
+landmark_1_y = symbols('landmark_1_y')
+landmark_2_x = symbols('landmark_2_x')
+landmark_2_y = symbols('landmark_2_y')
 
 # define state X, input U
 X = sympy.Matrix([[x], [y], [theta]])
@@ -47,8 +49,11 @@ fxu = sympy.Matrix([[x - r * sympy.sin(theta) + r * sympy.sin(theta + beta)],
 fxu_jacobian = fxu.jacobian(X)
 print("fxu_jacobian:\n", fxu_jacobian)
 
-hx = sympy.Matrix([[sympy.sqrt((p_x - x) ** 2 + (p_y - y) ** 2)],
-                   [sympy.atan2(p_y - y, p_x - x) - theta]])
+hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2)],
+                   [sympy.atan2(landmark_1_y - y, landmark_1_x - x) - theta],
+                   [sympy.sqrt((landmark_2_x - x) ** 2 +
+                               (landmark_2_y - y) ** 2)],
+                   [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
 hx_jacobian = hx.jacobian(X)
 print("hx_jacobian:\n", hx_jacobian)
 
@@ -61,22 +66,27 @@ KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 
 # %% design EKF
 
-landmark = np.array([[0.0], [0.0]])
+landmarks = np.array([[0.0, 10.0], [0.0, 10.0]])
 
 
 class Parameters:
-    def __init__(self, delta_time, wheelbase, p_x, p_y):
+    def __init__(self, delta_time, wheelbase,
+                 landmark_1_x, landmark_1_y, landmark_2_x, landmark_2_y):
         self.delta_time = delta_time
         self.wheelbase = wheelbase
-        self.p_x = p_x
-        self.p_y = p_y
+        self.landmark_1_x = landmark_1_x
+        self.landmark_1_y = landmark_1_y
+        self.landmark_2_x = landmark_2_x
+        self.landmark_2_y = landmark_2_y
 
 
 Parameters_ekf = Parameters(
-    delta_time=0.1, wheelbase=0.5, p_x=landmark[0, 0], p_y=landmark[1, 0])
+    delta_time=0.1, wheelbase=0.5,
+    landmark_1_x=landmarks[0, 0], landmark_1_y=landmarks[1, 0],
+    landmark_2_x=landmarks[0, 1], landmark_2_y=landmarks[1, 1])
 
 Q_ekf = np.diag([1.0, 1.0, 1.0])
-R_ekf = np.diag([10.0, 10.0])
+R_ekf = np.diag([10.0, 10.0, 10.0, 10.0])
 
 import fxu
 import fxu_jacobian
@@ -114,12 +124,20 @@ def move(x, u, dt, wheelbase):
 
     x_next = x + dx
 
-    x_dif = (landmark[0, 0] - x_next[0, 0])
-    y_dif = (landmark[1, 0] - x_next[1, 0])
     theta = x_next[2, 0]
-    r = math.sqrt(x_dif * x_dif + y_dif * y_dif)
-    phi = math.atan2(y_dif, x_dif) - theta
-    y_next = np.array([[r], [phi]])
+    # landmark 1
+    x_dif = (landmarks[0, 0] - x_next[0, 0])
+    y_dif = (landmarks[1, 0] - x_next[1, 0])
+    r_1 = math.sqrt(x_dif * x_dif + y_dif * y_dif)
+    phi_1 = math.atan2(y_dif, x_dif) - theta
+
+    # landmark 2
+    x_dif = (landmarks[0, 1] - x_next[0, 0])
+    y_dif = (landmarks[1, 1] - x_next[1, 0])
+    r_2 = math.sqrt(x_dif * x_dif + y_dif * y_dif)
+    phi_2 = math.atan2(y_dif, x_dif) - theta
+
+    y_next = np.array([[r_1], [phi_1], [r_2], [phi_2]])
 
     return x_next, y_next
 
@@ -135,11 +153,15 @@ def run_simulation():
     x_estimated = []
     y_measured = []
     time = np.arange(0, simulation_time, sim_delta_time)
+
+    u_true = []
+
     for i in range(round(simulation_time / sim_delta_time)):
         x, y = move(x, u, sim_delta_time,
                     sim_wheelbase)  # simulate robot
 
         x_true.append(x)
+        u_true.append(u)
         y_measured.append(y)
 
         # estimate
@@ -149,6 +171,7 @@ def run_simulation():
         x_estimated.append(ekf.x_hat)
 
     x_true = np.array(x_true)
+    u_true = np.array(u_true)
     y_measured = np.array(y_measured)
     x_estimated = np.array(x_estimated)
 
@@ -159,29 +182,39 @@ def run_simulation():
     axs[0, 0].plot(time, x_true[:, 0, 0], label='true')
     axs[0, 0].plot(time, x_estimated[:, 0, 0], label='estimated')
     axs[0, 0].legend()
-    axs[0, 0].set_ylabel('x position')
+    axs[0, 0].set_ylabel('x position (state)')
     axs[0, 0].grid(True)
 
     axs[1, 0].plot(time, x_true[:, 1, 0], label='true')
     axs[1, 0].plot(time, x_estimated[:, 1, 0], label='estimated')
     axs[1, 0].legend()
-    axs[1, 0].set_ylabel('y position')
+    axs[1, 0].set_ylabel('y position (state)')
     axs[1, 0].grid(True)
 
     axs[2, 0].plot(time, x_true[:, 2, 0], label='true')
     axs[2, 0].plot(time, x_estimated[:, 2, 0], label='estimated')
     axs[2, 0].legend()
-    axs[2, 0].set_ylabel('theta')
+    axs[2, 0].set_ylabel('theta (state)')
     axs[2, 0].set_xlabel('time')
     axs[2, 0].grid(True)
 
-    axs[0, 1].plot(time, y_measured[:, 0, 0])
-    axs[0, 1].set_ylabel('r_p')
+    axs[0, 1].plot(time, u_true[:, 0, 0], label='v')
+    axs[0, 1].plot(time, u_true[:, 1, 0], label='steering angle')
+    axs[0, 1].legend()
+    axs[0, 1].set_ylabel('inputs')
     axs[0, 1].grid(True)
 
-    axs[1, 1].plot(time, y_measured[:, 1, 0])
-    axs[1, 1].set_ylabel('angle_p')
+    axs[1, 1].plot(time, y_measured[:, 0, 0], label='landmark 1')
+    axs[1, 1].plot(time, y_measured[:, 2, 0], label='landmark 2')
+    axs[1, 1].legend()
+    axs[1, 1].set_ylabel('r (output)')
     axs[1, 1].grid(True)
+
+    axs[2, 1].plot(time, y_measured[:, 1, 0], label='landmark 1')
+    axs[2, 1].plot(time, y_measured[:, 3, 0], label='landmark 2')
+    axs[2, 1].legend()
+    axs[2, 1].set_ylabel('phi (output)')
+    axs[2, 1].grid(True)
 
 
 run_simulation()
