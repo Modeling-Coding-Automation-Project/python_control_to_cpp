@@ -90,7 +90,7 @@ int main(void) {
 
   Parameter_Type parameters(0.1, 0.5, 0.0, 0.0, 10.0, 10.0);
 
-  /* state nad measurement functions */
+  /* state and measurement functions */
   StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
       state_function = bicycle_model_state_function<double>;
 
