@@ -1259,8 +1259,6 @@ void check_python_control_extended_kalman_filter(void) {
     tester.throw_error_if_test_failed();
 }
 
-#include "python_control_gen_lkf.hpp"
-
 
 int main(void) {
 
@@ -1287,10 +1285,6 @@ int main(void) {
     check_python_control_extended_kalman_filter<double>();
 
     check_python_control_extended_kalman_filter<float>();
-
-
-
-    python_control_gen_lkf::type lkf = python_control_gen_lkf::make();
 
 
     return 0;
