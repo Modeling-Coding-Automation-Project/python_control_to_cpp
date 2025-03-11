@@ -4,6 +4,7 @@
 #include "python_control_state_space.hpp"
 #include "python_numpy.hpp"
 
+#include <functional>
 #include <type_traits>
 
 namespace PythonControl {
@@ -227,26 +228,22 @@ using LinearKalmanFilter_Type =
     LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>;
 
 /* state and measurement function alias */
-template <typename T, std::size_t State_Size, typename... Args>
-using StateFunction_Pointer =
-    PythonControl::StateSpaceStateType<T, State_Size> (*)(
-        const PythonControl::StateSpaceStateType<T, State_Size> &X,
-        Args... args);
+template <typename State_Type, typename Input_Type, typename Parameter_Type>
+using StateFunction_Object = std::function<State_Type(
+    const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
-template <typename T, typename A_Type, std::size_t State_Size, typename... Args>
-using StateFunctionJacobian_Pointer = A_Type (*)(
-    const PythonControl::StateSpaceStateType<T, State_Size> &X, Args... args);
+template <typename A_Type, typename State_Type, typename Input_Type,
+          typename Parameter_Type>
+using StateFunctionJacobian_Object = std::function<A_Type(
+    const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
-template <typename T, std::size_t State_Size, std::size_t Output_Size,
-          typename... Args>
-using MeasurementFunction_Pointer =
-    PythonControl::StateSpaceOutputType<T, Output_Size> (*)(
-        const PythonControl::StateSpaceStateType<T, State_Size> &X,
-        Args... args);
+template <typename Output_Type, typename State_Type, typename Parameter_Type>
+using MeasurementFunction_Object =
+    std::function<Output_Type(const State_Type &, const Parameter_Type &)>;
 
-template <typename T, typename C_Type, std::size_t State_Size, typename... Args>
-using MeasurementFunctionJacobian_Pointer = C_Type (*)(
-    const PythonControl::StateSpaceStateType<T, State_Size> &X, Args... args);
+template <typename C_Type, typename State_Type, typename Parameter_Type>
+using MeasurementFunctionJacobian_Object =
+    std::function<C_Type(const State_Type &, const Parameter_Type &)>;
 
 /* Extended Kalman Filter */
 template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
@@ -270,15 +267,17 @@ private:
   using _MeasurementStored_Type =
       PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
 
-  using _StateFunction_Pointer =
-      PythonControl::StateFunction_Pointer<_T, _STATE_SIZE>;
-  using _StateFunctionJacobian_Pointer =
-      PythonControl::StateFunctionJacobian_Pointer<_T, A_Type, _STATE_SIZE>;
-  using _MeasurementFunction_Pointer =
-      PythonControl::MeasurementFunction_Pointer<_T, _STATE_SIZE, _OUTPUT_SIZE>;
-  using _MeasurementFunctionJacobian_Pointer =
-      PythonControl::MeasurementFunctionJacobian_Pointer<_T, C_Type,
-                                                         _STATE_SIZE>;
+  using _StateFunction_Object =
+      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
+  using _StateFunctionJacobian_Object =
+      PythonControl::StateFunctionJacobian_Object<A_Type, _State_Type, U_Type,
+                                                  Parameter_Type>;
+  using _MeasurementFunction_Object =
+      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
+                                                Parameter_Type>;
+  using _MeasurementFunctionJacobian_Object =
+      PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
+                                                        Parameter_Type>;
 
   using _C_P_CT_R_Inv_Type =
       PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
@@ -309,10 +308,10 @@ public:
   ExtendedKalmanFilter(){};
 
   ExtendedKalmanFilter(
-      const Q_Type &Q, const R_Type &R, _StateFunction_Pointer state_function,
-      _StateFunctionJacobian_Pointer state_function_jacobian,
-      _MeasurementFunction_Pointer measurement_function,
-      _MeasurementFunctionJacobian_Pointer measurement_function_jacobian,
+      const Q_Type &Q, const R_Type &R, _StateFunction_Object &state_function,
+      _StateFunctionJacobian_Object &state_function_jacobian,
+      _MeasurementFunction_Object &measurement_function,
+      _MeasurementFunctionJacobian_Object &measurement_function_jacobian,
       const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
         P(PythonNumpy::make_DenseMatrixOnes<_T, _STATE_SIZE, _STATE_SIZE>()),
@@ -484,10 +483,10 @@ public:
 private:
   /* Variable */
   _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
-  _StateFunction_Pointer _state_function;
-  _StateFunctionJacobian_Pointer _state_function_jacobian;
-  _MeasurementFunction_Pointer _measurement_function;
-  _MeasurementFunctionJacobian_Pointer _measurement_function_jacobian;
+  _StateFunction_Object _state_function;
+  _StateFunctionJacobian_Object _state_function_jacobian;
+  _MeasurementFunction_Object _measurement_function;
+  _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
 };
 
 } // namespace PythonControl
