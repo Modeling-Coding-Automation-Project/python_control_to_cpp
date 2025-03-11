@@ -6,11 +6,16 @@ https://github.com/AtsushiSakai/PyAdvancedControl
 https://jp.mathworks.com/help/control/ref/lti.lqr.html
 https://jp.mathworks.com/help/control/ref/ss.lqi.html
 """
+import os
+import sys
+sys.path.append(os.getcwd())
 
 import matplotlib.pyplot as plt
 import control
 import numpy as np
 import scipy.linalg as la
+
+from python_control.lqr_deploy import LQI_Deploy
 
 simulation_time = 10.0
 dt = 0.1
@@ -39,6 +44,10 @@ Dd = sys_ss_d.D
 # LQI parameters
 Q_ex = np.diag([0.0, 2.0, 2.0])
 R_ex = np.diag([1.0])
+
+# You can create cpp header which can easily define state space as C++ code
+deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex)
+print(deployed_file_names)
 
 
 def process(x, u):
