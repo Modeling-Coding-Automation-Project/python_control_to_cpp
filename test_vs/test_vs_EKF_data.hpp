@@ -36,10 +36,10 @@ public:
 };
 
 template <typename T>
-StateSpaceStateType<T, STATE_SIZE> bicycle_model_state_function(
+auto bicycle_model_state_function(
     const StateSpaceStateType<T, STATE_SIZE> &X,
     const StateSpaceInputType<T, INPUT_SIZE> &U,
-    const BicycleModelParameter<T> &parameters) {
+    const BicycleModelParameter<T> &parameters) -> StateSpaceStateType<T, STATE_SIZE> {
 
 
     T x = X.template get<0, 0>();
@@ -87,9 +87,9 @@ A_Type bicycle_model_state_function_jacobian(
 }
 
 template <typename T>
-StateSpaceOutputType<T, OUTPUT_SIZE> bicycle_model_measurement_function(
+auto bicycle_model_measurement_function(
     const StateSpaceStateType<T, STATE_SIZE>& X,
-    const BicycleModelParameter<T>& parameters) {
+    const BicycleModelParameter<T>& parameters) -> StateSpaceOutputType<T, OUTPUT_SIZE> {
 
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();
@@ -137,13 +137,13 @@ C_Type bicycle_model_measurement_function_jacobian(
     C.template set<0, 1>((-landmark_1_y + y) / sqrt(dif_1_x * dif_1_x + dif_1_y * dif_1_y));
     C.template set<0, 2>(0);
     C.template set<1, 0>(-(-landmark_1_y + y) / (dif_1_x * dif_1_x + dif_1_y * dif_1_y));
-    C.template set<1, 1>((landmark_1_x - x) / (dif_1_x * dif_1_x + dif_1_y * dif_1_y));
+    C.template set<1, 1>(-(landmark_1_x - x) / (dif_1_x * dif_1_x + dif_1_y * dif_1_y));
     C.template set<1, 2>(-1);
     C.template set<2, 0>((-landmark_2_x + x) / sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y));
     C.template set<2, 1>((-landmark_2_y + y) / sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y));
     C.template set<2, 2>(0);
     C.template set<3, 0>(-(-landmark_2_y + y) / (dif_2_x * dif_2_x + dif_2_y * dif_2_y));
-    C.template set<3, 1>((landmark_2_x - x) / (dif_2_x * dif_2_x + dif_2_y * dif_2_y));
+    C.template set<3, 1>(-(landmark_2_x - x) / (dif_2_x * dif_2_x + dif_2_y * dif_2_y));
     C.template set<3, 2>(-1);
 
     return C;

@@ -84,14 +84,15 @@ public:
   }
 
   /* Move Constructor */
-  LinearKalmanFilter(
-      LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &&input)
+  LinearKalmanFilter(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                         &&input) noexcept
       : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)) {}
 
-  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &operator=(
-      LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &&input) {
+  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
+  operator=(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                &&input) noexcept {
     if (this != &input) {
       this->state_space = std::move(input.state_space);
       this->Q = std::move(input.Q);
@@ -446,9 +447,7 @@ public:
   }
 
   /* Get */
-  inline auto get_x_hat(void) const -> _State_Type {
-    return this->state_space.get_X();
-  }
+  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
 
   /* Set */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }

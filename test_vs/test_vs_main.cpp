@@ -1127,13 +1127,17 @@ void check_python_control_extended_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     //constexpr T NEAR_LIMIT_SOFT = 1.0e-3F;
 
     /* EKF定義準備 */
     constexpr std::size_t STATE_SIZE = EKF_TestData::STATE_SIZE;
     constexpr std::size_t INPUT_SIZE = EKF_TestData::INPUT_SIZE;
     constexpr std::size_t OUTPUT_SIZE = EKF_TestData::OUTPUT_SIZE;
+
+    using X_Type = StateSpaceStateType<T, STATE_SIZE>;
+    using U_Type = StateSpaceInputType<T, INPUT_SIZE>;
+    using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
 
     using SparseAvailable_A = SparseAvailable<
         ColumnAvailable<true, false, true>,
@@ -1152,7 +1156,6 @@ void check_python_control_extended_kalman_filter(void) {
 
     using C_Type = SparseMatrix_Type<T, SparseAvailable_C>;
 
-    using U_Type = StateSpaceInputType<T, INPUT_SIZE>;
 
     auto Q = make_DiagMatrix<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
@@ -1179,24 +1182,20 @@ void check_python_control_extended_kalman_filter(void) {
     );
 
     /* 状態方程式、出力方程式 */
-    StateFunction_Object<StateSpaceStateType<T, STATE_SIZE>,
-        StateSpaceInputType<T, INPUT_SIZE>,
+    StateFunction_Object<X_Type,
+        U_Type,
         EKF_TestData::BicycleModelParameter<T>> state_function;
     state_function = EKF_TestData::bicycle_model_state_function<T>;
 
-    StateFunctionJacobian_Object<A_Type,
-        StateSpaceStateType<T, STATE_SIZE>,
-        StateSpaceInputType<T, INPUT_SIZE>,
+    StateFunctionJacobian_Object<A_Type, X_Type, U_Type,
         EKF_TestData::BicycleModelParameter<T>> state_function_jacobian;
     state_function_jacobian = EKF_TestData::bicycle_model_state_function_jacobian<T, A_Type>;
 
-    MeasurementFunction_Object<StateSpaceOutputType<T, OUTPUT_SIZE>,
-        StateSpaceStateType<T, STATE_SIZE>,
+    MeasurementFunction_Object<Y_Type, X_Type,
         EKF_TestData::BicycleModelParameter<T>> measurement_function;
     measurement_function = EKF_TestData::bicycle_model_measurement_function<T>;
 
-    MeasurementFunctionJacobian_Object<C_Type,
-        StateSpaceStateType<T, STATE_SIZE>,
+    MeasurementFunctionJacobian_Object<C_Type, X_Type,
         EKF_TestData::BicycleModelParameter<T>> measurement_function_jacobian;
     measurement_function_jacobian = EKF_TestData::bicycle_model_measurement_function_jacobian<T, C_Type>;
 
@@ -1212,6 +1211,49 @@ void check_python_control_extended_kalman_filter(void) {
         ekf_move = std::move(ekf_copy);
     ekf = ekf_move;
 
+    /* シミュレーション */
+    std::size_t simulation_steps = 500;
+
+    auto x_true_initial = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(2), static_cast<T>(6), static_cast<T>(0.3)
+    );
+    decltype(x_true_initial) x_true;
+
+    auto u = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(1.1), static_cast<T>(0.1)
+    );
+
+    ekf.X_hat.template set<0, 0>(static_cast<T>(0.0));
+    ekf.X_hat.template set<1, 0>(static_cast<T>(0.0));
+    ekf.X_hat.template set<2, 0>(static_cast<T>(0.0));
+
+    constexpr std::size_t STORE_SIZE = 10;
+    std::array<X_Type, STORE_SIZE> x_true_store;
+    std::array<X_Type, STORE_SIZE> x_estimated_store;
+
+    std::size_t store_index = 0;
+
+    x_true = x_true_initial;
+    for (std::size_t i = 0; i < simulation_steps; i++) {
+        x_true = EKF_TestData::bicycle_model_state_function<T>(x_true, u, parameters);
+        auto y = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+
+        ekf.predict(u);
+        ekf.update(y);
+
+        x_true_store[store_index] = x_true;
+        x_estimated_store[store_index] = ekf.get_x_hat();
+        store_index++;
+        
+        if (store_index >= STORE_SIZE) {
+            store_index = 0;
+        }
+    }
+
+    for (std::size_t i = 0; i < STORE_SIZE; i++) {
+        tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_STRICT,
+            "check ExtendedKalmanFilter simulation x estimate.");
+    }
 
 
     tester.throw_error_if_test_failed();
