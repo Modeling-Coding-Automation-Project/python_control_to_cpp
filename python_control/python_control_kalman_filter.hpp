@@ -125,7 +125,7 @@ public:
 
     // When there is no delay, you can use below.
     // typename DiscreteStateSpace_Type::Original_Y_Type Y_dif =
-    // Y - this->state_space.C * this->state_space.X;
+    // Y - this->C * this->state_space.X;
 
     return Y_dif;
   }
@@ -308,19 +308,32 @@ public:
   /* Constructor */
   ExtendedKalmanFilter(){};
 
-  ExtendedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                       const Parameter_Type &Parameter)
+  ExtendedKalmanFilter(
+      const Q_Type &Q, const R_Type &R, _StateFunction_Pointer state_function,
+      _StateFunctionJacobian_Pointer state_function_jacobian,
+      _MeasurementFunction_Pointer measurement_function,
+      _MeasurementFunctionJacobian_Pointer measurement_function_jacobian,
+      const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
         P(PythonNumpy::make_DenseMatrixOnes<_T, _STATE_SIZE, _STATE_SIZE>()),
-        G(), X_hat(), Y_store(), parameter(Parameter), _C_P_CT_R_inv_solver() {}
+        G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        _state_function(state_function),
+        _state_function_jacobian(state_function_jacobian),
+        _measurement_function(measurement_function),
+        _measurement_function_jacobian(measurement_function_jacobian) {}
 
   /* Copy Constructor */
   ExtendedKalmanFilter(
       const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
                                  Parameter_Type, Number_Of_Delay> &input)
       : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
-        X_hat(input.X_hat), Y_store(input.Y_store), parameter(input.parameter),
-        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver) {}
+        X_hat(input.X_hat), Y_store(input.Y_store),
+        parameters(input.parameters),
+        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        _state_function(input._state_function),
+        _state_function_jacobian(input._state_function_jacobian),
+        _measurement_function(input._measurement_function),
+        _measurement_function_jacobian(input._measurement_function_jacobian) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
@@ -336,8 +349,13 @@ public:
       this->G = input.G;
       this->X_hat = input.X_hat;
       this->Y_store = input.Y_store;
-      this->parameter = input.parameter;
+      this->parameters = input.parameters;
       this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->_state_function = input._state_function;
+      this->_state_function_jacobian = input._state_function_jacobian;
+      this->_measurement_function = input._measurement_function;
+      this->_measurement_function_jacobian =
+          input._measurement_function_jacobian;
     }
     return *this;
   }
@@ -349,8 +367,12 @@ public:
       : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
-        parameter(std::move(input.parameter)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)) {}
+        parameters(std::move(input.parameters)),
+        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        _state_function(input._state_function),
+        _state_function_jacobian(input._state_function_jacobian),
+        _measurement_function(input._measurement_function),
+        _measurement_function_jacobian(input._measurement_function_jacobian) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
@@ -365,8 +387,14 @@ public:
       this->G = std::move(input.G);
       this->X_hat = std::move(input.X_hat);
       this->Y_store = std::move(input.Y_store);
-      this->parameter = std::move(input.parameter);
+      this->parameters = std::move(input.parameters);
       this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->_state_function = std::move(input._state_function);
+      this->_state_function_jacobian =
+          std::move(input._state_function_jacobian);
+      this->_measurement_function = std::move(input._measurement_function);
+      this->_measurement_function_jacobian =
+          std::move(input._measurement_function_jacobian);
     }
     return *this;
   }
@@ -375,35 +403,40 @@ public:
   /* Function */
   inline void predict(const U_Type &U) {
 
-    this->state_space.X =
-        this->state_space.A * this->state_space.X + this->state_space.B * U;
-    this->P = this->state_space.A *
-                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
-              this->Q;
+    this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+
+    this->X_hat = this->_state_function(this->X_hat, U, parameters);
+    this->P =
+        this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
   }
 
   inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
 
-    this->Y_store.push(this->state_space.C * this->state_space.X);
+    this->Y_store.push(this->_measurement_function(this->X_hat, parameters));
 
     _Measurement_Type Y_dif = Y - this->Y_store.get();
+
+    // When there is no delay, you can use below.
+    // Y_dif = Y - this->_measurement_function(this->X_hat, parameters);
 
     return Y_dif;
   }
 
   inline void update(const _Measurement_Type &Y) {
 
-    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
+    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
 
-    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
+
+    auto C_P_CT_R = this->C * P_CT + this->R;
     this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
 
     this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
 
-    this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
+    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
 
     this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-               this->G * this->state_space.C) *
+               this->G * this->C) *
               this->P;
   }
 
@@ -419,9 +452,7 @@ public:
   }
 
   /* Set */
-  inline void set_x_hat(const _State_Type &x_hat) {
-    this->state_space.X = x_hat;
-  }
+  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
 
   inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
     this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
@@ -448,11 +479,15 @@ public:
   _State_Type X_hat;
   _MeasurementStored_Type Y_store;
 
-  Parameter_Type parameter;
+  Parameter_Type parameters;
 
 private:
   /* Variable */
   _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  _StateFunction_Pointer _state_function;
+  _StateFunctionJacobian_Pointer _state_function_jacobian;
+  _MeasurementFunction_Pointer _measurement_function;
+  _MeasurementFunctionJacobian_Pointer _measurement_function_jacobian;
 };
 
 } // namespace PythonControl
