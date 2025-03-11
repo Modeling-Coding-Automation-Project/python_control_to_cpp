@@ -87,7 +87,7 @@ class StateSpaceDeploy:
 
         code_text += f"{type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
 
-        code_text += "using type = " + "DiscreteStateSpace_Type<" + \
+        code_text += "using type = DiscreteStateSpace_Type<" + \
             "decltype(A), decltype(B), decltype(C), decltype(D)>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"

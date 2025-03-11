@@ -6,9 +6,11 @@ import inspect
 import ast
 import astor
 import numpy as np
+import control
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
+from python_control.state_space_deploy import StateSpaceDeploy
 
 
 class KalmanFilterDeploy:
@@ -144,32 +146,79 @@ class KalmanFilterDeploy:
         code_file_name = "python_control_gen_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
-        # create A, B, C, D matrices
-        exec(f"{variable_name}_A = lkf.A")
-        A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
-        exec(f"{variable_name}_B = lkf.B")
-        B_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B)")
-        exec(f"{variable_name}_C = lkf.C")
-        C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
+        # create state space from A, B, C matrices
+        lkf_D = np.zeros((lkf.C.shape[0], lkf.B.shape[1]))
+        dt = 1.0  # dt is not used in LinearKalmanFilter calculation.
 
-        # D is empty
-        D = np.zeros((lkf.C.shape[0], lkf.B.shape[1]))
-        exec(f"{variable_name}_D = D")
-        D_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D)")
+        exec(f"{variable_name}_ss = control.ss(lkf.A, lkf.B, lkf.C, lkf_D, dt)")
+        ss_file_names = eval(
+            f"StateSpaceDeploy.generate_state_space_cpp_code({variable_name}_ss)")
 
-        deployed_file_names.append(A_file_name)
-        deployed_file_names.append(B_file_name)
-        deployed_file_names.append(C_file_name)
-        deployed_file_names.append(D_file_name)
+        deployed_file_names.append(ss_file_names)
+        ss_file_name = ss_file_names[-1]
 
-        A_file_name_no_extension = A_file_name.split(".")[0]
-        B_file_name_no_extension = B_file_name.split(".")[0]
-        C_file_name_no_extension = C_file_name.split(".")[0]
-        D_file_name_no_extension = D_file_name.split(".")[0]
+        ss_file_name_no_extension = ss_file_name.split(".")[0]
+
+        # create state-space cpp code
+        code_text = ""
+        code_text += "#ifndef __PYTHON_CONTROL_GEN_" + variable_name.upper() + \
+            "_HPP__\n"
+        code_text += "#define __PYTHON_CONTROL_GEN_" + \
+            variable_name.upper() + "_HPP__\n\n"
+
+        code_text += f"#include \"{ss_file_name}\"\n\n"
+        code_text += "#include \"python_control.hpp\"\n\n"
+
+        namespace_name = "python_control_gen_" + variable_name
+
+        code_text += "namespace " + namespace_name + " {\n\n"
+
+        code_text += "using namespace PythonControl;\n\n"
+
+        code_text += f"auto state_space = {ss_file_name_no_extension}::make();\n\n"
+
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(state_space.A)::COLS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(state_space.B)::ROWS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(state_space.C)::COLS;\n\n"
+
+        code_text += "auto Q = make_DiagMatrix<STATE_SIZE>("
+        for i in range(lkf.Q.shape[0]):
+            code_text += str(lkf.Q[i, i])
+            if i == lkf.Q.shape[0] - 1:
+                break
+            else:
+                code_text += ", "
+        code_text += ");\n\n"
+
+        code_text += "auto R = make_DiagMatrix<OUTPUT_SIZE>("
+        for i in range(lkf.R.shape[0]):
+            code_text += str(lkf.R[i, i])
+            if i == lkf.R.shape[0] - 1:
+                break
+            else:
+                code_text += ", "
+        code_text += ");\n\n"
+
+        code_text += "using type = LinearKalmanFilter_Type<" + \
+            "decltype(state_space), decltype(Q), decltype(R)>;\n\n"
+
+        code_text += "auto make() {\n\n"
+
+        code_text += "    return make_LinearKalmanFilter(state_space, Q, R);\n\n"
+
+        code_text += "}\n\n"
+
+        code_text += "} // namespace " + namespace_name + "\n\n"
+
+        code_text += "#endif // __PYTHON_NUMPY_GEN_" + variable_name.upper() + \
+            "_HPP__\n"
+
+        code_file_name_ext = ControlDeploy.write_to_file(
+            code_text, code_file_name_ext)
+
+        deployed_file_names.append(code_file_name_ext)
+
+        return deployed_file_names
 
 
 class PowerReplacer(ast.NodeTransformer):
