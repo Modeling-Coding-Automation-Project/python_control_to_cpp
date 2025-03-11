@@ -1169,7 +1169,7 @@ void check_python_control_extended_kalman_filter(void) {
     /* パラメータ */
     using Parameter_Type = EKF_TestData::BicycleModelParameter<T>;
 
-    Parameter_Type parameter(
+    Parameter_Type parameters(
         static_cast<T>(0.1),
         static_cast<T>(0.5),
         static_cast<T>(0),
@@ -1190,9 +1190,21 @@ void check_python_control_extended_kalman_filter(void) {
         EKF_TestData::BicycleModelParameter<T>> state_function_jacobian;
     state_function_jacobian = EKF_TestData::bicycle_model_state_function_jacobian<T, A_Type>;
 
+    MeasurementFunction_Object<StateSpaceOutputType<T, OUTPUT_SIZE>,
+        StateSpaceStateType<T, STATE_SIZE>,
+        EKF_TestData::BicycleModelParameter<T>> measurement_function;
+    measurement_function = EKF_TestData::bicycle_model_measurement_function<T>;
+
+    MeasurementFunctionJacobian_Object<C_Type,
+        StateSpaceStateType<T, STATE_SIZE>,
+        EKF_TestData::BicycleModelParameter<T>> measurement_function_jacobian;
+    measurement_function_jacobian = EKF_TestData::bicycle_model_measurement_function_jacobian<T, C_Type>;
+
 
     /* EKF定義 */
-    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type> ekf;
+    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+        ekf(Q, R, state_function, state_function_jacobian,
+            measurement_function, measurement_function_jacobian, parameters);
 
 
     tester.throw_error_if_test_failed();
