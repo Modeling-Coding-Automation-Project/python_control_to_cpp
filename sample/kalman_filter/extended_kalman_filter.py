@@ -122,20 +122,22 @@ def move(x, u, dt, wheelbase):
                        [dist * math.sin(hdg)],
                        [0]])
 
-    x_next = x + dx
+    x_next = x + dx + np.array([[np.random.randn() * 0.0],
+                                [np.random.randn() * 0.0],
+                                [np.random.randn() * 0.0]])
 
     theta = x_next[2, 0]
     # landmark 1
     x_dif = (landmarks[0, 0] - x_next[0, 0])
     y_dif = (landmarks[1, 0] - x_next[1, 0])
-    r_1 = math.sqrt(x_dif * x_dif + y_dif * y_dif)
-    phi_1 = math.atan2(y_dif, x_dif) - theta
+    r_1 = math.sqrt(x_dif * x_dif + y_dif * y_dif) + np.random.randn() * 0.0
+    phi_1 = math.atan2(y_dif, x_dif) - theta + np.random.randn() * 0.0
 
     # landmark 2
     x_dif = (landmarks[0, 1] - x_next[0, 0])
     y_dif = (landmarks[1, 1] - x_next[1, 0])
-    r_2 = math.sqrt(x_dif * x_dif + y_dif * y_dif)
-    phi_2 = math.atan2(y_dif, x_dif) - theta
+    r_2 = math.sqrt(x_dif * x_dif + y_dif * y_dif) + np.random.randn() * 0.0
+    phi_2 = math.atan2(y_dif, x_dif) - theta + np.random.randn() * 0.0
 
     y_next = np.array([[r_1], [phi_1], [r_2], [phi_2]])
 
