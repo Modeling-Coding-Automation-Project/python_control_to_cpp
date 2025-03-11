@@ -59,10 +59,10 @@ auto bicycle_model_state_function(
 }
 
 template <typename T, typename A_Type>
-A_Type bicycle_model_state_function_jacobian(
+auto bicycle_model_state_function_jacobian(
     const StateSpaceStateType<T, STATE_SIZE> &X,
     const StateSpaceInputType<T, INPUT_SIZE> &U,
-    const BicycleModelParameter<T> &parameters) {
+    const BicycleModelParameter<T> &parameters) -> A_Type {
 
     T theta = X.template get<2, 0>();
     T v = U.template get<0, 0>();
@@ -114,9 +114,9 @@ auto bicycle_model_measurement_function(
 }
 
 template <typename T, typename C_Type>
-C_Type bicycle_model_measurement_function_jacobian(
+auto bicycle_model_measurement_function_jacobian(
     const StateSpaceStateType<T, STATE_SIZE>& X,
-    const BicycleModelParameter<T>& parameters) {
+    const BicycleModelParameter<T>& parameters) -> C_Type {
 
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();
