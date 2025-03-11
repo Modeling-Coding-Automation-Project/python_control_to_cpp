@@ -27,6 +27,7 @@ plt.grid(True)
 sys_d = sys.sample(Ts=0.2, method='zoh')
 print("\nDiscrete transfer function:\n", sys_d)
 
+# You can create cpp header which can easily define state space as C++ code
 deployed_file_names = TransferFunctionDeploy.generate_transfer_function_cpp_code(
     sys_d)
 print(deployed_file_names, "\n")
