@@ -5,12 +5,16 @@ sys.path.append(os.getcwd())
 import inspect
 import ast
 import astor
+import numpy as np
 
-from python_control.kalman_filter import LinearKalmanFilter
-from python_control.kalman_filter import ExtendedKalmanFilter
+from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
+from python_control.control_deploy import ControlDeploy
 
 
 class KalmanFilterDeploy:
+    def __init__(self):
+        pass
+
     @staticmethod
     def create_sympy_code(sym_object):
         code_text = ""
@@ -72,11 +76,6 @@ class KalmanFilterDeploy:
         return code_text
 
     @staticmethod
-    def write_code_to_file(code_text, file_name):
-        with open(file_name, 'w') as f:
-            f.write(code_text)
-
-    @staticmethod
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
         header_code = "import numpy as np\nfrom math import *\n\n\n"
 
@@ -88,7 +87,7 @@ class KalmanFilterDeploy:
 
         total_code = header_code + sympy_function_code + interface_code
 
-        KalmanFilterDeploy.write_code_to_file(
+        ControlDeploy.write_to_file(
             total_code, f"{sym_object_name}.py")
 
     @staticmethod
@@ -122,6 +121,55 @@ class KalmanFilterDeploy:
 
         KalmanFilterDeploy.write_function_code_from_sympy(
             sym_object, sym_object_name, X, U=None)
+
+    @staticmethod
+    def generate_LKF_cpp_code(lkf):
+        deployed_file_names = []
+
+        ControlDeploy.restrict_data_type(lkf.A.dtype.name)
+
+        type_name = NumpyDeploy.check_dtype(lkf.A)
+
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the variable name that matches the matrix_in value
+        variable_name = None
+        for name, value in caller_locals.items():
+            if value is lkf:
+                variable_name = name
+                break
+
+        code_file_name = "python_control_gen_" + variable_name
+        code_file_name_ext = code_file_name + ".hpp"
+
+        # create A, B, C, D matrices
+        exec(f"{variable_name}_A = lkf.A")
+        A_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
+        exec(f"{variable_name}_B = lkf.B")
+        B_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B)")
+        exec(f"{variable_name}_C = lkf.C")
+        C_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
+
+        # D is empty
+        D = np.zeros((lkf.C.shape[0], lkf.B.shape[1]))
+        exec(f"{variable_name}_D = D")
+        D_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D)")
+
+        deployed_file_names.append(A_file_name)
+        deployed_file_names.append(B_file_name)
+        deployed_file_names.append(C_file_name)
+        deployed_file_names.append(D_file_name)
+
+        A_file_name_no_extension = A_file_name.split(".")[0]
+        B_file_name_no_extension = B_file_name.split(".")[0]
+        C_file_name_no_extension = C_file_name.split(".")[0]
+        D_file_name_no_extension = D_file_name.split(".")[0]
 
 
 class PowerReplacer(ast.NodeTransformer):

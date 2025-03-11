@@ -17,9 +17,10 @@ B = np.array([[0.1],
 C = np.array([[2, 0]])
 D = np.array([[0]])
 
-# You can create cpp header which can easily define state space as C++ code
 dt = 0.01
 sys = control.ss(A, B, C, D, dt)
+
+# You can create cpp header which can easily define state space as C++ code
 deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(sys)
 print(deployed_file_names)
 

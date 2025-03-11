@@ -6,9 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from python_control.kalman_filter import LinearKalmanFilter
+from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 
-# Example
 def generate_m_sequence(length, taps):
     """Generate an M-sequence using a linear feedback shift register (LFSR)."""
     state = [1] * (max(taps) + 1)  # Initial state with all ones
@@ -45,6 +45,10 @@ if __name__ == "__main__":
 
     # Define Kalman filter
     lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
+
+    # You can create cpp header which can easily define state space as C++ code
+    deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(lkf)
+    print(deployed_file_names)
 
     # Initial state
     lkf.x_hat = np.array([[0],

@@ -65,8 +65,9 @@ dt = 0.01
 sys_d = sys.sample(Ts=dt, method='euler')
 T_d, yout_d = control.step_response(sys_d)
 
-# You can create cpp header which can easily define state space as C++ code
 sys = control.ss(A, B, C, D, dt)
+
+# You can create cpp header which can easily define state space as C++ code
 deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(sys)
 print(deployed_file_names)
 
