@@ -5,6 +5,7 @@ sys.path.append(os.getcwd())
 import copy
 import numpy as np
 import control
+import inspect
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
@@ -16,25 +17,37 @@ class LQR_Deploy:
         pass
 
     @staticmethod
-    def generate_LQR_cpp_code(Ac, Bc, Q, R):
+    def generate_LQR_cpp_code(Ac, Bc, Q, R, file_name=None):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(Ac.dtype.name)
 
         type_name = NumpyDeploy.check_dtype(Ac)
 
+        # %% inspect arguments
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's file name
+        if file_name is None:
+            caller_file_full_path = frame.f_code.co_filename
+            caller_file_name = os.path.basename(caller_file_full_path)
+            caller_file_name_without_ext = os.path.splitext(caller_file_name)[
+                0]
+        else:
+            caller_file_name_without_ext = file_name
+
         variable_name = "LQR"
 
-        code_file_name = "python_control_gen_" + variable_name
+        code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
         # create Ac, Bc matrices
         exec(f"{variable_name}_Ac = copy.deepcopy(Ac)")
         Ac_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Ac)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Ac, caller_file_name_without_ext)")
         exec(f"{variable_name}_Bc = copy.deepcopy(Bc)")
         Bc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Bc)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Bc, caller_file_name_without_ext)")
 
         deployed_file_names.append(Ac_file_name)
         deployed_file_names.append(Bc_file_name)
@@ -45,8 +58,7 @@ class LQR_Deploy:
         # create state-space cpp code
         code_text = ""
 
-        file_header_macro_name = "__PYTHON_CONTROL_GEN_" + variable_name.upper() + \
-            "_HPP__"
+        file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
 
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"
@@ -55,7 +67,7 @@ class LQR_Deploy:
         code_text += f"#include \"{Bc_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        namespace_name = "python_control_gen_" + variable_name
+        namespace_name = code_file_name
 
         code_text += "namespace " + namespace_name + " {\n\n"
 
