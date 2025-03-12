@@ -13,6 +13,19 @@ from python_control.control_deploy import ControlDeploy
 from python_control.state_space_deploy import StateSpaceDeploy
 
 
+class InputSizeVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.input_size = None
+
+    def visit_Assign(self, node):
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == 'INPUT_SIZE':
+                if isinstance(node.value, ast.Constant):
+                    self.input_size = node.value.value
+                elif isinstance(node.value, ast.Num):  # For Python < 3.8
+                    self.input_size = node.value.n
+
+
 class KalmanFilterDeploy:
     def __init__(self):
         pass
@@ -130,6 +143,24 @@ class KalmanFilterDeploy:
 
         KalmanFilterDeploy.write_function_code_from_sympy(
             sym_object, sym_object_name, X, U=None)
+
+    @staticmethod
+    def get_input_size_from_function_code(file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            file_content = file.read()
+
+        tree = ast.parse(file_content)
+        visitor = InputSizeVisitor()
+        visitor.visit(tree)
+
+        return visitor.input_size
+
+    @staticmethod
+    def find_file(filename, search_path):
+        for root, _, files in os.walk(search_path):
+            if filename in files:
+                return os.path.join(root, filename)
+        return None
 
     @staticmethod
     def generate_LKF_cpp_code(lkf, file_name=None):
@@ -274,6 +305,14 @@ class KalmanFilterDeploy:
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
+        # create state and measurement functions
+        fxu_name = ekf.state_function.__module__
+        fxu_file_path = KalmanFilterDeploy.find_file(
+            f"{fxu_name}.py", os.getcwd())
+        state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
+            fxu_file_path)
+
+        # create A, C matrices
         exec(f"{variable_name}_A = ekf.A")
         A_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
@@ -310,11 +349,13 @@ class KalmanFilterDeploy:
 
         code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
 
-        code_text += f"using U_Type = ;\n\n"
-
         code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(State::INPUT_SIZE)::ROWS;\n"
+        code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
         code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;\n\n"
+
+        code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
+        code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
+        code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
 
         code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
