@@ -13,6 +13,27 @@ from python_control.control_deploy import ControlDeploy
 from python_control.state_space_deploy import StateSpaceDeploy
 
 
+class FunctionExtractor(ast.NodeVisitor):
+    def __init__(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            source_code = file.read()
+        self.source_code = source_code
+
+        self.functions = {}
+
+    def visit_FunctionDef(self, node):
+        function_name = node.name
+        function_code = ast.get_source_segment(self.source_code, node)
+        self.functions[function_name] = function_code
+        self.generic_visit(node)
+
+    def extract(self):
+        tree = ast.parse(self.source_code)
+        self.visit(tree)
+
+        return self.functions
+
+
 class InputSizeVisitor(ast.NodeVisitor):
     def __init__(self):
         self.input_size = None
@@ -27,14 +48,15 @@ class InputSizeVisitor(ast.NodeVisitor):
 
 
 class FunctionToCppVisitor(ast.NodeVisitor):
-    def __init__(self, Output_Type_name):
+    def __init__(self, Output_Type_name, Value_Type_name):
         self.cpp_code = ""
         self.Output_Type_name = Output_Type_name
 
     def visit_FunctionDef(self, node):
         self.cpp_code += "auto " + node.name + "("
         args = [arg.arg for arg in node.args.args]
-        self.cpp_code += ", ".join(["double " + arg for arg in args])
+        self.cpp_code += ", ".join([self.Value_Type_name +
+                                   " " + arg for arg in args])
         self.cpp_code += ") -> " + self.Output_Type_name + " {\n\n"
         self.generic_visit(node)
         self.cpp_code += "}\n"
@@ -246,7 +268,7 @@ class KalmanFilterDeploy:
 
         ss_file_name_no_extension = ss_file_name.split(".")[0]
 
-        # create state-space cpp code
+        # create cpp code
         code_text = ""
 
         file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
@@ -345,11 +367,19 @@ class KalmanFilterDeploy:
         code_file_name_ext = code_file_name + ".hpp"
 
         # create state and measurement functions
+        # state function
         fxu_name = ekf.state_function.__module__
         fxu_file_path = KalmanFilterDeploy.find_file(
             f"{fxu_name}.py", os.getcwd())
         state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
             fxu_file_path)
+
+        extractor = FunctionExtractor(fxu_file_path)
+        functions = extractor.extract()
+        state_function_code = []
+        for name, code in functions.items():
+            converter = FunctionToCppVisitor("X_Type", type_name)
+            state_function_code.append(converter.convert(code))
 
         # create A, C matrices
         exec(f"{variable_name}_A = ekf.A")
@@ -365,7 +395,7 @@ class KalmanFilterDeploy:
         A_file_name_no_extension = A_file_name.split(".")[0]
         C_file_name_no_extension = C_file_name.split(".")[0]
 
-        # create state-space cpp code
+        # create cpp code
         code_text = ""
 
         file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
@@ -395,6 +425,16 @@ class KalmanFilterDeploy:
         code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
         code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
         code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
+
+        code_text += "namespace state_function {\n\n"
+
+        code_text += "using namespace Base::Math;\n\n"
+
+        for code in state_function_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace state_function\n\n"
 
         code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
