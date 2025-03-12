@@ -51,38 +51,82 @@ class FunctionToCppVisitor(ast.NodeVisitor):
     def __init__(self, Output_Type_name, Value_Type_name):
         self.cpp_code = ""
         self.Output_Type_name = Output_Type_name
+        self.Value_Type_name = Value_Type_name
 
     def visit_FunctionDef(self, node):
         self.cpp_code += "auto " + node.name + "("
         args = [arg.arg for arg in node.args.args]
-        self.cpp_code += ", ".join([self.Value_Type_name +
-                                   " " + arg for arg in args])
+
+        if args[0] != "X":
+            for i, arg in enumerate(args):
+                self.cpp_code += self.Value_Type_name + " " + arg
+                if i == len(args) - 1:
+                    break
+                else:
+                    self.cpp_code += ", "
+        else:
+            for i, arg in enumerate(args):
+                if arg == "X":
+                    self.cpp_code += "X_Type X"
+                    if i == len(args) - 1:
+                        break
+                    else:
+                        self.cpp_code += ", "
+                elif arg == "U":
+                    self.cpp_code += "U_Type U"
+                    if i == len(args) - 1:
+                        break
+                    else:
+                        self.cpp_code += ", "
+                elif arg == "Parameters":
+                    self.cpp_code += "Parameter_Type Parameters"
+                    if i == len(args) - 1:
+                        break
+                    else:
+                        self.cpp_code += ", "
+
         self.cpp_code += ") -> " + self.Output_Type_name + " {\n\n"
         self.generic_visit(node)
         self.cpp_code += "}\n"
 
     def visit_Return(self, node):
+        return_code = ""
         if isinstance(node.value, ast.Call):
-            self.cpp_code += "    return " + \
+            return_code += "    return " + \
                 astor.to_source(node.value).strip() + ";\n"
         elif isinstance(node.value, ast.Tuple):
-            self.cpp_code += "    return {"
-            self.cpp_code += ", ".join([astor.to_source(e).strip()
-                                       for e in node.value.elts])
-            self.cpp_code += "};\n"
+            return_code += "    return {"
+            return_code += ", ".join([astor.to_source(e).strip()
+                                      for e in node.value.elts])
+            return_code += "};\n"
         else:
             raise TypeError(f"Unsupported return type: {type(node.value)}")
+
+        return_code = return_code.replace(
+            "np.array", self.Output_Type_name)
+        return_code = return_code.replace(
+            "[", "{")
+        return_code = return_code.replace(
+            "]", "}")
+
+        self.cpp_code += return_code
+
+    def visit_Assign(self, node):
+        assign_code = ""
+        targets = [astor.to_source(t).strip() for t in node.targets]
+        value = astor.to_source(node.value).strip()
+        assign_code += "    " + self.Value_Type_name + " " + \
+            ", ".join(targets) + " = " + value + ";\n"
+        assign_code += "\n"
+
+        assign_code = assign_code.replace("[", ".template get<")
+        assign_code = assign_code.replace("]", ">()")
+
+        self.cpp_code += assign_code
 
     def convert(self, python_code):
         tree = ast.parse(python_code)
         self.visit(tree)
-
-        self.cpp_code = self.cpp_code.replace(
-            "np.array", self.Output_Type_name)
-        self.cpp_code = self.cpp_code.replace(
-            "[", "{")
-        self.cpp_code = self.cpp_code.replace(
-            "]", "}")
 
         return self.cpp_code
 
@@ -405,6 +449,8 @@ class KalmanFilterDeploy:
 
         code_text += f"#include \"{A_file_name}\"\n"
         code_text += f"#include \"{C_file_name}\"\n\n"
+
+        code_text += "#include \"base_math.hpp\"\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
         namespace_name = code_file_name
