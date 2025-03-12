@@ -26,6 +26,45 @@ class InputSizeVisitor(ast.NodeVisitor):
                     self.input_size = node.value.n
 
 
+class FunctionToCppVisitor(ast.NodeVisitor):
+    def __init__(self, Output_Type_name):
+        self.cpp_code = ""
+        self.Output_Type_name = Output_Type_name
+
+    def visit_FunctionDef(self, node):
+        self.cpp_code += "auto " + node.name + "("
+        args = [arg.arg for arg in node.args.args]
+        self.cpp_code += ", ".join(["double " + arg for arg in args])
+        self.cpp_code += ") -> " + self.Output_Type_name + " {\n\n"
+        self.generic_visit(node)
+        self.cpp_code += "}\n"
+
+    def visit_Return(self, node):
+        if isinstance(node.value, ast.Call):
+            self.cpp_code += "    return " + \
+                astor.to_source(node.value).strip() + ";\n"
+        elif isinstance(node.value, ast.Tuple):
+            self.cpp_code += "    return {"
+            self.cpp_code += ", ".join([astor.to_source(e).strip()
+                                       for e in node.value.elts])
+            self.cpp_code += "};\n"
+        else:
+            raise TypeError(f"Unsupported return type: {type(node.value)}")
+
+    def convert(self, python_code):
+        tree = ast.parse(python_code)
+        self.visit(tree)
+
+        self.cpp_code = self.cpp_code.replace(
+            "np.array", self.Output_Type_name)
+        self.cpp_code = self.cpp_code.replace(
+            "[", "{")
+        self.cpp_code = self.cpp_code.replace(
+            "]", "}")
+
+        return self.cpp_code
+
+
 class KalmanFilterDeploy:
     def __init__(self):
         pass
