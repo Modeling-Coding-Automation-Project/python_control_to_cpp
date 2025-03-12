@@ -81,6 +81,13 @@ class KalmanFilterDeploy:
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
         header_code = "import numpy as np\nfrom math import *\n\n\n"
 
+        header_code += "STATE_SIZE = " + str(X.shape[0]) + "\n"
+        if U is not None:
+            header_code += "INPUT_SIZE = " + str(U.shape[0])
+        else:
+            header_code += "INPUT_SIZE = 0"
+        header_code += "\n\n\n"
+
         sympy_function_code, arguments_text = KalmanFilterDeploy.create_sympy_code(
             sym_object)
 
