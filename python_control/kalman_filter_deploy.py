@@ -236,13 +236,14 @@ class KalmanFilterDeploy:
         return deployed_file_names
 
     @staticmethod
-    def generate_EKF_cpp_code(ekf):
+    def generate_EKF_cpp_code(ekf, file_name=None):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ekf.A.dtype.name)
 
         type_name = NumpyDeploy.check_dtype(ekf.A)
 
+        # %% inspect arguments
         # Get the caller's frame
         frame = inspect.currentframe().f_back
         # Get the caller's local variables
@@ -253,16 +254,25 @@ class KalmanFilterDeploy:
             if value is ekf:
                 variable_name = name
                 break
+        # Get the caller's file name
+        if file_name is None:
+            caller_file_full_path = frame.f_code.co_filename
+            caller_file_name = os.path.basename(caller_file_full_path)
+            caller_file_name_without_ext = os.path.splitext(caller_file_name)[
+                0]
+        else:
+            caller_file_name_without_ext = file_name
 
-        code_file_name = "python_control_gen_" + variable_name
+        # %% code generation
+        code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
         exec(f"{variable_name}_A = ekf.A")
         A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
         exec(f"{variable_name}_C = ekf.C")
         C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C, caller_file_name_without_ext)")
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(C_file_name)
@@ -273,8 +283,7 @@ class KalmanFilterDeploy:
         # create state-space cpp code
         code_text = ""
 
-        file_header_macro_name = "__PYTHON_CONTROL_GEN_" + variable_name.upper() + \
-            "_HPP__"
+        file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
 
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"
@@ -283,7 +292,7 @@ class KalmanFilterDeploy:
         code_text += f"#include \"{C_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        namespace_name = "python_control_gen_" + variable_name
+        namespace_name = code_file_name
 
         code_text += "namespace " + namespace_name + " {\n\n"
 
