@@ -20,6 +20,7 @@ class StateSpaceDeploy:
 
         type_name = NumpyDeploy.check_dtype(state_space.A)
 
+        # %% inspect arguments
         # Get the caller's frame
         frame = inspect.currentframe().f_back
         # Get the caller's local variables
@@ -30,23 +31,28 @@ class StateSpaceDeploy:
             if value is state_space:
                 variable_name = name
                 break
+        # Get the caller's file name
+        caller_file_full_path = frame.f_code.co_filename
+        caller_file_name = os.path.basename(caller_file_full_path)
+        caller_file_name_without_ext = os.path.splitext(caller_file_name)[0]
 
-        code_file_name = "python_control_gen_" + variable_name
+        # %% code generation
+        code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
         # create A, B, C, D matrices
         exec(f"{variable_name}_A = state_space.A")
         A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
         exec(f"{variable_name}_B = state_space.B")
         B_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B, caller_file_name_without_ext)")
         exec(f"{variable_name}_C = state_space.C")
         C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C, caller_file_name_without_ext)")
         exec(f"{variable_name}_D = state_space.D")
         D_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D)")
+            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D, caller_file_name_without_ext)")
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(B_file_name)
@@ -73,7 +79,7 @@ class StateSpaceDeploy:
         code_text += f"#include \"{D_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        namespace_name = "python_control_gen_" + variable_name
+        namespace_name = code_file_name
 
         code_text += "namespace " + namespace_name + " {\n\n"
 
