@@ -137,18 +137,25 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def create_sympy_code(sym_object):
+        value_example = np.array([[1.0]])
+        value_type = str(value_example.dtype.name)
+
         code_text = ""
         code_text += "def sympy_function("
 
         arguments_text = ""
+        arguments_text_out = ""
 
         sym_symbols = sym_object.free_symbols
         for i, symbol in enumerate(sym_symbols):
             arguments_text += f"{symbol}"
+            arguments_text_out += f"{symbol}"
             if i == len(sym_symbols) - 1:
+                arguments_text += f": np.{value_type}"
                 break
             else:
-                arguments_text += ", "
+                arguments_text += f": np.{value_type}" + ", "
+                arguments_text_out += ", "
 
         code_text += arguments_text + "):\n\n"
 
@@ -156,19 +163,19 @@ class KalmanFilterDeploy:
 
         code_text += f"    return np.array({calculation_code})\n\n\n"
 
-        return code_text, arguments_text
+        return code_text, arguments_text_out
 
     @staticmethod
     def create_interface_code(sym_object, arguments_text, X, U=None):
         sym_symbols = sym_object.free_symbols
 
         code_text = ""
-        code_text += "def function(X"
+        code_text += "def function(X: X_Type"
 
         if U is not None:
-            code_text += ", U, Parameters=None):\n\n"
+            code_text += ", U: U_Type, Parameters: Parameter_Type = None):\n\n"
         else:
-            code_text += ", Parameters=None):\n\n"
+            code_text += ", Parameters: Parameter_Type = None):\n\n"
 
         for i in range(X.shape[0]):
             if X[i] in sym_symbols:
@@ -198,6 +205,12 @@ class KalmanFilterDeploy:
     @staticmethod
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
         header_code = "import numpy as np\nfrom math import *\n\n\n"
+
+        header_code += "class X_Type:\n    pass\n\n\n"
+
+        header_code += "class U_Type:\n    pass\n\n\n"
+
+        header_code += "class Parameter_Type:\n    pass\n\n\n"
 
         header_code += "STATE_SIZE = " + str(X.shape[0]) + "\n"
         if U is not None:
@@ -450,7 +463,7 @@ class KalmanFilterDeploy:
         code_text += f"#include \"{A_file_name}\"\n"
         code_text += f"#include \"{C_file_name}\"\n\n"
 
-        code_text += "#include \"base_math.hpp\"\n"
+        code_text += "#include \"python_math.hpp\"\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
         namespace_name = code_file_name
@@ -474,7 +487,7 @@ class KalmanFilterDeploy:
 
         code_text += "namespace state_function {\n\n"
 
-        code_text += "using namespace Base::Math;\n\n"
+        code_text += "using namespace PythonMath;\n\n"
 
         for code in state_function_code:
             code_text += code
