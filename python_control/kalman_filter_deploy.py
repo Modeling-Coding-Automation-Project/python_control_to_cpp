@@ -157,7 +157,9 @@ class KalmanFilterDeploy:
                 arguments_text += f": np.{value_type}" + ", "
                 arguments_text_out += ", "
 
-        code_text += arguments_text + "):\n\n"
+        code_text += arguments_text + ")"
+
+        code_text += f" -> Tuple[{sym_object.shape[0]}, {sym_object.shape[1]}]:\n\n"
 
         calculation_code = f"{sym_object.tolist()}"
 
@@ -173,9 +175,11 @@ class KalmanFilterDeploy:
         code_text += "def function(X: X_Type"
 
         if U is not None:
-            code_text += ", U: U_Type, Parameters: Parameter_Type = None):\n\n"
+            code_text += ", U: U_Type, Parameters: Parameter_Type = None)"
         else:
-            code_text += ", Parameters: Parameter_Type = None):\n\n"
+            code_text += ", Parameters: Parameter_Type = None)"
+
+        code_text += f" -> Tuple[{sym_object.shape[0]}, {sym_object.shape[1]}]:\n\n"
 
         for i in range(X.shape[0]):
             if X[i] in sym_symbols:
@@ -204,7 +208,10 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
-        header_code = "import numpy as np\nfrom math import *\n\n\n"
+        header_code = ""
+        header_code += "import numpy as np\n"
+        header_code += "from math import *\n"
+        header_code += "from typing import Tuple\n\n\n"
 
         header_code += "class X_Type:\n    pass\n\n\n"
 
