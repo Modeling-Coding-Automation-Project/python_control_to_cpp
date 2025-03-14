@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+import re
 import inspect
 import ast
 import astor
@@ -11,6 +12,63 @@ import control
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
 from python_control.control_deploy import ControlDeploy
 from python_control.state_space_deploy import StateSpaceDeploy
+
+
+class NpArrayExtractor:
+    def __init__(self, code_text):
+        self.code_text = code_text
+        self.extract_text = ""
+
+    @staticmethod
+    def extract_elements(node):
+        if isinstance(node, ast.List):  # リストノードの場合
+            return [NpArrayExtractor.extract_elements(el) for el in node.elts]
+        elif isinstance(node, ast.BinOp) or isinstance(node, ast.Call) or isinstance(node, ast.Name):
+            return ast.unparse(node)  # 演算、関数、変数の場合は文字列として取得
+        elif isinstance(node, ast.Constant):  # Python 3.8 以降（数値）
+            return node.value
+        elif isinstance(node, ast.Num):  # Python 3.7 以前（数値）
+            return node.n
+        else:
+            return node
+
+    def extract(self):
+        extract_text = ""
+
+        # `np.array(...)` の部分のみを抽出
+        matrix_content = self.code_text[self.code_text .find(
+            'np.array(') + len('np.array('):-1]  # `np.array(...)` の中身を取得
+
+        tree = ast.parse(matrix_content)
+
+        # AST のルート要素からリストを抽出
+        matrix_list = NpArrayExtractor.extract_elements(tree.body[0].value)
+
+        # 行列のサイズ取得
+        cols = len(matrix_list)
+        rows = len(matrix_list[0]) if isinstance(
+            matrix_list[0], list) else 1
+
+        for i in range(cols):
+            for j in range(rows):
+                if isinstance(matrix_list[i][j], (int, float)):
+                    extract_text += f"result[{i}, {j}] = {matrix_list[i][j]}\n"
+                elif isinstance(matrix_list[i][j], str):
+                    extract_text += f"result[{i}, {j}] = " + \
+                        matrix_list[i][j] + "\n"
+
+        self.extract_text = extract_text
+        return extract_text
+
+    def convert_to_cpp(self):
+        pattern = r"result\[(\d+), (\d+)\] = "
+        replacement = r"result.template set<\1, \2>("
+
+        convert_text = re.sub(pattern, replacement, self.extract_text)
+
+        convert_text = convert_text.replace("\n", ");\n")
+
+        return convert_text
 
 
 class FunctionExtractor(ast.NodeVisitor):
@@ -54,7 +112,7 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         self.Value_Type_name = "double"
 
     def visit_FunctionDef(self, node):
-        self.cpp_code += "auto " + node.name + "("
+        self.cpp_code += "inline auto " + node.name + "("
         args = [arg.arg for arg in node.args.args]
         annotations = {}
 
@@ -110,30 +168,31 @@ class FunctionToCppVisitor(ast.NodeVisitor):
                         self.cpp_code += ", "
 
         self.cpp_code += ") -> " + self.Output_Type_name + " {\n\n"
+
+        if node.name == "sympy_function":
+            self.cpp_code += "    " + self.Output_Type_name + " result;\n\n"
+
         self.generic_visit(node)
         self.cpp_code += "}\n"
 
     def visit_Return(self, node):
         return_code = ""
         if isinstance(node.value, ast.Call):
-            return_code += "    return " + \
-                astor.to_source(node.value).strip() + ";\n"
-        elif isinstance(node.value, ast.Tuple):
-            return_code += "    return {"
-            return_code += ", ".join([astor.to_source(e).strip()
-                                      for e in node.value.elts])
-            return_code += "};\n"
+            return_code += astor.to_source(node.value).strip()
         else:
             raise TypeError(f"Unsupported return type: {type(node.value)}")
 
-        return_code = return_code.replace(
-            "np.array", self.Output_Type_name)
-        return_code = return_code.replace(
-            "[", "{")
-        return_code = return_code.replace(
-            "]", "}")
+        if "np.array(" in return_code:
+            np_array_extractor = NpArrayExtractor(return_code)
+            np_array_extractor.extract()
+            return_code = np_array_extractor.convert_to_cpp()
 
-        self.cpp_code += return_code
+            return_code = return_code.replace("\n", "\n    ")
+
+            self.cpp_code += "    " + return_code + "\n"
+            self.cpp_code += "    return result;\n"
+        else:
+            self.cpp_code += "    return " + return_code + ";\n"
 
     def visit_Assign(self, node):
         assign_code = ""
