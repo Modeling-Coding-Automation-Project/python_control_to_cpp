@@ -29,6 +29,11 @@ class NpArrayExtractor:
             return node.value
         elif isinstance(node, ast.Num):  # Python 3.7 以前（数値）
             return node.n
+        elif isinstance(node, ast.UnaryOp):  # 単項演算子（例：-1）
+            operand = NpArrayExtractor.extract_elements(node.operand)
+            if isinstance(node.op, ast.USub):  # 負の数
+                return -operand
+            return operand
         else:
             return node
 
