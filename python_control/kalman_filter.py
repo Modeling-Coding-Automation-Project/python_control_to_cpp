@@ -182,12 +182,15 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         SP = np.linalg.cholesky(P)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
-        Kai[:, 0] = x
+        Kai[:, 0] = x.flatten()
         for i in range(self.STATE_SIZE):
-            Kai[:, i + 1] = x + \
-                math.sqrt(self.STATE_SIZE + self.lambda_weight) * SP[:, i].T
-            Kai[:, i + self.STATE_SIZE + 1] = x.flatten() - \
-                math.sqrt(self.STATE_SIZE + self.lambda_weight) * SP[:, i].T
+            Kai[:, i + 1] = (x +
+                             math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                             (SP[i, :].T).reshape(-1, 1)).flatten()
+            Kai[:, i + self.STATE_SIZE + 1] = \
+                (x -
+                 math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                 (SP[i, :].T).reshape(-1, 1)).flatten()
 
         return Kai
 
@@ -195,31 +198,33 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
 
         for i in range(2 * self.STATE_SIZE + 1):
-            Kai[:, i] = self.state_function(Kai[:, i], u, self.Parameters)
+            Kai[:, i] = self.state_function(
+                Kai[:, i].reshape(-1, 1), u, self.Parameters).flatten()
 
         self.x_hat = np.zeros((self.STATE_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            self.x_hat += self.W[i, i] * Kai[:, i]
+            self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
 
         for i in range(2 * self.STATE_SIZE + 1):
-            self.X_d[:, i] = Kai[:, i] - self.x_hat
+            self.X_d[:, i] = (Kai[:, i].reshape(-1, 1) - self.x_hat).flatten()
 
         self.P = self.X_d @ self.W @ self.X_d.T + self.Q
 
     def update(self, y):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
 
+        Nu = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            Kai[:, i] = self.measurement_function(
-                Kai[:, i], self.Parameters)
+            Nu[:, i] = self.measurement_function(
+                Kai[:, i].reshape(-1, 1), self.Parameters).flatten()
 
         y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            y_hat_m += self.W[i, i] * Kai[:, i]
+            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            Y_d[:, i] = Kai[:, i] - y_hat_m
+            Y_d[:, i] = (Nu[:, i].reshape(-1, 1) - y_hat_m).flatten()
 
         P_yy = Y_d @ self.W @ Y_d.T
         P_xy = self.X_d @ self.W @ Y_d.T
