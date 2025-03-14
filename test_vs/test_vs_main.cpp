@@ -1127,10 +1127,12 @@ void check_python_control_extended_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    //constexpr T NEAR_LIMIT_SOFT = 1.0e-3F;
+    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-2F;
 
     /* EKF定義準備 */
+    constexpr std::size_t NUMBER_OF_DELAY = 5;
+
     constexpr std::size_t STATE_SIZE = EKF_TestData::STATE_SIZE;
     constexpr std::size_t INPUT_SIZE = EKF_TestData::INPUT_SIZE;
     constexpr std::size_t OUTPUT_SIZE = EKF_TestData::OUTPUT_SIZE;
@@ -1164,8 +1166,8 @@ void check_python_control_extended_kalman_filter(void) {
     using Q_Type = decltype(Q);
 
     auto R = make_DiagMatrix<OUTPUT_SIZE>(
-        static_cast<T>(10), static_cast<T>(10),
-        static_cast<T>(10), static_cast<T>(10));
+        static_cast<T>(100), static_cast<T>(100),
+        static_cast<T>(100), static_cast<T>(100));
 
     using R_Type = decltype(R);
 
@@ -1201,18 +1203,18 @@ void check_python_control_extended_kalman_filter(void) {
 
 
     /* EKF定義 */
-    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ekf(Q, R, state_function, state_function_jacobian,
             measurement_function, measurement_function_jacobian, parameters);
 
-    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ekf_copy = ekf;
-    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ekf_move = std::move(ekf_copy);
     ekf = ekf_move;
 
     /* シミュレーション */
-    std::size_t simulation_steps = 500;
+    std::size_t simulation_steps = 200;
 
     auto x_true_initial = make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(2), static_cast<T>(6), static_cast<T>(0.3)
@@ -1220,7 +1222,7 @@ void check_python_control_extended_kalman_filter(void) {
     decltype(x_true_initial) x_true;
 
     auto u = make_StateSpaceInput<INPUT_SIZE>(
-        static_cast<T>(1.1), static_cast<T>(0.1)
+        static_cast<T>(2.0), static_cast<T>(0.1)
     );
 
     ekf.X_hat.template set<0, 0>(static_cast<T>(0.0));
@@ -1233,13 +1235,23 @@ void check_python_control_extended_kalman_filter(void) {
 
     std::size_t store_index = 0;
 
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+
+    std::size_t delay_index = 0;
+
     x_true = x_true_initial;
     for (std::size_t i = 0; i < simulation_steps; i++) {
         x_true = EKF_TestData::bicycle_model_state_function<T>(x_true, u, parameters);
-        auto y = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+
+        // system delay
+        delay_index++;
+        if (delay_index > NUMBER_OF_DELAY) {
+            delay_index = 0;
+        }
 
         ekf.predict(u);
-        ekf.update(y);
+        ekf.update(y_store[delay_index]);
 
         x_true_store[store_index] = x_true;
         x_estimated_store[store_index] = ekf.get_x_hat();
@@ -1251,7 +1263,7 @@ void check_python_control_extended_kalman_filter(void) {
     }
 
     for (std::size_t i = 0; i < STORE_SIZE; i++) {
-        tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_STRICT,
+        tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_SOFT,
             "check ExtendedKalmanFilter simulation x estimate.");
     }
 
