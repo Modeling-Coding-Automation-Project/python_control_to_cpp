@@ -20,6 +20,9 @@ class DelayedVectorObject:
 
 
 class KalmanFilterCommon:
+    def __init__(self, Number_of_Delay=0):
+        self.Number_of_Delay = Number_of_Delay
+
     def predict_and_update(self, u, y):
         self.predict(u)
         self.update(y)
@@ -30,6 +33,7 @@ class KalmanFilterCommon:
 
 class LinearKalmanFilter(KalmanFilterCommon):
     def __init__(self, A, B, C, Q, R, Number_of_Delay=0):
+        super().__init__(Number_of_Delay)
         self.A = A
         self.B = B
         self.C = C
@@ -39,7 +43,6 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.P = np.eye(A.shape[0])
         self.G = None
 
-        self.Number_of_Delay = Number_of_Delay
         self.y_store = DelayedVectorObject(C.shape[0], Number_of_Delay)
 
     def predict(self, u):
@@ -81,6 +84,7 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  state_function_jacobian, measurement_function_jacobian,
                  Q, R, Parameters=None, Number_of_Delay=0):
+        super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
         self.state_function_jacobian = state_function_jacobian
@@ -96,7 +100,6 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
         self.G = None
 
         self.Parameters = Parameters
-        self.Number_of_Delay = Number_of_Delay
         self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
     def predict(self, u):
@@ -131,7 +134,7 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 class UnscentedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  Q, R, kappa, Parameters=None, Number_of_Delay=0):
-        super().__init__()
+        super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
 
@@ -149,7 +152,6 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         self.G = None
 
         self.Parameters = Parameters
-        self.Number_of_Delay = Number_of_Delay
         self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
         self.W = np.zeros(2 * self.STATE_SIZE + 1)
