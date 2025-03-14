@@ -8,7 +8,9 @@
 using namespace PythonNumpy;
 using namespace PythonControl;
 
-constexpr std::size_t EKF_SIM_STEP_MAX = 500;
+constexpr std::size_t EKF_SIM_STEP_MAX = 200;
+
+constexpr std::size_t NUMBER_OF_DELAY = 5;
 
 constexpr std::size_t STATE_SIZE = 3;
 constexpr std::size_t INPUT_SIZE = 2;
@@ -81,7 +83,7 @@ int main(void) {
 
   using Q_Type = decltype(Q);
 
-  auto R = make_DiagMatrix<OUTPUT_SIZE>(10.0, 10.0, 10.0, 10.0);
+  auto R = make_DiagMatrix<OUTPUT_SIZE>(100.0, 100.0, 100.0, 100.0);
 
   using R_Type = decltype(R);
 
@@ -108,7 +110,8 @@ int main(void) {
           bicycle_model_measurement_function_jacobian<double, C_Type>;
 
   /* define EKF */
-  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type>
+  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
+                       NUMBER_OF_DELAY>
       ekf(Q, R, state_function, state_function_jacobian, measurement_function,
           measurement_function_jacobian, parameters);
 
@@ -116,19 +119,31 @@ int main(void) {
   auto x_true_initial = make_StateSpaceState<STATE_SIZE>(2.0, 6.0, 0.3);
   decltype(x_true_initial) x_true;
 
-  auto u = make_StateSpaceInput<INPUT_SIZE>(1.1, 0.1);
+  auto u = make_StateSpaceInput<INPUT_SIZE>(2.0, 0.1);
 
   ekf.X_hat.template set<0, 0>(0.0);
   ekf.X_hat.template set<1, 0>(0.0);
   ekf.X_hat.template set<2, 0>(0.0);
 
+  std::array<StateSpaceOutputType<double, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)>
+      y_store;
+
+  std::size_t delay_index = 0;
+
   x_true = x_true_initial;
   for (std::size_t i = 0; i < EKF_SIM_STEP_MAX; i++) {
     x_true = bicycle_model_state_function<double>(x_true, u, parameters);
-    auto y = bicycle_model_measurement_function<double>(x_true, parameters);
+    y_store[delay_index] =
+        bicycle_model_measurement_function<double>(x_true, parameters);
+
+    // system delay
+    delay_index++;
+    if (delay_index > NUMBER_OF_DELAY) {
+      delay_index = 0;
+    }
 
     ekf.predict(u);
-    ekf.update(y);
+    ekf.update(y_store[delay_index]);
 
     for (std::size_t j = 0; j < STATE_SIZE; j++) {
       std::cout << "X_hat[" << j << "]: " << ekf.X_hat(j, 0) << ", ";
