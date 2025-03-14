@@ -19,7 +19,16 @@ class DelayedVectorObject:
         return self.store[:, self.delay_index].reshape(-1, 1)
 
 
-class LinearKalmanFilter:
+class KalmanFilterCommon:
+    def predict_and_update(self, u, y):
+        self.predict(u)
+        self.update(y)
+
+    def get_x_hat(self):
+        return self.x_hat
+
+
+class LinearKalmanFilter(KalmanFilterCommon):
     def __init__(self, A, B, C, Q, R, Number_of_Delay=0):
         self.A = A
         self.B = B
@@ -56,10 +65,6 @@ class LinearKalmanFilter:
 
         return y_dif
 
-    def predict_and_update(self, u, y):
-        self.predict(u)
-        self.update(y)
-
     # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u):
         self.x_hat = self.A @ self.x_hat + self.B @ u
@@ -71,11 +76,8 @@ class LinearKalmanFilter:
         self.predict_with_fixed_G(u)
         self.update_with_fixed_G(y)
 
-    def get_x_hat(self):
-        return self.x_hat
 
-
-class ExtendedKalmanFilter:
+class ExtendedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  state_function_jacobian, measurement_function_jacobian,
                  Q, R, Parameters=None, Number_of_Delay=0):
@@ -121,19 +123,12 @@ class ExtendedKalmanFilter:
         y_dif = y - self.y_store.get()
 
         # When there is no delay, you can use below.
-        # y_dif = y - self.measurement_function(self.x_hat)
+        # y_dif = y - self.measurement_function(self.x_hat, self.Parameters)
 
         return y_dif
 
-    def predict_and_update(self, u, y):
-        self.predict(u)
-        self.update(y)
 
-    def get_x_hat(self):
-        return self.x_hat
-
-
-class UnscentedKalmanFilter:
+class UnscentedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  Q, R, kappa, Parameters=None, Number_of_Delay=0):
         super().__init__()
@@ -166,9 +161,9 @@ class UnscentedKalmanFilter:
         SP = np.linalg.cholesky(P)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
-        Kai[:, 0] = x.flatten()
+        Kai[:, 0] = x
         for i in range(self.STATE_SIZE):
-            Kai[:, i + 1] = x.flatten() + \
+            Kai[:, i + 1] = x + \
                 math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
             Kai[:, i + self.STATE_SIZE + 1] = x.flatten() - \
                 math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
