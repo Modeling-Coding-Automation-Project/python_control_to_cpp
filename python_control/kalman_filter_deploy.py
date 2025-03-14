@@ -720,9 +720,10 @@ class KalmanFilterDeploy:
         code_text += "auto make() -> type {\n\n"
 
         code_text += "    return ExtendedKalmanFilter_Type<\n" + \
-            "A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
-            "Q, R, state_function, state_function_jacobian, measurement_function," + \
-            " measurement_function_jacobian, parameters);\n\n"
+            "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "        Q, R, state_function::function, state_function_jacobian::function, \n" + \
+            "        measurement_function::function, measurement_function_jacobian::function, \n" + \
+            "        parameters);\n\n"
 
         code_text += "}\n\n"
 
