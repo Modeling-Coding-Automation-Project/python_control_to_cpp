@@ -732,10 +732,22 @@ class KalmanFilterDeploy:
 
         code_text += "    Parameter_Type parameters;\n\n"
 
+        code_text += "    StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
+            "        state_function::function;\n\n"
+
+        code_text += "    StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> state_function_jacobian_object =\n" + \
+            "        state_function_jacobian::function;\n\n"
+
+        code_text += "    MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
+            "        measurement_function::function;\n\n"
+
+        code_text += "    MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> measurement_function_jacobian_object =\n" + \
+            "        measurement_function_jacobian::function;\n\n"
+
         code_text += "    return ExtendedKalmanFilter_Type<\n" + \
             "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
-            "        Q, R, state_function::function, state_function_jacobian::function, \n" + \
-            "        measurement_function::function, measurement_function_jacobian::function, \n" + \
+            "        Q, R, state_function_object, state_function_jacobian_object,\n" + \
+            "        measurement_function_object, measurement_function_jacobian_object,\n" + \
             "        parameters);\n\n"
 
         code_text += "}\n\n"
