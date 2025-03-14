@@ -8,7 +8,7 @@ import astor
 import numpy as np
 import control
 
-from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
+from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
 from python_control.control_deploy import ControlDeploy
 from python_control.state_space_deploy import StateSpaceDeploy
 
@@ -48,38 +48,62 @@ class InputSizeVisitor(ast.NodeVisitor):
 
 
 class FunctionToCppVisitor(ast.NodeVisitor):
-    def __init__(self, Output_Type_name, Value_Type_name):
+    def __init__(self, Output_Type_name):
         self.cpp_code = ""
         self.Output_Type_name = Output_Type_name
-        self.Value_Type_name = Value_Type_name
+        self.Value_Type_name = "double"
 
     def visit_FunctionDef(self, node):
         self.cpp_code += "auto " + node.name + "("
         args = [arg.arg for arg in node.args.args]
+        annotations = {}
+
+        # get argument type annotations
+        for arg in node.args.args:
+            if arg.annotation:
+                annotations[arg.arg] = ast.dump(arg.annotation)
+            else:
+                annotations[arg.arg] = None
+
+        # get return type annotation
+        if node.returns:
+            annotations['return'] = ast.dump(node.returns)
+        else:
+            annotations['return'] = None
 
         if args[0] != "X":
             for i, arg in enumerate(args):
-                self.cpp_code += self.Value_Type_name + " " + arg
+                Value_Type_name = self.Value_Type_name
+                if annotations[arg] is not None:
+                    annotation = annotations[arg]
+                    Value_Type_python_name = annotation.split(
+                        "attr='")[1].split("'")[0]
+                    Value_Type_name = python_to_cpp_types[Value_Type_python_name]
+
+                self.cpp_code += Value_Type_name + " " + arg
                 if i == len(args) - 1:
                     break
                 else:
                     self.cpp_code += ", "
         else:
             for i, arg in enumerate(args):
+                type_name = annotations[arg].split(
+                    "id='")[1].split("'")[0]
+
                 if arg == "X":
-                    self.cpp_code += "X_Type X"
+                    self.cpp_code += f"{type_name} X"
                     if i == len(args) - 1:
                         break
                     else:
                         self.cpp_code += ", "
                 elif arg == "U":
-                    self.cpp_code += "U_Type U"
+                    self.cpp_code += f"{type_name} U"
                     if i == len(args) - 1:
                         break
                     else:
                         self.cpp_code += ", "
                 elif arg == "Parameters":
-                    self.cpp_code += "Parameter_Type Parameters"
+                    self.cpp_code += f"{type_name} Parameters"
                     if i == len(args) - 1:
                         break
                     else:
@@ -442,7 +466,7 @@ class KalmanFilterDeploy:
         functions = extractor.extract()
         state_function_code = []
         for name, code in functions.items():
-            converter = FunctionToCppVisitor("X_Type", type_name)
+            converter = FunctionToCppVisitor("X_Type")
             state_function_code.append(converter.convert(code))
 
         # create A, C matrices
