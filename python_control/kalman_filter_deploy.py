@@ -598,6 +598,7 @@ class KalmanFilterDeploy:
         state_function_jacobian_code, _, A_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_jacobian_name,
                                                                           "A_Type")
+        ekf_A = A_SparseAvailable_list[0]
 
         hx_name = ekf.measurement_function.__module__
         measurement_function_code, _, _ = \
@@ -608,12 +609,13 @@ class KalmanFilterDeploy:
         measurement_function_jacobian_code, _, C_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_jacobian_name,
                                                                           "C_Type")
+        ekf_C = C_SparseAvailable_list[0]
 
         # create A, C matrices
-        exec(f"{variable_name}_A = ekf.A")
+        exec(f"{variable_name}_A = ekf_A")
         A_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
-        exec(f"{variable_name}_C = ekf.C")
+        exec(f"{variable_name}_C = ekf_C")
         C_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C, caller_file_name_without_ext)")
 
@@ -766,5 +768,8 @@ class KalmanFilterDeploy:
 
             state_function_code.append(converter.convert(code))
             SparseAvailable_list.append(converter.SparseAvailable)
+
+        SparseAvailable_list = [
+            x for x in SparseAvailable_list if x is not None]
 
         return state_function_code, state_function_U_size, SparseAvailable_list
