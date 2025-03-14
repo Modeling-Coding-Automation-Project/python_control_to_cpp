@@ -411,6 +411,28 @@ class KalmanFilterDeploy:
         return None
 
     @staticmethod
+    def generate_parameter_cpp_code(parameter_object, value_type_name):
+        try:
+            value_type_name = python_to_cpp_types[value_type_name]
+        except KeyError:
+            pass
+
+        code_text = ""
+        code_text += "class Parameter {\n"
+        code_text += "public:\n"
+
+        elements = parameter_object.__dict__
+        for key, value in elements.items():
+            code_text += f"  {value_type_name} {key} = static_cast<{value_type_name}>({value});\n"
+
+        code_text += "};\n\n"
+
+        code_text += "using Parameter_Type = Parameter;\n"
+        code_text += "Parameter_Type parameters;\n"
+
+        return code_text
+
+    @staticmethod
     def generate_LKF_cpp_code(lkf, file_name=None):
         deployed_file_names = []
 
@@ -553,6 +575,10 @@ class KalmanFilterDeploy:
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
+        # generate parameter class code
+        parameter_code = KalmanFilterDeploy.generate_parameter_cpp_code(
+            ekf.Parameters, type_name)
+
         # create state and measurement functions
         fxu_name = ekf.state_function.__module__
         state_function_code, state_function_U_size = \
@@ -622,6 +648,9 @@ class KalmanFilterDeploy:
         code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
         code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
         code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
+
+        code_text += parameter_code
+        code_text += "\n"
 
         code_text += "namespace state_function {\n\n"
 
