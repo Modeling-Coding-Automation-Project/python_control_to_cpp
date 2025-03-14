@@ -14,6 +14,30 @@ from python_control.control_deploy import ControlDeploy
 from python_control.state_space_deploy import StateSpaceDeploy
 
 
+class IntegerPowerReplacer(ast.NodeTransformer):
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and isinstance(node.right.value, int) and node.right.value > 0:
+            n = node.right.value
+            result = node.left
+            for _ in range(n - 1):
+                result = ast.BinOp(left=result, op=ast.Mult(), right=node.left)
+            return result
+        return node
+
+    def transform_code(self, source_code):
+        tree = ast.parse(source_code)
+        transformer = IntegerPowerReplacer()
+        transformed_tree = transformer.visit(tree)
+
+        transformed_code = astor.to_source(transformed_tree)
+
+        if transformed_code.endswith("\n"):
+            transformed_code = transformed_code[:-1]
+
+        return transformed_code
+
+
 class NpArrayExtractor:
     def __init__(self, code_text, Value_Type_name="float64"):
         self.code_text = code_text
@@ -188,10 +212,14 @@ class FunctionToCppVisitor(ast.NodeVisitor):
 
     def visit_Return(self, node):
         return_code = ""
+
         if isinstance(node.value, ast.Call):
             return_code += astor.to_source(node.value).strip()
         else:
             raise TypeError(f"Unsupported return type: {type(node.value)}")
+
+        integer_power_replacer = IntegerPowerReplacer()
+        return_code = integer_power_replacer.transform_code(return_code)
 
         if "np.array(" in return_code:
             np_array_extractor = NpArrayExtractor(
@@ -695,18 +723,3 @@ class KalmanFilterDeploy:
             state_function_code.append(converter.convert(code))
 
         return state_function_code, state_function_U_size
-
-
-class PowerReplacer(ast.NodeTransformer):
-    def visit_BinOp(self, node):
-        self.generic_visit(node)
-        if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and node.right.value == 2:
-
-            return ast.BinOp(left=node.left, op=ast.Mult(), right=node.left)
-        return node
-
-    def transform_code(self, source_code):
-        tree = ast.parse(source_code)
-        transformer = ast.NodeTransformer()
-        transformed_tree = transformer.visit(tree)
-        return astor.to_source(transformed_tree)
