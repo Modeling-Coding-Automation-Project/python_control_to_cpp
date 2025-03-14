@@ -148,7 +148,7 @@ class UnscentedKalmanFilter:
         self.OUTPUT_SIZE = R.shape[0]
 
         self.x_hat = np.zeros((self.STATE_SIZE, 1))
-        self.X_d = np.zeros((2 * self.STATE_SIZE + 1, self.STATE_SIZE))
+        self.X_d = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
         self.P = np.eye(self.STATE_SIZE)
         self.G = None
@@ -186,9 +186,9 @@ class UnscentedKalmanFilter:
             self.x_hat += self.W[i, i] * Kai[:, i]
 
         for i in range(2 * self.STATE_SIZE + 1):
-            self.X_d[i, :] = (Kai[:, i] - self.x_hat).T
+            self.X_d[:, i] = Kai[:, i] - self.x_hat
 
-        self.P = self.X_d.T @ self.W @ self.X_d + self.Q
+        self.P = self.X_d @ self.W @ self.X_d.T + self.Q
 
     def update(self, y):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
@@ -201,12 +201,12 @@ class UnscentedKalmanFilter:
         for i in range(2 * self.STATE_SIZE + 1):
             y_hat_m += self.W[i, i] * Kai[:, i]
 
-        Y_d = np.zeros((2 * self.STATE_SIZE + 1, self.OUTPUT_SIZE))
+        Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            Y_d[i, :] = (Kai[:, i] - y_hat_m).T
+            Y_d[:, i] = Kai[:, i] - y_hat_m
 
-        P_yy = Y_d.T @ self.W @ Y_d
-        P_xy = self.X_d.T @ self.W @ Y_d
+        P_yy = Y_d @ self.W @ Y_d.T
+        P_xy = self.X_d @ self.W @ Y_d.T
 
         self.G = P_xy @ np.linalg.inv(P_yy + self.R)
 
