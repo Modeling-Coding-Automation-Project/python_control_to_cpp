@@ -15,9 +15,10 @@ from python_control.state_space_deploy import StateSpaceDeploy
 
 
 class NpArrayExtractor:
-    def __init__(self, code_text):
+    def __init__(self, code_text, Value_Type_name="float64"):
         self.code_text = code_text
         self.extract_text = ""
+        self.value_type_name = Value_Type_name
 
     @staticmethod
     def extract_elements(node):
@@ -66,12 +67,17 @@ class NpArrayExtractor:
         return extract_text
 
     def convert_to_cpp(self):
+        try:
+            value_type_name = python_to_cpp_types[self.value_type_name]
+        except KeyError:
+            value_type_name = self.value_type_name
+
         pattern = r"result\[(\d+), (\d+)\] = "
-        replacement = r"result.template set<\1, \2>("
+        replacement = rf"result.template set<\1, \2>(static_cast<{value_type_name}>("
 
         convert_text = re.sub(pattern, replacement, self.extract_text)
 
-        convert_text = convert_text.replace("\n", ");\n")
+        convert_text = convert_text.replace("\n", "));\n")
 
         return convert_text
 
@@ -188,7 +194,8 @@ class FunctionToCppVisitor(ast.NodeVisitor):
             raise TypeError(f"Unsupported return type: {type(node.value)}")
 
         if "np.array(" in return_code:
-            np_array_extractor = NpArrayExtractor(return_code)
+            np_array_extractor = NpArrayExtractor(
+                return_code, self.Value_Type_name)
             np_array_extractor.extract()
             return_code = np_array_extractor.convert_to_cpp()
 
