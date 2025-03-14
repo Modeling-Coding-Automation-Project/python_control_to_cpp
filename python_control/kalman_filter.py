@@ -145,6 +145,7 @@ class UnscentedKalmanFilter:
         self.kappa = kappa
 
         self.STATE_SIZE = Q.shape[0]
+        self.OUTPUT_SIZE = R.shape[0]
 
         self.x_hat = np.zeros((self.STATE_SIZE, 1))
         self.X_d = np.zeros((2 * self.STATE_SIZE + 1, self.STATE_SIZE))
@@ -162,7 +163,7 @@ class UnscentedKalmanFilter:
             self.W[i, i] = 1 / (2 * (self.STATE_SIZE + kappa))
 
     def calc_sigma_points(self, x, P):
-        SP = np.linalg.cholesky((P))
+        SP = np.linalg.cholesky(P)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
         Kai[:, 0] = x.flatten()
@@ -176,15 +177,41 @@ class UnscentedKalmanFilter:
 
     def predict(self, u):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
-        x_hat_m = np.zeros((self.STATE_SIZE, 1))
-        for i in range(2 * self.STATE_SIZE + 1):
-            x_hat_m += self.W[i, i] * self.state_function(
-                Kai[:, i], u, self.Parameters)
 
         for i in range(2 * self.STATE_SIZE + 1):
-            self.X_d[i, :] = (Kai[:, i] - x_hat_m).T
+            Kai[:, i] = self.state_function(Kai[:, i], u, self.Parameters)
+
+        self.x_hat = np.zeros((self.STATE_SIZE, 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            self.x_hat += self.W[i, i] * Kai[:, i]
+
+        for i in range(2 * self.STATE_SIZE + 1):
+            self.X_d[i, :] = (Kai[:, i] - self.x_hat).T
 
         self.P = self.X_d.T @ self.W @ self.X_d + self.Q
+
+    def update(self, y):
+        Kai = self.calc_sigma_points(self.x_hat, self.P)
+
+        for i in range(2 * self.STATE_SIZE + 1):
+            Kai[:, i] = self.measurement_function(
+                Kai[:, i], self.Parameters)
+
+        y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            y_hat_m += self.W[i, i] * Kai[:, i]
+
+        Y_d = np.zeros((2 * self.STATE_SIZE + 1, self.OUTPUT_SIZE))
+        for i in range(2 * self.STATE_SIZE + 1):
+            Y_d[i, :] = (Kai[:, i] - y_hat_m).T
+
+        P_yy = Y_d.T @ self.W @ Y_d
+        P_xy = self.X_d.T @ self.W @ Y_d
+
+        self.G = P_xy @ np.linalg.inv(P_yy + self.R)
+
+        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y, y_hat_m)
+        self.P = self.P - self.G @ P_xy.T
 
     def calc_y_dif(self, y, y_hat_m):
         self.y_store.push(y_hat_m)
