@@ -115,7 +115,7 @@ def move(x, u, dt, wheelbase):
     steering_angle = u[1, 0]
     dist = vel * dt
 
-    if abs(steering_angle) > 0.001:  # is robot rataing?
+    if abs(steering_angle) > 0.001:  # is robot rotating?
         beta = (dist / wheelbase) * math.tan(steering_angle)
         r = wheelbase / math.tan(steering_angle)  # radius
 
