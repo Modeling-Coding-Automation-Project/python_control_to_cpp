@@ -133,14 +133,14 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 
 class UnscentedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
-                 Q, R, kappa, Parameters=None, Number_of_Delay=0):
+                 Q, R, Parameters=None, kappa=0.0, alpha=0.5, beta=2.0,
+                 Number_of_Delay=0):
         super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
 
         self.Q = Q
         self.R = R
-        self.kappa = kappa
 
         self.STATE_SIZE = Q.shape[0]
         self.OUTPUT_SIZE = R.shape[0]
@@ -154,10 +154,30 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         self.Parameters = Parameters
         self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
+        self.kappa = 0.0
+        if kappa == 0.0:
+            self.kappa = 3 - self.STATE_SIZE
+        else:
+            self.kappa = kappa
+
+        self.alpha = alpha
+        self.beta = beta
+        self.lambda_weight = 0.0
         self.W = np.zeros(2 * self.STATE_SIZE + 1)
-        self.W[0, 0] = kappa / (self.STATE_SIZE + kappa)
+        self.wc = 0.0
+
+        self.calc_weights()
+
+    def calc_weights(self):
+        self.lambda_weight = self.alpha * self.alpha * \
+            (self.STATE_SIZE + self.kappa) - self.STATE_SIZE
+
+        self.W[0, 0] = self.lambda_weight / \
+            (self.STATE_SIZE + self.lambda_weight)
         for i in range(1, 2 * self.STATE_SIZE + 1):
-            self.W[i, i] = 1 / (2 * (self.STATE_SIZE + kappa))
+            self.W[i, i] = 1 / (2 * (self.STATE_SIZE + self.lambda_weight))
+
+        self.wc = self.W[0, 0] + 1 - self.alpha * self.alpha + self.beta
 
     def calc_sigma_points(self, x, P):
         SP = np.linalg.cholesky(P)
