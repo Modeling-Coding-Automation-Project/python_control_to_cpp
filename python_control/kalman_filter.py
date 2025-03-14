@@ -133,8 +133,7 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 
 class UnscentedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
-                 Q, R, Parameters=None, kappa=0.0, alpha=0.5, beta=2.0,
-                 Number_of_Delay=0):
+                 Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
         super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
@@ -163,7 +162,7 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         self.alpha = alpha
         self.beta = beta
         self.lambda_weight = 0.0
-        self.W = np.zeros(2 * self.STATE_SIZE + 1)
+        self.W = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
         self.wc = 0.0
 
         self.calc_weights()
@@ -186,9 +185,9 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         Kai[:, 0] = x
         for i in range(self.STATE_SIZE):
             Kai[:, i + 1] = x + \
-                math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
+                math.sqrt(self.STATE_SIZE + self.lambda_weight) * SP[:, i].T
             Kai[:, i + self.STATE_SIZE + 1] = x.flatten() - \
-                math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
+                math.sqrt(self.STATE_SIZE + self.lambda_weight) * SP[:, i].T
 
         return Kai
 
