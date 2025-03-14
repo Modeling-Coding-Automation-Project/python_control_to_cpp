@@ -463,7 +463,17 @@ class KalmanFilterDeploy:
         fxu_jacobian_name = ekf.state_function_jacobian.__module__
         state_function_jacobian_code, _ = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_jacobian_name,
-                                                                          "X_Type")
+                                                                          "A_Type")
+
+        hx_name = ekf.measurement_function.__module__
+        measurement_function_code, state_function_U_size = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_name,
+                                                                          "Y_Type")
+
+        hx_jacobian_name = ekf.measurement_function_jacobian.__module__
+        measurement_function_jacobian_code, _ = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_jacobian_name,
+                                                                          "C_Type")
 
         # create A, C matrices
         exec(f"{variable_name}_A = ekf.A")
@@ -500,13 +510,15 @@ class KalmanFilterDeploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += f"using A_Type = {A_file_name_no_extension}::type;\n"
         code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
 
+        code_text += f"using C_Type = {C_file_name_no_extension}::type;\n"
         code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::COLS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;\n\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::COLS;\n\n"
 
         code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
         code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
@@ -532,6 +544,26 @@ class KalmanFilterDeploy:
 
         code_text += "} // namespace state_function_jacobian\n\n"
 
+        code_text += "namespace measurement_function {\n\n"
+
+        code_text += "using namespace PythonMath;\n\n"
+
+        for code in measurement_function_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace measurement_function\n\n"
+
+        code_text += "namespace measurement_function_jacobian {\n\n"
+
+        code_text += "using namespace PythonMath;\n\n"
+
+        for code in measurement_function_jacobian_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace measurement_function_jacobian\n\n"
+
         code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
             code_text += "    static_cast<" + \
@@ -555,12 +587,12 @@ class KalmanFilterDeploy:
         code_text += ");\n\n"
 
         code_text += "using type = ExtendedKalmanFilter_Type<" + \
-            "decltype(A), decltype(C), U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
+            "A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
         code_text += "    return ExtendedKalmanFilter_Type<\n" + \
-            "decltype(A), decltype(C), U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
             "Q, R, state_function, state_function_jacobian, measurement_function," + \
             " measurement_function_jacobian, parameters);\n\n"
 
