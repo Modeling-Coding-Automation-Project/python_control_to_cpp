@@ -18,8 +18,21 @@ class DelayedVectorObject:
         return self.store[:, self.delay_index].reshape(-1, 1)
 
 
-class LinearKalmanFilter:
+class KalmanFilterBase:
+    def __init__(self):
+        pass
+
+    def predict_and_update(self, u, y):
+        self.predict(u)
+        self.update(y)
+
+    def get_x_hat(self):
+        return self.x_hat
+
+
+class LinearKalmanFilter(KalmanFilterBase):
     def __init__(self, A, B, C, Q, R, Number_of_Delay=0):
+        super().__init__()
         self.A = A
         self.B = B
         self.C = C
@@ -51,13 +64,9 @@ class LinearKalmanFilter:
         y_dif = y - self.y_store.get()
 
         # When there is no delay, you can use below.
-        # y_dif = y - self.C @ self.x_hat
+        # y_dif = y - self.measurement_function(self.x_hat)
 
         return y_dif
-
-    def predict_and_update(self, u, y):
-        self.predict(u)
-        self.update(y)
 
     # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u):
@@ -70,14 +79,12 @@ class LinearKalmanFilter:
         self.predict_with_fixed_G(u)
         self.update_with_fixed_G(y)
 
-    def get_x_hat(self):
-        return self.x_hat
 
-
-class ExtendedKalmanFilter:
+class ExtendedKalmanFilter(KalmanFilterBase):
     def __init__(self, state_function, measurement_function,
                  state_function_jacobian, measurement_function_jacobian,
                  Q, R, Parameters=None, Number_of_Delay=0):
+        super().__init__()
         self.state_function = state_function
         self.measurement_function = measurement_function
         self.state_function_jacobian = state_function_jacobian
@@ -101,6 +108,17 @@ class ExtendedKalmanFilter:
         self.x_hat = self.state_function(self.x_hat, u, self.Parameters)
         self.P = self.A @ self.P @ self.A.T + self.Q
 
+    def calc_y_dif(self, y):
+        self.y_store.push(self.measurement_function(
+            self.x_hat, self.Parameters))
+
+        y_dif = y - self.y_store.get()
+
+        # When there is no delay, you can use below.
+        # y_dif = y - self.measurement_function(self.x_hat)
+
+        return y_dif
+
     def update(self, y):
         self.C = self.measurement_function_jacobian(
             self.x_hat, self.Parameters)
@@ -113,20 +131,24 @@ class ExtendedKalmanFilter:
 
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
-    def calc_y_dif(self, y):
-        self.y_store.push(self.measurement_function(
-            self.x_hat, self.Parameters))
 
-        y_dif = y - self.y_store.get()
+class UnscentedKalmanFilter(KalmanFilterBase):
+    def __init__(self, state_function, measurement_function,
+                 Q, R, kappa, Parameters=None, Number_of_Delay=0):
+        super().__init__()
+        self.state_function = state_function
+        self.measurement_function = measurement_function
 
-        # When there is no delay, you can use below.
-        # y_dif = y - self.measurement_function(self.x_hat)
+        self.Q = Q
+        self.R = R
+        self.kappa = kappa
 
-        return y_dif
+        self.x_hat = np.zeros((Q.shape[0], 1))
+        self.X_d = np.zeros((Q.shape[0], 2 * Q.shape[0] + 1))
 
-    def predict_and_update(self, u, y):
-        self.predict(u)
-        self.update(y)
+        self.P = np.eye(Q.shape[0])
+        self.G = None
 
-    def get_x_hat(self):
-        return self.x_hat
+        self.Parameters = Parameters
+        self.Number_of_Delay = Number_of_Delay
+        self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
