@@ -43,20 +43,21 @@ class NpArrayExtractor:
         self.code_text = code_text
         self.extract_text = ""
         self.value_type_name = Value_Type_name
+        self.SparseAvailable = None
 
     @staticmethod
     def extract_elements(node):
-        if isinstance(node, ast.List):  # リストノードの場合
+        if isinstance(node, ast.List):
             return [NpArrayExtractor.extract_elements(el) for el in node.elts]
         elif isinstance(node, ast.BinOp) or isinstance(node, ast.Call) or isinstance(node, ast.Name):
-            return ast.unparse(node)  # 演算、関数、変数の場合は文字列として取得
-        elif isinstance(node, ast.Constant):  # Python 3.8 以降（数値）
+            return ast.unparse(node)
+        elif isinstance(node, ast.Constant):  # for Python 3.8 or later (numeric)
             return node.value
-        elif isinstance(node, ast.Num):  # Python 3.7 以前（数値）
+        elif isinstance(node, ast.Num):  # before Python 3.7 (numeric)
             return node.n
-        elif isinstance(node, ast.UnaryOp):  # 単項演算子（例：-1）
+        elif isinstance(node, ast.UnaryOp):
             operand = NpArrayExtractor.extract_elements(node.operand)
-            if isinstance(node.op, ast.USub):  # 負の数
+            if isinstance(node.op, ast.USub):
                 return -operand
             return operand
         else:
@@ -65,30 +66,36 @@ class NpArrayExtractor:
     def extract(self):
         extract_text = ""
 
-        # `np.array(...)` の部分のみを抽出
         matrix_content = self.code_text[self.code_text .find(
-            'np.array(') + len('np.array('):-1]  # `np.array(...)` の中身を取得
+            'np.array(') + len('np.array('):-1]
 
         tree = ast.parse(matrix_content)
 
-        # AST のルート要素からリストを抽出
         matrix_list = NpArrayExtractor.extract_elements(tree.body[0].value)
 
-        # 行列のサイズ取得
         cols = len(matrix_list)
         rows = len(matrix_list[0]) if isinstance(
             matrix_list[0], list) else 1
+
+        SparseAvailable = np.zeros((cols, rows), dtype=np.float64)
 
         for i in range(cols):
             for j in range(rows):
                 if isinstance(matrix_list[i][j], (int, float)):
                     extract_text += f"result[{i}, {j}] = {matrix_list[i][j]}\n"
+
+                    if matrix_list[i][j] != 0:
+                        SparseAvailable[i, j] = True
+
                 elif isinstance(matrix_list[i][j], str):
                     extract_text += f"result[{i}, {j}] = " + \
                         matrix_list[i][j] + "\n"
 
+                    if matrix_list[i][j] != "0":
+                        SparseAvailable[i, j] = True
+
         self.extract_text = extract_text
-        return extract_text
+        self.SparseAvailable = SparseAvailable
 
     def convert_to_cpp(self):
         try:
@@ -145,6 +152,8 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         self.cpp_code = ""
         self.Output_Type_name = Output_Type_name
         self.Value_Type_name = "double"
+
+        self.SparseAvailable = None
 
     def visit_FunctionDef(self, node):
         self.cpp_code += "inline auto " + node.name + "("
@@ -226,6 +235,7 @@ class FunctionToCppVisitor(ast.NodeVisitor):
                 return_code, self.Value_Type_name)
             np_array_extractor.extract()
             return_code = np_array_extractor.convert_to_cpp()
+            self.SparseAvailable = np_array_extractor.SparseAvailable
 
             return_code = return_code.replace("\n", "\n    ")
 
@@ -580,22 +590,22 @@ class KalmanFilterDeploy:
 
         # create state and measurement functions
         fxu_name = ekf.state_function.__module__
-        state_function_code, state_function_U_size = \
+        state_function_code, state_function_U_size, _ = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_name,
                                                                           "X_Type")
 
         fxu_jacobian_name = ekf.state_function_jacobian.__module__
-        state_function_jacobian_code, _ = \
+        state_function_jacobian_code, _, A_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_jacobian_name,
                                                                           "A_Type")
 
         hx_name = ekf.measurement_function.__module__
-        measurement_function_code, state_function_U_size = \
+        measurement_function_code, _, _ = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_name,
                                                                           "Y_Type")
 
         hx_jacobian_name = ekf.measurement_function_jacobian.__module__
-        measurement_function_jacobian_code, _ = \
+        measurement_function_jacobian_code, _, C_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_jacobian_name,
                                                                           "C_Type")
 
@@ -749,8 +759,12 @@ class KalmanFilterDeploy:
         extractor = FunctionExtractor(fxu_file_path)
         functions = extractor.extract()
         state_function_code = []
+        SparseAvailable_list = []
+
         for name, code in functions.items():
             converter = FunctionToCppVisitor(return_type)
-            state_function_code.append(converter.convert(code))
 
-        return state_function_code, state_function_U_size
+            state_function_code.append(converter.convert(code))
+            SparseAvailable_list.append(converter.SparseAvailable)
+
+        return state_function_code, state_function_U_size, SparseAvailable_list
