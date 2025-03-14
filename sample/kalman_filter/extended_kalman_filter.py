@@ -85,8 +85,10 @@ Parameters_ekf = Parameters(
     landmark_1_x=landmarks[0, 0], landmark_1_y=landmarks[1, 0],
     landmark_2_x=landmarks[0, 1], landmark_2_y=landmarks[1, 1])
 
+Number_of_Delay = 5
+
 Q_ekf = np.diag([1.0, 1.0, 1.0])
-R_ekf = np.diag([10.0, 10.0, 10.0, 10.0])
+R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 100.0
 
 import fxu
 import fxu_jacobian
@@ -94,7 +96,7 @@ import hx
 import hx_jacobian
 ekf = ExtendedKalmanFilter(fxu.function, hx.function,
                            fxu_jacobian.function, hx_jacobian.function,
-                           Q_ekf, R_ekf, Parameters_ekf)
+                           Q_ekf, R_ekf, Parameters_ekf, Number_of_Delay)
 
 # You can create cpp header which can easily define state space as C++ code
 deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(ekf)
@@ -104,7 +106,7 @@ print(deployed_file_names)
 
 sim_delta_time = 0.1
 sim_wheelbase = Parameters_ekf.wheelbase
-simulation_time = 50.0
+simulation_time = 20.0
 
 
 def move(x, u, dt, wheelbase):
@@ -150,7 +152,7 @@ def move(x, u, dt, wheelbase):
 def run_simulation():
 
     x = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
-    u = np.array([[1.1], [0.1]])  # inputs v, steering_angle
+    u = np.array([[2.0], [0.1]])  # inputs v, steering_angle
 
     ekf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
 
@@ -159,19 +161,28 @@ def run_simulation():
     y_measured = []
     time = np.arange(0, simulation_time, sim_delta_time)
 
+    y_store = [np.zeros((R_ekf.shape[0], 1))] * (Number_of_Delay + 1)
+    delay_index = 0
+
     u_true = []
 
     for i in range(round(simulation_time / sim_delta_time)):
-        x, y = move(x, u, sim_delta_time,
-                    sim_wheelbase)  # simulate robot
+        x, y_store[delay_index] = move(x, u, sim_delta_time,
+                                       sim_wheelbase)  # simulate robot
 
         x_true.append(x)
         u_true.append(u)
-        y_measured.append(y)
+
+        # system delay
+        delay_index += 1
+        if delay_index > Number_of_Delay:
+            delay_index = 0
+
+        y_measured.append(y_store[delay_index])
 
         # estimate
         ekf.predict(u)
-        ekf.update(y)
+        ekf.update(y_store[delay_index])
 
         x_estimated.append(ekf.x_hat)
 
@@ -212,13 +223,13 @@ def run_simulation():
     axs[1, 1].plot(time, y_measured[:, 0, 0], label='landmark 1')
     axs[1, 1].plot(time, y_measured[:, 2, 0], label='landmark 2')
     axs[1, 1].legend()
-    axs[1, 1].set_ylabel('r (output)')
+    axs[1, 1].set_ylabel('r (measured)')
     axs[1, 1].grid(True)
 
     axs[2, 1].plot(time, y_measured[:, 1, 0], label='landmark 1')
     axs[2, 1].plot(time, y_measured[:, 3, 0], label='landmark 2')
     axs[2, 1].legend()
-    axs[2, 1].set_ylabel('phi (output)')
+    axs[2, 1].set_ylabel('phi (measured)')
     axs[2, 1].grid(True)
 
 
