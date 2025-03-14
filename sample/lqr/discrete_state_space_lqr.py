@@ -5,11 +5,16 @@ Reference URL:
 https://github.com/AtsushiSakai/PyAdvancedControl
 https://jp.mathworks.com/help/control/ref/lti.lqr.html
 """
+import os
+import sys
+sys.path.append(os.getcwd())
 
 import matplotlib.pyplot as plt
 import control
 import numpy as np
 import scipy.linalg as la
+
+from python_control.lqr_deploy import LQR_Deploy
 
 simulation_time = 10.0
 dt = 0.1
@@ -49,6 +54,10 @@ Dd = sys_d.D
 # LQR parameters
 Q = np.diag([1.0, 0.0, 1.0, 0.0])
 R = np.diag([1.0])
+
+# You can create cpp header which can easily define state space as C++ code
+deployed_file_names = LQR_Deploy.generate_LQR_cpp_code(Ac, Bc, Q, R)
+print(deployed_file_names)
 
 
 def process(x, u):

@@ -6,6 +6,7 @@
 
 #include "MCAP_tester.hpp"
 #include "test_vs_data.hpp"
+#include "test_vs_EKF_data.hpp"
 
 
 using namespace Tester;
@@ -918,7 +919,7 @@ void check_python_control_lqr(void) {
 }
 
 template <typename T>
-void check_python_control_kalman_filter(void) {
+void check_python_control_linear_kalman_filter(void) {
     using namespace PythonNumpy;
     using namespace PythonControl;
 
@@ -1119,6 +1120,157 @@ void check_python_control_kalman_filter(void) {
     tester.throw_error_if_test_failed();
 }
 
+template <typename T>
+void check_python_control_extended_kalman_filter(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+
+    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-2F;
+
+    /* EKF定義準備 */
+    constexpr std::size_t NUMBER_OF_DELAY = 5;
+
+    constexpr std::size_t STATE_SIZE = EKF_TestData::STATE_SIZE;
+    constexpr std::size_t INPUT_SIZE = EKF_TestData::INPUT_SIZE;
+    constexpr std::size_t OUTPUT_SIZE = EKF_TestData::OUTPUT_SIZE;
+
+    using X_Type = StateSpaceStateType<T, STATE_SIZE>;
+    using U_Type = StateSpaceInputType<T, INPUT_SIZE>;
+    using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
+
+    using SparseAvailable_A = SparseAvailable<
+        ColumnAvailable<true, false, true>,
+        ColumnAvailable<false, true, true>,
+        ColumnAvailable<false, false, true>
+    >;
+
+    using A_Type = SparseMatrix_Type<T, SparseAvailable_A>;
+
+    using SparseAvailable_C = SparseAvailable<
+        ColumnAvailable<true, true, false>,
+        ColumnAvailable<true, true, true>,
+        ColumnAvailable<true, true, false>,
+        ColumnAvailable<true, true, true>
+    >;
+
+    using C_Type = SparseMatrix_Type<T, SparseAvailable_C>;
+
+
+    auto Q = make_DiagMatrix<STATE_SIZE>(
+        static_cast<T>(1), static_cast<T>(1),
+        static_cast<T>(1));
+
+    using Q_Type = decltype(Q);
+
+    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+        static_cast<T>(100), static_cast<T>(100),
+        static_cast<T>(100), static_cast<T>(100));
+
+    using R_Type = decltype(R);
+
+    /* パラメータ */
+    using Parameter_Type = EKF_TestData::BicycleModelParameter<T>;
+
+    Parameter_Type parameters(
+        static_cast<T>(0.1),
+        static_cast<T>(0.5),
+        static_cast<T>(0),
+        static_cast<T>(0),
+        static_cast<T>(10.0),
+        static_cast<T>(10.0)
+    );
+
+    /* 状態方程式、出力方程式 */
+    StateFunction_Object<X_Type,
+        U_Type,
+        EKF_TestData::BicycleModelParameter<T>> state_function;
+    state_function = EKF_TestData::bicycle_model_state_function<T>;
+
+    StateFunctionJacobian_Object<A_Type, X_Type, U_Type,
+        EKF_TestData::BicycleModelParameter<T>> state_function_jacobian;
+    state_function_jacobian = EKF_TestData::bicycle_model_state_function_jacobian<T, A_Type>;
+
+    MeasurementFunction_Object<Y_Type, X_Type,
+        EKF_TestData::BicycleModelParameter<T>> measurement_function;
+    measurement_function = EKF_TestData::bicycle_model_measurement_function<T>;
+
+    MeasurementFunctionJacobian_Object<C_Type, X_Type,
+        EKF_TestData::BicycleModelParameter<T>> measurement_function_jacobian;
+    measurement_function_jacobian = EKF_TestData::bicycle_model_measurement_function_jacobian<T, C_Type>;
+
+
+    /* EKF定義 */
+    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
+        ekf(Q, R, state_function, state_function_jacobian,
+            measurement_function, measurement_function_jacobian, parameters);
+
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
+        ekf_copy = ekf;
+    ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
+        ekf_move = std::move(ekf_copy);
+    ekf = ekf_move;
+
+    /* シミュレーション */
+    std::size_t simulation_steps = 200;
+
+    auto x_true_initial = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(2), static_cast<T>(6), static_cast<T>(0.3)
+    );
+    decltype(x_true_initial) x_true;
+
+    auto u = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(2.0), static_cast<T>(0.1)
+    );
+
+    ekf.X_hat.template set<0, 0>(static_cast<T>(0.0));
+    ekf.X_hat.template set<1, 0>(static_cast<T>(0.0));
+    ekf.X_hat.template set<2, 0>(static_cast<T>(0.0));
+
+    constexpr std::size_t STORE_SIZE = 10;
+    std::array<X_Type, STORE_SIZE> x_true_store;
+    std::array<X_Type, STORE_SIZE> x_estimated_store;
+
+    std::size_t store_index = 0;
+
+    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+
+    std::size_t delay_index = 0;
+
+    x_true = x_true_initial;
+    for (std::size_t i = 0; i < simulation_steps; i++) {
+        x_true = EKF_TestData::bicycle_model_state_function<T>(x_true, u, parameters);
+        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+
+        // system delay
+        delay_index++;
+        if (delay_index > NUMBER_OF_DELAY) {
+            delay_index = 0;
+        }
+
+        ekf.predict(u);
+        ekf.update(y_store[delay_index]);
+
+        x_true_store[store_index] = x_true;
+        x_estimated_store[store_index] = ekf.get_x_hat();
+        store_index++;
+        
+        if (store_index >= STORE_SIZE) {
+            store_index = 0;
+        }
+    }
+
+    for (std::size_t i = 0; i < STORE_SIZE; i++) {
+        tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check ExtendedKalmanFilter simulation x estimate.");
+    }
+
+
+    tester.throw_error_if_test_failed();
+}
+
 
 int main(void) {
 
@@ -1138,9 +1290,13 @@ int main(void) {
 
     check_python_control_lqr<float>();
 
-    check_python_control_kalman_filter<double>();
+    check_python_control_linear_kalman_filter<double>();
 
-    check_python_control_kalman_filter<float>();
+    check_python_control_linear_kalman_filter<float>();
+
+    check_python_control_extended_kalman_filter<double>();
+
+    check_python_control_extended_kalman_filter<float>();
 
 
     return 0;

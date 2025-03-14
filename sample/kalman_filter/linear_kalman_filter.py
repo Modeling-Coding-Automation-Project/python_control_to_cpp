@@ -4,10 +4,11 @@ sys.path.append(os.getcwd())
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from python_control.kalman_filter import LinearKalmanFilter
+from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 
-# Example
 def generate_m_sequence(length, taps):
     """Generate an M-sequence using a linear feedback shift register (LFSR)."""
     state = [1] * (max(taps) + 1)  # Initial state with all ones
@@ -44,6 +45,10 @@ if __name__ == "__main__":
 
     # Define Kalman filter
     lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
+
+    # You can create cpp header which can easily define state space as C++ code
+    deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(lkf)
+    print(deployed_file_names)
 
     # Initial state
     lkf.x_hat = np.array([[0],
@@ -103,49 +108,45 @@ if __name__ == "__main__":
     print("Kalman Gain:\n", lkf.G)
 
     # Plot
-    plt.figure()
-    plt.title("True state and observation")
+    fig, axs = plt.subplots(3, 2)
+    fig.suptitle("True state and observation")
 
-    plt.subplot(3, 2, 1)
-    plt.plot(x_true[0, :, 0], label="True x0")
-    plt.plot(x_estimate[0, :, 0], label="Estimated x0")
-    plt.plot(y_measured[0, :, 0], label="Measured y0")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[0, 0].plot(x_true[0, :, 0], label="True x0")
+    axs[0, 0].plot(x_estimate[0, :, 0], label="Estimated x0")
+    axs[0, 0].plot(y_measured[0, :, 0], label="Measured y0")
+    axs[0, 0].legend()
+    axs[0, 0].set_ylabel("Value")
+    axs[0, 0].grid(True)
 
-    plt.subplot(3, 2, 3)
-    plt.plot(x_true[2, :, 0], label="True x2")
-    plt.plot(x_estimate[2, :, 0], label="Estimated x2")
-    plt.plot(y_measured[1, :, 0], label="Measured y1")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[1, 0].plot(x_true[2, :, 0], label="True x2")
+    axs[1, 0].plot(x_estimate[2, :, 0], label="Estimated x2")
+    axs[1, 0].plot(y_measured[1, :, 0], label="Measured y1")
+    axs[1, 0].legend()
+    axs[1, 0].set_ylabel("Value")
+    axs[1, 0].grid(True)
 
-    plt.subplot(3, 2, 2)
-    plt.plot(u_data[0, :], label="Input u0")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[0, 1].plot(u_data[0, :], label="Input u0")
+    axs[0, 1].legend()
+    axs[0, 1].set_ylabel("Value")
+    axs[0, 1].grid(True)
 
-    plt.subplot(3, 2, 4)
-    plt.plot(u_data[1, :], label="Input u1")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[1, 1].plot(u_data[1, :], label="Input u1")
+    axs[1, 1].legend()
+    axs[1, 1].set_ylabel("Value")
+    axs[1, 1].grid(True)
 
-    plt.subplot(3, 2, 5)
-    plt.plot(x_true[1, :, 0], label="True x1")
-    plt.plot(x_estimate[1, :, 0], label="Estimated x1")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[2, 0].plot(x_true[1, :, 0], label="True x1")
+    axs[2, 0].plot(x_estimate[1, :, 0], label="Estimated x1")
+    axs[2, 0].legend()
+    axs[2, 0].set_xlabel("Time")
+    axs[2, 0].set_ylabel("Value")
+    axs[2, 0].grid(True)
 
-    plt.subplot(3, 2, 6)
-    plt.plot(x_true[3, :, 0], label="True x3")
-    plt.plot(x_estimate[3, :, 0], label="Estimated x3")
-    plt.legend()
-    plt.xlabel("Time")
-    plt.ylabel("Value")
+    axs[2, 1].plot(x_true[3, :, 0], label="True x3")
+    axs[2, 1].plot(x_estimate[3, :, 0], label="Estimated x3")
+    axs[2, 1].legend()
+    axs[2, 1].set_xlabel("Time")
+    axs[2, 1].set_ylabel("Value")
+    axs[2, 1].grid(True)
 
     plt.show()

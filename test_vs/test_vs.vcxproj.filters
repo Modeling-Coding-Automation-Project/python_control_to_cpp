@@ -44,5 +44,8 @@
     <ClInclude Include="..\python_control\python_control_kalman_filter.hpp">
       <Filter>リソース ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="test_vs_EKF_data.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

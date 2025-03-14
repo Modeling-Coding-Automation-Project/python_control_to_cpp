@@ -628,7 +628,7 @@ make_DiscreteTransferFunction(Numerator_Type numerator,
 
 /* Discrete Transfer Function Type */
 template <typename Numerator_Type, typename Denominator_Type,
-          std::size_t Number_Of_Delay>
+          std::size_t Number_Of_Delay = 0>
 using DiscreteTransferFunction_Type =
     DiscreteTransferFunction<Numerator_Type, Denominator_Type, Number_Of_Delay>;
 
