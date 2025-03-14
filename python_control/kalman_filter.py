@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 
@@ -143,18 +144,47 @@ class UnscentedKalmanFilter:
         self.R = R
         self.kappa = kappa
 
-        self.x_hat = np.zeros((Q.shape[0], 1))
-        self.X_d = np.zeros((Q.shape[0], 2 * Q.shape[0] + 1))
+        self.STATE_SIZE = Q.shape[0]
 
-        self.P = np.eye(Q.shape[0])
+        self.x_hat = np.zeros((self.STATE_SIZE, 1))
+        self.X_d = np.zeros((2 * self.STATE_SIZE + 1, self.STATE_SIZE))
+
+        self.P = np.eye(self.STATE_SIZE)
         self.G = None
 
         self.Parameters = Parameters
         self.Number_of_Delay = Number_of_Delay
         self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
+        self.W = np.zeros(2 * self.STATE_SIZE + 1)
+        self.W[0, 0] = kappa / (self.STATE_SIZE + kappa)
+        for i in range(1, 2 * self.STATE_SIZE + 1):
+            self.W[i, i] = 1 / (2 * (self.STATE_SIZE + kappa))
+
+    def calc_sigma_points(self, x, P):
+        SP = np.linalg.cholesky((P))
+        Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
+
+        Kai[:, 0] = x.flatten()
+        for i in range(self.STATE_SIZE):
+            Kai[:, i + 1] = x.flatten() + \
+                math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
+            Kai[:, i + self.STATE_SIZE + 1] = x.flatten() - \
+                math.sqrt(self.STATE_SIZE + self.kappa) * SP[:, i].T
+
+        return Kai
+
     def predict(self, u):
-        pass
+        Kai = self.calc_sigma_points(self.x_hat, self.P)
+        x_hat_m = np.zeros((self.STATE_SIZE, 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            x_hat_m += self.W[i, i] * self.state_function(
+                Kai[:, i], u, self.Parameters)
+
+        for i in range(2 * self.STATE_SIZE + 1):
+            self.X_d[i, :] = (Kai[:, i] - x_hat_m).T
+
+        self.P = self.X_d.T @ self.W @ self.X_d + self.Q
 
     def calc_y_dif(self, y, y_hat_m):
         self.y_store.push(y_hat_m)
