@@ -455,19 +455,15 @@ class KalmanFilterDeploy:
         code_file_name_ext = code_file_name + ".hpp"
 
         # create state and measurement functions
-        # state function
         fxu_name = ekf.state_function.__module__
-        fxu_file_path = KalmanFilterDeploy.find_file(
-            f"{fxu_name}.py", os.getcwd())
-        state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
-            fxu_file_path)
+        state_function_code, state_function_U_size = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_name,
+                                                                          "X_Type")
 
-        extractor = FunctionExtractor(fxu_file_path)
-        functions = extractor.extract()
-        state_function_code = []
-        for name, code in functions.items():
-            converter = FunctionToCppVisitor("X_Type")
-            state_function_code.append(converter.convert(code))
+        fxu_jacobian_name = ekf.state_function_jacobian.__module__
+        state_function_jacobian_code, _ = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_jacobian_name,
+                                                                          "X_Type")
 
         # create A, C matrices
         exec(f"{variable_name}_A = ekf.A")
@@ -526,6 +522,16 @@ class KalmanFilterDeploy:
 
         code_text += "} // namespace state_function\n\n"
 
+        code_text += "namespace state_function_jacobian {\n\n"
+
+        code_text += "using namespace PythonMath;\n\n"
+
+        for code in state_function_jacobian_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace state_function_jacobian\n\n"
+
         code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
             code_text += "    static_cast<" + \
@@ -570,6 +576,22 @@ class KalmanFilterDeploy:
         deployed_file_names.append(code_file_name_ext)
 
         return deployed_file_names
+
+    @staticmethod
+    def create_state_and_measurement_function_code(ekf, function_name, return_type):
+        fxu_file_path = KalmanFilterDeploy.find_file(
+            f"{function_name}.py", os.getcwd())
+        state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
+            fxu_file_path)
+
+        extractor = FunctionExtractor(fxu_file_path)
+        functions = extractor.extract()
+        state_function_code = []
+        for name, code in functions.items():
+            converter = FunctionToCppVisitor(return_type)
+            state_function_code.append(converter.convert(code))
+
+        return state_function_code, state_function_U_size
 
 
 class PowerReplacer(ast.NodeTransformer):
