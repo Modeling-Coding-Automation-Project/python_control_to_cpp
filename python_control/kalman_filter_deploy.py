@@ -428,7 +428,6 @@ class KalmanFilterDeploy:
         code_text += "};\n\n"
 
         code_text += "using Parameter_Type = Parameter;\n"
-        code_text += "Parameter_Type parameters;\n"
 
         return code_text
 
@@ -718,6 +717,8 @@ class KalmanFilterDeploy:
             "A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
+
+        code_text += "    Parameter_Type parameters;\n\n"
 
         code_text += "    return ExtendedKalmanFilter_Type<\n" + \
             "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
