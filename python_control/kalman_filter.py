@@ -313,10 +313,7 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         self.x_hat = np.zeros((self.STATE_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            if i == 0:
-                self.x_hat += self.wc * Kai[:, i].reshape(-1, 1)
-            else:
-                self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
+            self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
 
         for i in range(2 * self.STATE_SIZE + 1):
             self.X_d[:, i] = (Kai[:, i].reshape(-1, 1) - self.x_hat).flatten()
@@ -333,10 +330,7 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            if i == 0:
-                y_hat_m += self.wc * Nu[:, i].reshape(-1, 1)
-            else:
-                y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
+            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
