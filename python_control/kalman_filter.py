@@ -1,3 +1,4 @@
+import copy
 import math
 import numpy as np
 
@@ -268,6 +269,7 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
         self.beta = beta
         self.lambda_weight = 0.0
         self.W = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
+        self.Wc = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
         self.wc = 0.0
 
         self.calc_weights()
@@ -282,6 +284,9 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
             self.W[i, i] = 1 / (2 * (self.STATE_SIZE + self.lambda_weight))
 
         self.wc = self.W[0, 0] + 1 - self.alpha * self.alpha + self.beta
+
+        self.Wc = copy.deepcopy(self.W)
+        self.Wc[0, 0] = self.wc
 
     def calc_sigma_points(self, x, P):
         SP = np.linalg.cholesky(P)
@@ -308,12 +313,15 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         self.x_hat = np.zeros((self.STATE_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
+            if i == 0:
+                self.x_hat += self.wc * Kai[:, i].reshape(-1, 1)
+            else:
+                self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
 
         for i in range(2 * self.STATE_SIZE + 1):
             self.X_d[:, i] = (Kai[:, i].reshape(-1, 1) - self.x_hat).flatten()
 
-        self.P = self.X_d @ self.W @ self.X_d.T + self.Q
+        self.P = self.X_d @ self.Wc @ self.X_d.T + self.Q
 
     def update(self, y):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
@@ -325,14 +333,17 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
+            if i == 0:
+                y_hat_m += self.wc * Nu[:, i].reshape(-1, 1)
+            else:
+                y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
             Y_d[:, i] = (Nu[:, i].reshape(-1, 1) - y_hat_m).flatten()
 
-        P_yy = Y_d @ self.W @ Y_d.T
-        P_xy = self.X_d @ self.W @ Y_d.T
+        P_yy = Y_d @ self.Wc @ Y_d.T
+        P_xy = self.X_d @ self.Wc @ Y_d.T
 
         self.G = P_xy @ np.linalg.inv(P_yy + self.R)
 
