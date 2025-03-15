@@ -133,6 +133,111 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 
 class UnscentedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
+                 Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0):
+        super().__init__(Number_of_Delay)
+        self.state_function = state_function
+        self.measurement_function = measurement_function
+
+        self.Q = Q
+        self.R = R
+
+        self.STATE_SIZE = Q.shape[0]
+        self.OUTPUT_SIZE = R.shape[0]
+
+        self.x_hat = np.zeros((self.STATE_SIZE, 1))
+        self.X_d = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
+
+        self.P = np.eye(self.STATE_SIZE)
+        self.G = None
+
+        self.Parameters = Parameters
+        self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
+
+        self.kappa = kappa
+        self.lambda_weight = 0.0
+
+        self.W = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
+
+        self.calc_weights()
+
+    def calc_weights(self):
+
+        self.lambda_weight = self.kappa
+
+        self.W[0, 0] = self.kappa / \
+            (self.STATE_SIZE + self.kappa)
+        for i in range(1, 2 * self.STATE_SIZE + 1):
+            self.W[i, i] = 1 / (2 * (self.STATE_SIZE + self.kappa))
+
+    def calc_sigma_points(self, x, P):
+        SP = np.linalg.cholesky(P)
+        Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
+
+        Kai[:, 0] = x.flatten()
+        for i in range(self.STATE_SIZE):
+            Kai[:, i + 1] = (x +
+                             math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                             (SP[i, :].T).reshape(-1, 1)).flatten()
+            Kai[:, i + self.STATE_SIZE + 1] = \
+                (x -
+                 math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                 (SP[i, :].T).reshape(-1, 1)).flatten()
+
+        return Kai
+
+    def predict(self, u):
+        Kai = self.calc_sigma_points(self.x_hat, self.P)
+
+        for i in range(2 * self.STATE_SIZE + 1):
+            Kai[:, i] = self.state_function(
+                Kai[:, i].reshape(-1, 1), u, self.Parameters).flatten()
+
+        self.x_hat = np.zeros((self.STATE_SIZE, 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
+
+        for i in range(2 * self.STATE_SIZE + 1):
+            self.X_d[:, i] = (Kai[:, i].reshape(-1, 1) - self.x_hat).flatten()
+
+        self.P = self.X_d @ self.W @ self.X_d.T + self.Q
+
+    def update(self, y):
+        Kai = self.calc_sigma_points(self.x_hat, self.P)
+
+        Nu = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            Nu[:, i] = self.measurement_function(
+                Kai[:, i].reshape(-1, 1), self.Parameters).flatten()
+
+        y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
+
+        Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
+        for i in range(2 * self.STATE_SIZE + 1):
+            Y_d[:, i] = (Nu[:, i].reshape(-1, 1) - y_hat_m).flatten()
+
+        P_yy = Y_d @ self.W @ Y_d.T
+        P_xy = self.X_d @ self.W @ Y_d.T
+
+        self.G = P_xy @ np.linalg.inv(P_yy + self.R)
+
+        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y, y_hat_m)
+        self.P = self.P - self.G @ P_xy.T
+
+    def calc_y_dif(self, y, y_hat_m):
+        self.y_store.push(y_hat_m)
+
+        y_dif = y - self.y_store.get()
+
+        # When there is no delay, you can use below.
+        # y_dif = y - y_hat_m
+
+        return y_dif
+
+
+class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
+    def __init__(self, state_function, measurement_function,
                  Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
         super().__init__(Number_of_Delay)
         self.state_function = state_function

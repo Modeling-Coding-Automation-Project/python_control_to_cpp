@@ -81,12 +81,14 @@ Parameters_ukf = Parameters(
 Number_of_Delay = 0
 
 Q_ukf = np.diag([1.0, 1.0, 1.0])
-R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 100.0
+R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 1.0
+kappa = 0.5
 
 import fxu
 import hx
 ukf = UnscentedKalmanFilter(fxu.function, hx.function,
-                            Q_ukf, R_ukf, Parameters_ukf, Number_of_Delay)
+                            Q_ukf, R_ukf, Parameters_ukf,
+                            Number_of_Delay, kappa)
 
 
 # %% bicycle model simulation
