@@ -237,42 +237,25 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         return y_dif
 
 
-class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
+class UnscentedKalmanFilter_VanDerMerwe(UnscentedKalmanFilter):
     def __init__(self, state_function, measurement_function,
                  Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
-        super().__init__(Number_of_Delay)
-        self.state_function = state_function
-        self.measurement_function = measurement_function
-
-        self.Q = Q
-        self.R = R
-
-        self.STATE_SIZE = Q.shape[0]
-        self.OUTPUT_SIZE = R.shape[0]
-
-        self.x_hat = np.zeros((self.STATE_SIZE, 1))
-        self.X_d = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
-
-        self.P = np.eye(self.STATE_SIZE)
-        self.G = None
-
-        self.Parameters = Parameters
-        self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
         self.kappa = 0.0
         if kappa == 0.0:
-            self.kappa = 3 - self.STATE_SIZE
+            self.kappa = 3 - Q.shape[0]
         else:
             self.kappa = kappa
 
         self.alpha = alpha
         self.beta = beta
         self.lambda_weight = 0.0
-        self.W = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
-        self.Wc = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
+
+        self.Wc = np.zeros((2 * Q.shape[0] + 1, 2 * Q.shape[0] + 1))
         self.wc = 0.0
 
-        self.calc_weights()
+        super().__init__(state_function, measurement_function,
+                         Q, R, Parameters, Number_of_Delay, self.kappa)
 
     def calc_weights(self):
         self.lambda_weight = self.alpha * self.alpha * \
@@ -287,22 +270,6 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         self.Wc = copy.deepcopy(self.W)
         self.Wc[0, 0] = self.wc
-
-    def calc_sigma_points(self, x, P):
-        SP = np.linalg.cholesky(P)
-        Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
-
-        Kai[:, 0] = x.flatten()
-        for i in range(self.STATE_SIZE):
-            Kai[:, i + 1] = (x +
-                             math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                             (SP[i, :].T).reshape(-1, 1)).flatten()
-            Kai[:, i + self.STATE_SIZE + 1] = \
-                (x -
-                 math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                 (SP[i, :].T).reshape(-1, 1)).flatten()
-
-        return Kai
 
     def predict(self, u):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
@@ -343,13 +310,3 @@ class UnscentedKalmanFilter_VanDerMerwe(KalmanFilterCommon):
 
         self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y, y_hat_m)
         self.P = self.P - self.G @ P_xy.T
-
-    def calc_y_dif(self, y, y_hat_m):
-        self.y_store.push(y_hat_m)
-
-        y_dif = y - self.y_store.get()
-
-        # When there is no delay, you can use below.
-        # y_dif = y - y_hat_m
-
-        return y_dif
