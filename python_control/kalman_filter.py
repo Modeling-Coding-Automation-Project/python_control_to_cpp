@@ -251,7 +251,6 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
         self.beta = beta
         self.lambda_weight = 0.0
 
-        self.W_c = np.zeros((2 * Q.shape[0] + 1, 2 * Q.shape[0] + 1))
         self.w_c = 0.0
         self.w_m = 0.0
 
@@ -266,9 +265,9 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
             (self.STATE_SIZE + self.lambda_weight)
         self.w_c = self.w_m + 1 - self.alpha * self.alpha + self.beta
 
-        self.W_c[0, 0] = self.w_c
+        self.W[0, 0] = self.w_c
         for i in range(1, 2 * self.STATE_SIZE + 1):
-            self.W_c[i, i] = 1 / (2 * (self.STATE_SIZE + self.lambda_weight))
+            self.W[i, i] = 1 / (2 * (self.STATE_SIZE + self.lambda_weight))
 
     def predict(self, u):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
@@ -279,12 +278,12 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
 
         self.x_hat = self.w_m * Kai[:, 0].reshape(-1, 1)
         for i in range(1, 2 * self.STATE_SIZE + 1):
-            self.x_hat += self.W_c[i, i] * Kai[:, i].reshape(-1, 1)
+            self.x_hat += self.W[i, i] * Kai[:, i].reshape(-1, 1)
 
         for i in range(2 * self.STATE_SIZE + 1):
             self.X_d[:, i] = (Kai[:, i].reshape(-1, 1) - self.x_hat).flatten()
 
-        self.P = self.X_d @ self.W_c @ self.X_d.T + self.Q
+        self.P = self.X_d @ self.W @ self.X_d.T + self.Q
 
     def update(self, y):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
@@ -296,14 +295,14 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
 
         y_hat_m = self.w_m * Nu[:, 0].reshape(-1, 1)
         for i in range(1, 2 * self.STATE_SIZE + 1):
-            y_hat_m += self.W_c[i, i] * Nu[:, i].reshape(-1, 1)
+            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
             Y_d[:, i] = (Nu[:, i].reshape(-1, 1) - y_hat_m).flatten()
 
-        P_yy = Y_d @ self.W_c @ Y_d.T
-        P_xy = self.X_d @ self.W_c @ Y_d.T
+        P_yy = Y_d @ self.W @ Y_d.T
+        P_xy = self.X_d @ self.W @ Y_d.T
 
         self.G = P_xy @ np.linalg.inv(P_yy + self.R)
 
