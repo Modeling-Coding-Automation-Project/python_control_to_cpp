@@ -170,7 +170,7 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
             self.W[i, i] = 1.0 / (2.0 * (self.STATE_SIZE + self.kappa))
 
     def calc_sigma_points(self, x, P):
-        SP = np.linalg.cholesky(P)
+        SP = np.linalg.cholesky(P, upper=True)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
         Kai[:, 0] = x.flatten()

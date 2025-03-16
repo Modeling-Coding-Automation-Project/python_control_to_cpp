@@ -80,8 +80,8 @@ Parameters_ukf = Parameters(
 
 Number_of_Delay = 5
 
-Q_ukf = np.diag([0.1, 0.1, 0.01])
-R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 10.0
+Q_ukf = np.diag([0.01, 0.01, 0.001])
+R_ukf = np.diag([1.0, 1.0, 1.0, 1.0])
 
 import fxu
 import hx
