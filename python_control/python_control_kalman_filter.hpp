@@ -557,6 +557,93 @@ template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
 using SetRowVectorsToMatrix =
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
 
+/* calc state function with each sigma points */
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type, std::size_t Index>
+struct StateFunctionEachSigmaPoints_Loop {
+  static inline void compute(Kai_Type &Kai,
+                             const StateFunction_Object &state_function,
+                             const U_Type &U,
+                             const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<Index>(
+        Kai, state_function(PythonNumpy::get_row<Index>(Kai), U, parameters));
+
+    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                      Parameter_Type,
+                                      (Index - 1)>::calc(Kai, state_function, U,
+                                                         parameters);
+  }
+};
+
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type>
+struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                         Parameter_Type, 0> {
+  static inline void compute(Kai_Type &Kai,
+                             const StateFunction_Object &state_function,
+                             const U_Type &U,
+                             const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<0>(
+        Kai, state_function(PythonNumpy::get_row<0>(Kai), U, parameters));
+  }
+};
+
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type>
+using StateFunctionEachSigmaPoints =
+    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                      Parameter_Type, (Kai_Type::ROWS - 1)>;
+
+template <typename X_Type, typename W_Type, typename Kai_Type,
+          std::size_t Index>
+struct AverageSigmaPoints_Loop {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    X_hat = X_hat +
+            W.template get<Index, Index>() * PythonNumpy::get_row<Index>(Kai);
+
+    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Index - 1)>::average(
+        X_hat, W, Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
+struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    X_hat = X_hat + W.template get<0, 0>() * PythonNumpy::get_row<0>(Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
+using AverageSigmaPoints =
+    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::ROWS - 1)>;
+
+template <typename Kai_Type, typename X_Type, std::size_t Index>
+struct SigmaPointsCovariance_Loop {
+  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
+                             const X_Type &X_hat) {
+
+    PythonNumpy::set_row<Index>(X_d, PythonNumpy::get_row<Index>(Kai) - X_hat);
+
+    SigmaPointsCovariance_Loop<Kai_Type, X_Type>::compute(X_d, Kai, X_hat);
+  }
+};
+
+template <typename Kai_Type, typename X_Type>
+struct SigmaPointsCovariance_Loop<Kai_Type, X_Type, 0> {
+  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
+                             const X_Type &X_hat) {
+    PythonNumpy::set_row<0>(X_d, PythonNumpy::get_row<0>(Kai) - X_hat);
+  }
+};
+
+template <typename Kai_Type, typename X_Type>
+using SigmaPointsCovariance =
+    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::ROWS - 1)>;
+
 } // namespace UKF_Operation
 
 /* Unscented Kalman Filter */
@@ -634,7 +721,7 @@ public:
                           .create_dense()),
         G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
         beta(static_cast<_T>(2)), lambda_weight(static_cast<_T>(0)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), Y_store(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
         parameters(parameters), _C_P_CT_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function) {
@@ -649,7 +736,7 @@ public:
       : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
         alpha(input.alpha), beta(input.beta),
         lambda_weight(input.lambda_weight), w_m(input.w_m), W(input.W),
-        X_hat(input.X_hat), Y_store(input.Y_store),
+        X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
         parameters(input.parameters),
         _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
         _state_function(input._state_function),
@@ -671,6 +758,7 @@ public:
       this->w_m = input.w_m;
       this->W = input.W;
       this->X_hat = input.X_hat;
+      this->X_d = input.X_d;
       this->Y_store = input.Y_store;
       this->parameters = input.parameters;
       this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
@@ -689,7 +777,8 @@ public:
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
         lambda_weight(std::move(input.lambda_weight)),
         w_m(std::move(input.w_m)), W(std::move(input.W)),
-        X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
+        X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
+        Y_store(std::move(input.Y_store)),
         parameters(std::move(input.parameters)),
         _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
         _state_function(input._state_function),
@@ -711,6 +800,7 @@ public:
       this->w_m = std::move(input.w_m);
       this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
+      this->X_d = std::move(input.X_d);
       this->Y_store = std::move(input.Y_store);
       this->parameters = std::move(input.parameters);
       this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
@@ -739,23 +829,6 @@ public:
                       (static_cast<_T>(_STATE_SIZE) + this->lambda_weight)));
   }
 
-  /*
-      def calc_sigma_points(self, x, P):
-          SP = np.linalg.cholesky(P)
-          Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
-
-          Kai[:, 0] = x.flatten()
-          for i in range(self.STATE_SIZE):
-              Kai[:, i + 1] = (x +
-                               math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                               (SP[:, i]).reshape(-1, 1)).flatten()
-              Kai[:, i + self.STATE_SIZE + 1] = \
-                  (x -
-                   math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                   (SP[:, i]).reshape(-1, 1)).flatten()
-
-          return Kai
-  */
   auto calc_sigma_points(const _State_Type &x, const P_Type &P) -> _Kai_Type {
 
     _P_Chol_Solver_Type P_cholesky_solver =
@@ -778,11 +851,17 @@ public:
 
     auto Kai = this->calc_sigma_points(this->X_hat, this->P);
 
-    // this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+    UKF_Operation::StateFunctionEachSigmaPoints<
+        _Kai_Type, _StateFunction_Object, U_Type,
+        Parameter_Type>::compute(Kai, this->_state_function, U, parameters);
 
-    // this->X_hat = this->_state_function(this->X_hat, U, parameters);
-    // this->P =
-    //     this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
+    this->X_hat = PythonNumpy::make_DenseMatrix<_T, _STATE_SIZE, 1>();
+
+    UKF_Operation::AverageSigmaPoints<_State_Type, _W_Type, _Kai_Type>::compute(
+        this->X_hat, this->W, Kai);
+
+    UKF_Operation::SigmaPointsCovariance<_Kai_Type, _State_Type>::compute(
+        this->X_d, Kai, this->X_hat);
   }
 
   inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
@@ -792,25 +871,35 @@ public:
     _Measurement_Type Y_dif = Y - this->Y_store.get();
 
     // When there is no delay, you can use below.
-    // Y_dif = Y - this->_measurement_function(this->X_hat, parameters);
+    // Y_dif = Y -
+    // this->_measurement_function(this->X_hat,
+    // parameters);
 
     return Y_dif;
   }
 
   inline void update(const _Measurement_Type &Y) {
 
-    // this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
+    // this->C =
+    // this->_measurement_function_jacobian(this->X_hat,
+    // parameters);
 
-    // auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
+    // auto P_CT =
+    // PythonNumpy::A_mul_BTranspose(this->P,
+    // this->C);
 
     // auto C_P_CT_R = this->C * P_CT + this->R;
     // this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
 
-    // this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+    // this->G = P_CT *
+    // this->_C_P_CT_R_inv_solver.get_answer();
 
-    // this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
+    // this->X_hat = this->X_hat + this->G *
+    // this->calc_y_dif(Y);
 
-    // this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+    // this->P =
+    // (PythonNumpy::make_DiagMatrixIdentity<_T,
+    // _STATE_SIZE>() -
     //            this->G * this->C) *
     //           this->P;
   }
@@ -855,6 +944,7 @@ public:
   _W_Type W;
 
   _State_Type X_hat;
+  _Kai_Type X_d;
   _MeasurementStored_Type Y_store;
 
   Parameter_Type parameters;
