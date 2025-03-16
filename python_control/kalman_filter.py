@@ -263,9 +263,7 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
 
         self.w_m = self.lambda_weight / \
             (self.STATE_SIZE + self.lambda_weight)
-        self.w_c = self.w_m + 1 - self.alpha * self.alpha + self.beta
-
-        self.W[0, 0] = self.w_c
+        self.W[0, 0] = self.w_m + 1 - self.alpha * self.alpha + self.beta
         for i in range(1, 2 * self.STATE_SIZE + 1):
             self.W[i, i] = 1 / (2 * (self.STATE_SIZE + self.lambda_weight))
 
