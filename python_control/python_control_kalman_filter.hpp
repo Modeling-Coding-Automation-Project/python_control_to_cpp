@@ -498,6 +498,32 @@ using ExtendedKalmanFilter_Type =
     ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                          Number_Of_Delay>;
 
+/* Unscented Kalman Filter Operation */
+namespace UKF_Operation {
+
+template <typename T, typename W_Type, std::size_t Index, std::size_t Rest>
+struct set_rest_of_W {
+  static inline void set(W_Type &W, const T &weight_to_set) {
+    W.template set<Index, Index>(weight_to_set);
+    set_rest_of_W<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
+  }
+};
+
+template <typename T, typename W_Type, std::size_t Index>
+struct set_rest_of_W<T, W_Type, Index, 0> {
+  static inline void set(W_Type &W, const T &weight_to_set) {
+    // Do nothing.
+    static_cast<void>(W);
+    static_cast<void>(weight_to_set);
+  }
+};
+
+template <typename T, typename W_Type, std::size_t Start_Index>
+using set_rest_of_W_Type =
+    set_rest_of_W<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
+
+} // namespace UKF_Operation
+
 /* Unscented Kalman Filter */
 template <typename U_Type, typename Q_Type, typename R_Type,
           typename Parameter_Type, std::size_t Number_Of_Delay = 0>
@@ -531,6 +557,8 @@ private:
   using _C_P_CT_R_Inv_Type =
       PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
           PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+
+  using _W_Type = PythonNumpy::DiagMatrix_Type<_T, (2 * _STATE_SIZE + 1)>;
 
 public:
   /* Type  */
@@ -566,16 +594,25 @@ public:
                         const Parameter_Type &parameters)
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
-        G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
+        beta(static_cast<_T>(2)), lambda_weight(static_cast<_T>(0)),
+        w_m(static_cast<_T>(0)), W(), X_hat(), Y_store(),
+        parameters(parameters), _C_P_CT_R_inv_solver(),
         _state_function(state_function),
-        _measurement_function(measurement_function) {}
+        _measurement_function(measurement_function) {
+
+    this->calc_weights();
+  }
 
   /* Copy Constructor */
   UnscentedKalmanFilter(
       const UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                                   Number_Of_Delay> &input)
-      : Q(input.Q), R(input.R), P(input.P), G(input.G), X_hat(input.X_hat),
-        Y_store(input.Y_store), parameters(input.parameters),
+      : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
+        alpha(input.alpha), beta(input.beta),
+        lambda_weight(input.lambda_weight), w_m(input.w_m), W(input.W),
+        X_hat(input.X_hat), Y_store(input.Y_store),
+        parameters(input.parameters),
         _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
         _state_function(input._state_function),
         _measurement_function(input._measurement_function) {}
@@ -589,6 +626,12 @@ public:
       this->R = input.R;
       this->P = input.P;
       this->G = input.G;
+      this->kappa = input.kappa;
+      this->alpha = input.alpha;
+      this->beta = input.beta;
+      this->lambda_weight = input.lambda_weight;
+      this->w_m = input.w_m;
+      this->W = input.W;
       this->X_hat = input.X_hat;
       this->Y_store = input.Y_store;
       this->parameters = input.parameters;
@@ -604,8 +647,11 @@ public:
       UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                             Number_Of_Delay> &&input)
       : Q(std::move(input.Q)), R(std::move(input.R)), P(std::move(input.P)),
-        G(std::move(input.G)), X_hat(std::move(input.X_hat)),
-        Y_store(std::move(input.Y_store)),
+        G(std::move(input.G)), kappa(std::move(input.kappa)),
+        alpha(std::move(input.alpha)), beta(std::move(input.beta)),
+        lambda_weight(std::move(input.lambda_weight)),
+        w_m(std::move(input.w_m)), W(std::move(input.W)),
+        X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
         parameters(std::move(input.parameters)),
         _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
         _state_function(input._state_function),
@@ -620,6 +666,12 @@ public:
       this->R = std::move(input.R);
       this->P = std::move(input.P);
       this->G = std::move(input.G);
+      this->kappa = std::move(input.kappa);
+      this->alpha = std::move(input.alpha);
+      this->beta = std::move(input.beta);
+      this->lambda_weight = std::move(input.lambda_weight);
+      this->w_m = std::move(input.w_m);
+      this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
       this->Y_store = std::move(input.Y_store);
       this->parameters = std::move(input.parameters);
@@ -632,6 +684,23 @@ public:
 
 public:
   /* Function */
+  inline void calc_weights(void) {
+    this->lambda_weight = this->alpha * this->alpha *
+                              (static_cast<_T>(_STATE_SIZE) + this->kappa) -
+                          static_cast<_T>(_STATE_SIZE);
+
+    this->w_m = this->lambda_weight /
+                (static_cast<_T>(_STATE_SIZE) + this->lambda_weight);
+
+    this->W.template set<0, 0>(this->w_m + static_cast<_T>(1) -
+                               this->alpha * this->alpha + this->beta);
+
+    UKF_Operation::set_rest_of_W_Type<_T, _W_Type, 1>::set(
+        this->W, static_cast<_T>(1) /
+                     (static_cast<_T>(2) *
+                      (static_cast<_T>(_STATE_SIZE) + this->lambda_weight)));
+  }
+
   inline void predict(const U_Type &U) {
 
     this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
@@ -702,6 +771,13 @@ public:
   R_Type R;
   P_Type P;
   G_Type G;
+
+  _T kappa;
+  _T alpha;
+  _T beta;
+  _T lambda_weight;
+  _T w_m;
+  _W_Type W;
 
   _State_Type X_hat;
   _MeasurementStored_Type Y_store;
