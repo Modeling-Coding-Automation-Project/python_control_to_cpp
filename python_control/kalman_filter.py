@@ -178,11 +178,11 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         for i in range(self.STATE_SIZE):
             Kai[:, i + 1] = (x +
                              math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                             (SP[i, :].T).reshape(-1, 1)).flatten()
+                             (SP[:, i]).reshape(-1, 1)).flatten()
             Kai[:, i + self.STATE_SIZE + 1] = \
                 (x -
                  math.sqrt(self.STATE_SIZE + self.lambda_weight) *
-                 (SP[i, :].T).reshape(-1, 1)).flatten()
+                 (SP[:, i]).reshape(-1, 1)).flatten()
 
         return Kai
 
