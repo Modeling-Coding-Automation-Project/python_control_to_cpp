@@ -2,6 +2,7 @@
 #define __PYTHON_CONTROL_KALMAN_FILTER_HPP__
 
 #include "python_control_state_space.hpp"
+#include "python_math.hpp"
 #include "python_numpy.hpp"
 
 #include <functional>
@@ -502,15 +503,15 @@ using ExtendedKalmanFilter_Type =
 namespace UKF_Operation {
 
 template <typename T, typename W_Type, std::size_t Index, std::size_t Rest>
-struct set_rest_of_W {
+struct SetRestOfW_Loop {
   static inline void set(W_Type &W, const T &weight_to_set) {
     W.template set<Index, Index>(weight_to_set);
-    set_rest_of_W<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
+    SetRestOfW_Loop<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
   }
 };
 
 template <typename T, typename W_Type, std::size_t Index>
-struct set_rest_of_W<T, W_Type, Index, 0> {
+struct SetRestOfW_Loop<T, W_Type, Index, 0> {
   static inline void set(W_Type &W, const T &weight_to_set) {
     // Do nothing.
     static_cast<void>(W);
@@ -519,8 +520,42 @@ struct set_rest_of_W<T, W_Type, Index, 0> {
 };
 
 template <typename T, typename W_Type, std::size_t Start_Index>
-using set_rest_of_W_Type =
-    set_rest_of_W<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
+using SetRestOfW =
+    SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
+
+/* update sigma point matrix */
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
+          std::size_t Index, std::size_t End_Index>
+struct UpdateSigmaPointMatrix_Loop {
+  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
+                         const T &x_lambda) {
+
+    PythonNumpy::set_row<(Index + 1)>(
+        Kai, X + x_lambda * PythonNumpy::get_row<Index>(SP));
+    PythonNumpy::set_row<(Index + X_Type::COLS + 1)>(
+        Kai, X - x_lambda * PythonNumpy::get_row<Index>(SP));
+
+    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, (Index + 1),
+                                (End_Index - 1)>::set(Kai, X, SP, x_lambda);
+  }
+};
+
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
+          std::size_t Index>
+struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
+  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
+                         const T &x_lambda) {
+    // Do nothing.
+    static_cast<void>(Kai);
+    static_cast<void>(X);
+    static_cast<void>(SP);
+    static_cast<void>(x_lambda);
+  }
+};
+
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
+using SetRowVectorsToMatrix =
+    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
 
 } // namespace UKF_Operation
 
@@ -551,7 +586,7 @@ private:
       PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
                                                 Parameter_Type>;
 
-  using _Chol_P_Type = PythonNumpy::LinalgSolverCholesky_Type<
+  using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
       PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
 
   using _C_P_CT_R_Inv_Type =
@@ -559,6 +594,9 @@ private:
           PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
   using _W_Type = PythonNumpy::DiagMatrix_Type<_T, (2 * _STATE_SIZE + 1)>;
+
+  using _Kai_Type =
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, (2 * _STATE_SIZE + 1)>;
 
 public:
   /* Type  */
@@ -695,10 +733,45 @@ public:
     this->W.template set<0, 0>(this->w_m + static_cast<_T>(1) -
                                this->alpha * this->alpha + this->beta);
 
-    UKF_Operation::set_rest_of_W_Type<_T, _W_Type, 1>::set(
+    UKF_Operation::SetRestOfW<_T, _W_Type, 1>::set(
         this->W, static_cast<_T>(1) /
                      (static_cast<_T>(2) *
                       (static_cast<_T>(_STATE_SIZE) + this->lambda_weight)));
+  }
+
+  /*
+      def calc_sigma_points(self, x, P):
+          SP = np.linalg.cholesky(P)
+          Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
+
+          Kai[:, 0] = x.flatten()
+          for i in range(self.STATE_SIZE):
+              Kai[:, i + 1] = (x +
+                               math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                               (SP[:, i]).reshape(-1, 1)).flatten()
+              Kai[:, i + self.STATE_SIZE + 1] = \
+                  (x -
+                   math.sqrt(self.STATE_SIZE + self.lambda_weight) *
+                   (SP[:, i]).reshape(-1, 1)).flatten()
+
+          return Kai
+  */
+  auto calc_sigma_points(const _State_Type &x, const P_Type &P) -> _Kai_Type {
+
+    _P_Chol_Solver_Type P_cholesky_solver =
+        PythonNumpy::make_LinalgSolverCholesky(P);
+    _Kai_Type Kai;
+    _T x_lambda =
+        PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + this->lambda_weight);
+
+    auto SP = P_cholesky_solver.solve(P);
+
+    PythonNumpy::set_row<0>(Kai, x);
+    UKF_Operation::SetRowVectorsToMatrix<_T, _Kai_Type, _State_Type,
+                                         decltype(SP)>::set(Kai, x, SP,
+                                                            x_lambda);
+
+    return Kai;
   }
 
   inline void predict(const U_Type &U) {
