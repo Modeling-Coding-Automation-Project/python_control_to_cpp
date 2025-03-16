@@ -609,10 +609,21 @@ struct AverageSigmaPoints_Loop {
 };
 
 template <typename X_Type, typename W_Type, typename Kai_Type>
+struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 1> {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    X_hat = X_hat + W.template get<1, 1>() * PythonNumpy::get_row<1>(Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
 struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
   static inline void compute(X_Type &X_hat, const W_Type &W,
                              const Kai_Type &Kai) {
-    X_hat = X_hat + W.template get<0, 0>() * PythonNumpy::get_row<0>(Kai);
+    // Do nothing.
+    static_cast<void>(X_hat);
+    static_cast<void>(W);
+    static_cast<void>(Kai);
   }
 };
 
@@ -651,7 +662,7 @@ template <typename Nu_Type, typename Kai_Type,
           std::size_t Index>
 struct MeasurementFunctionEachSigmaPoints_Loop {
   static inline void
-  compute(Nu_Type Nu, Kai_Type &Kai,
+  compute(Nu_Type &Nu, Kai_Type &Kai,
           const MeasurementFunction_Object &measurement_function,
           const Parameter_Type &parameters) {
 
@@ -669,7 +680,7 @@ template <typename Nu_Type, typename Kai_Type,
 struct MeasurementFunctionEachSigmaPoints_Loop<
     Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type, 0> {
   static inline void
-  compute(Nu_Type Nu, Kai_Type &Kai,
+  compute(Nu_Type &Nu, Kai_Type &Kai,
           const MeasurementFunction_Object &measurement_function,
           const Parameter_Type &parameters) {
 
@@ -897,8 +908,7 @@ public:
         _Kai_Type, _StateFunction_Object, U_Type,
         Parameter_Type>::compute(Kai, this->_state_function, U, parameters);
 
-    this->X_hat = PythonNumpy::make_DenseMatrixZeros<_T, _STATE_SIZE, 1>();
-
+    this->X_hat = this->w_m * PythonNumpy::get_row<0>(Kai);
     UKF_Operation::AverageSigmaPoints<_State_Type, _W_Type, _Kai_Type>::compute(
         this->X_hat, this->W, Kai);
 
@@ -938,6 +948,7 @@ public:
 
     _Measurement_Type Y_hat_m =
         PythonNumpy::make_DenseMatrixZeros<_T, _OUTPUT_SIZE, 1>();
+    Y_hat_m = this->w_m * PythonNumpy::get_row<0>(Y_d);
     UKF_Operation::AverageSigmaPoints<_Measurement_Type, _W_Type,
                                       Y_d_Type>::compute(Y_hat_m, this->W, Y_d);
 

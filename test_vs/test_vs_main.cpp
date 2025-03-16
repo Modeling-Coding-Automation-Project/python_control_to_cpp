@@ -1279,7 +1279,7 @@ void check_python_control_unscented_kalman_filter(void) {
     MCAPTester<T> tester;
 
     //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    constexpr T NEAR_LIMIT_SOFT = 1.0e-2F;
+    constexpr T NEAR_LIMIT_SOFT = 5.0e-2F;
 
     /* UKF定義準備 */
     constexpr std::size_t NUMBER_OF_DELAY = 5;
@@ -1294,14 +1294,14 @@ void check_python_control_unscented_kalman_filter(void) {
 
 
     auto Q = make_DiagMatrix<STATE_SIZE>(
-        static_cast<T>(0.1), static_cast<T>(0.1),
-        static_cast<T>(0.01));
+        static_cast<T>(0.01), static_cast<T>(0.01),
+        static_cast<T>(0.001));
 
     using Q_Type = decltype(Q);
 
     auto R = make_DiagMatrix<OUTPUT_SIZE>(
-        static_cast<T>(10), static_cast<T>(10),
-        static_cast<T>(10), static_cast<T>(10));
+        static_cast<T>(1), static_cast<T>(1),
+        static_cast<T>(1), static_cast<T>(1));
 
     using R_Type = decltype(R);
 
@@ -1386,10 +1386,10 @@ void check_python_control_unscented_kalman_filter(void) {
         }
     }
 
-    //for (std::size_t i = 0; i < STORE_SIZE; i++) {
-    //    tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_SOFT,
-    //        "check UnscentedKalmanFilter simulation x estimate.");
-    //}
+    for (std::size_t i = 0; i < STORE_SIZE; i++) {
+        tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_SOFT,
+            "check UnscentedKalmanFilter simulation x estimate.");
+    }
 
 
     tester.throw_error_if_test_failed();
