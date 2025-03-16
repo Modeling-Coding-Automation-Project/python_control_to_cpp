@@ -776,11 +776,13 @@ public:
 
   inline void predict(const U_Type &U) {
 
-    this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+    auto Kai = this->calc_sigma_points(this->X_hat, this->P);
 
-    this->X_hat = this->_state_function(this->X_hat, U, parameters);
-    this->P =
-        this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
+    // this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+
+    // this->X_hat = this->_state_function(this->X_hat, U, parameters);
+    // this->P =
+    //     this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
   }
 
   inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
@@ -797,20 +799,20 @@ public:
 
   inline void update(const _Measurement_Type &Y) {
 
-    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
+    // this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
 
-    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
+    // auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
 
-    auto C_P_CT_R = this->C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+    // auto C_P_CT_R = this->C * P_CT + this->R;
+    // this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
 
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+    // this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
 
-    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
+    // this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
 
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-               this->G * this->C) *
-              this->P;
+    // this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+    //            this->G * this->C) *
+    //           this->P;
   }
 
   inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
