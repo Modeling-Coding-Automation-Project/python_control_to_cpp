@@ -251,7 +251,6 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
         self.beta = beta
         self.lambda_weight = 0.0
 
-        self.w_c = 0.0
         self.w_m = 0.0
 
         super().__init__(state_function, measurement_function,
