@@ -203,18 +203,17 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
     def update(self, y):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
 
-        Nu = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
+        Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            Nu[:, i] = self.measurement_function(
+            Y_d[:, i] = self.measurement_function(
                 Kai[:, i].reshape(-1, 1), self.Parameters).flatten()
 
         y_hat_m = np.zeros((self.OUTPUT_SIZE, 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            y_hat_m += self.W[i, i] * Nu[:, i].reshape(-1, 1)
+            y_hat_m += self.W[i, i] * Y_d[:, i].reshape(-1, 1)
 
-        Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
         for i in range(2 * self.STATE_SIZE + 1):
-            Y_d[:, i] = (Nu[:, i].reshape(-1, 1) - y_hat_m).flatten()
+            Y_d[:, i] = (Y_d[:, i].reshape(-1, 1) - y_hat_m).flatten()
 
         P_yy = Y_d @ self.W @ Y_d.T
         P_xy = self.X_d @ self.W @ Y_d.T
