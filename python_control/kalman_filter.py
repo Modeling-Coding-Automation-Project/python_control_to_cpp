@@ -132,7 +132,7 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
         return y_dif
 
 
-class UnscentedKalmanFilter(KalmanFilterCommon):
+class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0):
         super().__init__(Number_of_Delay)
@@ -237,7 +237,7 @@ class UnscentedKalmanFilter(KalmanFilterCommon):
         return y_dif
 
 
-class UnscentedKalmanFilter_VanDerMerwe(UnscentedKalmanFilter):
+class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
     def __init__(self, state_function, measurement_function,
                  Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
 

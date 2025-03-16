@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 
-from python_control.kalman_filter import UnscentedKalmanFilter, UnscentedKalmanFilter_VanDerMerwe
+from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 # %% bicycle model example
@@ -82,17 +82,16 @@ Number_of_Delay = 0
 
 Q_ukf = np.diag([1.0, 1.0, 1.0])
 R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 0.1
-kappa = 0.5
 
 import fxu
 import hx
-# ukf = UnscentedKalmanFilter(fxu.function, hx.function,
-#                             Q_ukf, R_ukf, Parameters_ukf,
-#                             Number_of_Delay, kappa)
+# ukf = UnscentedKalmanFilter_Basic(fxu.function, hx.function,
+#                                   Q_ukf, R_ukf, Parameters_ukf,
+#                                   Number_of_Delay, kappa=0.5)
 
-ukf = UnscentedKalmanFilter_VanDerMerwe(fxu.function, hx.function,
-                                        Q_ukf, R_ukf, Parameters_ukf,
-                                        Number_of_Delay)
+ukf = UnscentedKalmanFilter(fxu.function, hx.function,
+                            Q_ukf, R_ukf, Parameters_ukf,
+                            Number_of_Delay)
 
 # %% bicycle model simulation
 
