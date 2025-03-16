@@ -78,10 +78,10 @@ Parameters_ukf = Parameters(
     landmark_1_x=landmarks[0, 0], landmark_1_y=landmarks[1, 0],
     landmark_2_x=landmarks[0, 1], landmark_2_y=landmarks[1, 1])
 
-Number_of_Delay = 0
+Number_of_Delay = 5
 
-Q_ukf = np.diag([1.0, 1.0, 1.0])
-R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 0.1
+Q_ukf = np.diag([0.1, 0.1, 0.01])
+R_ukf = np.diag([1.0, 1.0, 1.0, 1.0]) * 10.0
 
 import fxu
 import hx
