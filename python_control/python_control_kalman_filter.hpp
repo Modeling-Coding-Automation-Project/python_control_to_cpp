@@ -498,6 +498,223 @@ using ExtendedKalmanFilter_Type =
     ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                          Number_Of_Delay>;
 
+/* Unscented Kalman Filter */
+template <typename U_Type, typename Q_Type, typename R_Type,
+          typename Parameter_Type, std::size_t Number_Of_Delay = 0>
+class UnscentedKalmanFilter {
+private:
+  /* Type */
+  using _T = typename U_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Matrix value data type must be float or double.");
+
+  static constexpr std::size_t _STATE_SIZE = Q_Type::COLS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
+  static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
+
+  using _State_Type = PythonControl::StateSpaceStateType<_T, _STATE_SIZE>;
+  using _Measurement_Type =
+      PythonControl::StateSpaceOutputType<_T, _OUTPUT_SIZE>;
+  using _MeasurementStored_Type =
+      PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
+
+  using _StateFunction_Object =
+      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
+  using _MeasurementFunction_Object =
+      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
+                                                Parameter_Type>;
+
+  using _Chol_P_Type = PythonNumpy::LinalgSolverCholesky_Type<
+      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
+
+  using _C_P_CT_R_Inv_Type =
+      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
+          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+
+public:
+  /* Type  */
+  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+  using P_xy_Type =
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+  using P_yy_Type =
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>;
+
+  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+
+  /* Check Compatibility */
+  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
+                "Q matrix must be diagonal matrix.");
+
+  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
+                "R matrix must be diagonal matrix.");
+
+  /* Check Data Type */
+  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+                "Data type of Q matrix must be same type as A.");
+
+  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+                "Data type of R matrix must be same type as A.");
+
+public:
+  /* Constructor */
+  UnscentedKalmanFilter(){};
+
+  UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
+                        _StateFunction_Object &state_function,
+                        _MeasurementFunction_Object &measurement_function,
+                        const Parameter_Type &parameters)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                          .create_dense()),
+        G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        _state_function(state_function),
+        _measurement_function(measurement_function) {}
+
+  /* Copy Constructor */
+  UnscentedKalmanFilter(
+      const UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                  Number_Of_Delay> &input)
+      : Q(input.Q), R(input.R), P(input.P), G(input.G), X_hat(input.X_hat),
+        Y_store(input.Y_store), parameters(input.parameters),
+        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        _state_function(input._state_function),
+        _measurement_function(input._measurement_function) {}
+
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                        Number_Of_Delay> &
+  operator=(const UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                        Number_Of_Delay> &input) {
+    if (this != &input) {
+      this->Q = input.Q;
+      this->R = input.R;
+      this->P = input.P;
+      this->G = input.G;
+      this->X_hat = input.X_hat;
+      this->Y_store = input.Y_store;
+      this->parameters = input.parameters;
+      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->_state_function = input._state_function;
+      this->_measurement_function = input._measurement_function;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  UnscentedKalmanFilter(
+      UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                            Number_Of_Delay> &&input)
+      : Q(std::move(input.Q)), R(std::move(input.R)), P(std::move(input.P)),
+        G(std::move(input.G)), X_hat(std::move(input.X_hat)),
+        Y_store(std::move(input.Y_store)),
+        parameters(std::move(input.parameters)),
+        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        _state_function(input._state_function),
+        _measurement_function(input._measurement_function) {}
+
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                        Number_Of_Delay> &
+  operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                  Number_Of_Delay> &&input) {
+    if (this != &input) {
+      this->Q = std::move(input.Q);
+      this->R = std::move(input.R);
+      this->P = std::move(input.P);
+      this->G = std::move(input.G);
+      this->X_hat = std::move(input.X_hat);
+      this->Y_store = std::move(input.Y_store);
+      this->parameters = std::move(input.parameters);
+      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->_state_function = std::move(input._state_function);
+      this->_measurement_function = std::move(input._measurement_function);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void predict(const U_Type &U) {
+
+    this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+
+    this->X_hat = this->_state_function(this->X_hat, U, parameters);
+    this->P =
+        this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
+  }
+
+  inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
+
+    this->Y_store.push(this->_measurement_function(this->X_hat, parameters));
+
+    _Measurement_Type Y_dif = Y - this->Y_store.get();
+
+    // When there is no delay, you can use below.
+    // Y_dif = Y - this->_measurement_function(this->X_hat, parameters);
+
+    return Y_dif;
+  }
+
+  inline void update(const _Measurement_Type &Y) {
+
+    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
+
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
+
+    auto C_P_CT_R = this->C * P_CT + this->R;
+    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+
+    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+
+    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
+
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->C) *
+              this->P;
+  }
+
+  inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
+
+    this->predict(U);
+    this->update(Y);
+  }
+
+  /* Get */
+  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+
+  /* Set */
+  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
+
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
+    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void
+  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
+    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  }
+
+public:
+  /* Constant */
+  static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
+
+public:
+  /* Variable */
+  Q_Type Q;
+  R_Type R;
+  P_Type P;
+  G_Type G;
+
+  _State_Type X_hat;
+  _MeasurementStored_Type Y_store;
+
+  Parameter_Type parameters;
+
+private:
+  /* Variable */
+  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  _StateFunction_Object _state_function;
+  _MeasurementFunction_Object _measurement_function;
+};
+
 } // namespace PythonControl
 
 #endif // __PYTHON_CONTROL_KALMAN_FILTER_HPP__
