@@ -56,11 +56,11 @@ int main(void) {
   using U_Type = StateSpaceInputType<double, INPUT_SIZE>;
   using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;
 
-  auto Q = make_DiagMatrix<STATE_SIZE>(0.01, 0.01, 0.001);
+  auto Q = make_KalmanFilter_Q<STATE_SIZE>(0.01, 0.01, 0.001);
 
   using Q_Type = decltype(Q);
 
-  auto R = make_DiagMatrix<OUTPUT_SIZE>(1.0, 1.0, 1.0, 1.0);
+  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(1.0, 1.0, 1.0, 1.0);
 
   using R_Type = decltype(R);
 

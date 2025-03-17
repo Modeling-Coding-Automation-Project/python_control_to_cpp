@@ -969,11 +969,11 @@ void check_python_control_linear_kalman_filter(void) {
 
     auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1), static_cast<T>(2));
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(10), static_cast<T>(10));
 
     /* カルマンフィルタ定義 */
@@ -1159,13 +1159,13 @@ void check_python_control_extended_kalman_filter(void) {
     using C_Type = SparseMatrix_Type<T, SparseAvailable_C>;
 
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1));
 
     using Q_Type = decltype(Q);
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(100), static_cast<T>(100),
         static_cast<T>(100), static_cast<T>(100));
 
@@ -1293,13 +1293,13 @@ void check_python_control_unscented_kalman_filter(void) {
     using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
 
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(0.01), static_cast<T>(0.01),
         static_cast<T>(0.001));
 
     using Q_Type = decltype(Q);
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1), static_cast<T>(1));
 
@@ -1329,7 +1329,8 @@ void check_python_control_unscented_kalman_filter(void) {
 
     /* UKF定義 */
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
-        ukf(Q, R, state_function, measurement_function, parameters);
+        ukf(Q, R, state_function, measurement_function, parameters,
+            static_cast<T>(0), static_cast<T>(0), static_cast<T>(0));
 
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ukf_copy = ukf;
@@ -1337,7 +1338,12 @@ void check_python_control_unscented_kalman_filter(void) {
         ukf_move = std::move(ukf_copy);
     ukf = ukf_move;
 
-    ///* シミュレーション */
+    ukf.kappa = static_cast<T>(0);
+    ukf.alpha = static_cast<T>(0.5);
+    ukf.beta = static_cast<T>(2);
+    ukf.calculate_weights();
+
+    /* シミュレーション */
     std::size_t simulation_steps = 200;
 
     auto x_true_initial = make_StateSpaceState<STATE_SIZE>(

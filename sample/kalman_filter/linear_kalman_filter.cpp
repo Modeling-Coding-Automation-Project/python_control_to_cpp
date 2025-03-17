@@ -45,9 +45,9 @@ int main(void) {
 
   auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
-  auto Q = make_DiagMatrix<STATE_SIZE>(1.0, 1.0, 1.0, 2.0);
+  auto Q = make_KalmanFilter_Q<STATE_SIZE>(1.0, 1.0, 1.0, 2.0);
 
-  auto R = make_DiagMatrix<OUTPUT_SIZE>(10.0, 10.0);
+  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(10.0, 10.0);
 
   auto lkf = make_LinearKalmanFilter(sys, Q, R);
 
