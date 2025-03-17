@@ -12,6 +12,35 @@ namespace PythonControl {
 
 constexpr double KALMAN_FILTER_DIVISION_MIN = 1.0e-10;
 
+/* Kalman Filter Weight Type */
+template <typename T, std::size_t Vector_Size>
+using KalmanFilter_Q_Type = PythonNumpy::DiagMatrix_Type<T, Vector_Size>;
+
+/* make Kalman Filter Weights  */
+template <std::size_t Vector_Size, typename T, typename... Args>
+inline auto make_KalmanFilter_Q(T value_1, Args... args)
+    -> KalmanFilter_Q_Type<T, Vector_Size> {
+
+  KalmanFilter_Q_Type<T, Vector_Size> input =
+      PythonNumpy::make_DiagMatrix<Vector_Size>(value_1, args...);
+
+  return input;
+}
+
+template <typename T, std::size_t Vector_Size>
+using KalmanFilter_R_Type = PythonNumpy::DiagMatrix_Type<T, Vector_Size>;
+
+/* make Kalman Filter Weights  */
+template <std::size_t Vector_Size, typename T, typename... Args>
+inline auto make_KalmanFilter_R(T value_1, Args... args)
+    -> KalmanFilter_R_Type<T, Vector_Size> {
+
+  KalmanFilter_R_Type<T, Vector_Size> input =
+      PythonNumpy::make_DiagMatrix<Vector_Size>(value_1, args...);
+
+  return input;
+}
+
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 class LinearKalmanFilter {
 private:

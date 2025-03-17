@@ -969,11 +969,11 @@ void check_python_control_linear_kalman_filter(void) {
 
     auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1), static_cast<T>(2));
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(10), static_cast<T>(10));
 
     /* カルマンフィルタ定義 */
@@ -1159,13 +1159,13 @@ void check_python_control_extended_kalman_filter(void) {
     using C_Type = SparseMatrix_Type<T, SparseAvailable_C>;
 
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1));
 
     using Q_Type = decltype(Q);
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(100), static_cast<T>(100),
         static_cast<T>(100), static_cast<T>(100));
 
@@ -1293,13 +1293,13 @@ void check_python_control_unscented_kalman_filter(void) {
     using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
 
 
-    auto Q = make_DiagMatrix<STATE_SIZE>(
+    auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(0.01), static_cast<T>(0.01),
         static_cast<T>(0.001));
 
     using Q_Type = decltype(Q);
 
-    auto R = make_DiagMatrix<OUTPUT_SIZE>(
+    auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
         static_cast<T>(1), static_cast<T>(1),
         static_cast<T>(1), static_cast<T>(1));
 
