@@ -808,7 +808,55 @@ public:
         _state_function(state_function),
         _measurement_function(measurement_function) {
 
-    this->calc_weights();
+    this->calculate_weights();
+  }
+
+  UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
+                        _StateFunction_Object &state_function,
+                        _MeasurementFunction_Object &measurement_function,
+                        const Parameter_Type &parameters, _T kappa_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                          .create_dense()),
+        G(), kappa(kappa_in), alpha(static_cast<_T>(0.5)),
+        beta(static_cast<_T>(2)), sigma_point_weight(static_cast<_T>(0)),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        parameters(parameters), _P_YY_R_inv_solver(),
+        _state_function(state_function),
+        _measurement_function(measurement_function) {
+
+    this->calculate_weights();
+  }
+
+  UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
+                        _StateFunction_Object &state_function,
+                        _MeasurementFunction_Object &measurement_function,
+                        const Parameter_Type &parameters, _T kappa_in,
+                        _T alpha_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                          .create_dense()),
+        G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<_T>(2)),
+        sigma_point_weight(static_cast<_T>(0)), w_m(static_cast<_T>(0)), W(),
+        X_hat(), X_d(), Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        _state_function(state_function),
+        _measurement_function(measurement_function) {
+
+    this->calculate_weights();
+  }
+
+  UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
+                        _StateFunction_Object &state_function,
+                        _MeasurementFunction_Object &measurement_function,
+                        const Parameter_Type &parameters, _T kappa_in,
+                        _T alpha_in, _T beta_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                          .create_dense()),
+        G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
+        sigma_point_weight(static_cast<_T>(0)), w_m(static_cast<_T>(0)), W(),
+        X_hat(), X_d(), Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        _state_function(state_function),
+        _measurement_function(measurement_function) {
+
+    this->calculate_weights();
   }
 
   /* Copy Constructor */
@@ -894,7 +942,7 @@ public:
 
 public:
   /* Function */
-  inline void calc_weights(void) {
+  inline void calculate_weights(void) {
     _T lambda_weight = this->alpha * this->alpha *
                            (static_cast<_T>(_STATE_SIZE) + this->kappa) -
                        static_cast<_T>(_STATE_SIZE);
@@ -913,8 +961,8 @@ public:
         PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + lambda_weight);
   }
 
-  inline auto calc_sigma_points(const _State_Type &X_in, const P_Type &P_in)
-      -> _Kai_Type {
+  inline auto calculate_sigma_points(const _State_Type &X_in,
+                                     const P_Type &P_in) -> _Kai_Type {
 
     _P_Chol_Solver_Type P_cholesky_solver =
         PythonNumpy::make_LinalgSolverCholesky<P_Type>();
@@ -932,7 +980,7 @@ public:
 
   inline void predict(const U_Type &U) {
 
-    auto Kai = this->calc_sigma_points(this->X_hat, this->P);
+    auto Kai = this->calculate_sigma_points(this->X_hat, this->P);
 
     UKF_Operation::StateFunctionEachSigmaPoints<
         _Kai_Type, _StateFunction_Object, U_Type,
@@ -965,7 +1013,7 @@ public:
 
   inline void update(const _Measurement_Type &Y) {
 
-    auto Kai = this->calc_sigma_points(this->X_hat, this->P);
+    auto Kai = this->calculate_sigma_points(this->X_hat, this->P);
 
     auto Y_d = PythonNumpy::make_DenseMatrixZeros<_T, _OUTPUT_SIZE,
                                                   (2 * _STATE_SIZE + 1)>();

@@ -1329,7 +1329,8 @@ void check_python_control_unscented_kalman_filter(void) {
 
     /* UKF定義 */
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
-        ukf(Q, R, state_function, measurement_function, parameters);
+        ukf(Q, R, state_function, measurement_function, parameters,
+            static_cast<T>(0), static_cast<T>(0), static_cast<T>(0));
 
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ukf_copy = ukf;
@@ -1337,7 +1338,12 @@ void check_python_control_unscented_kalman_filter(void) {
         ukf_move = std::move(ukf_copy);
     ukf = ukf_move;
 
-    ///* シミュレーション */
+    ukf.kappa = static_cast<T>(0);
+    ukf.alpha = static_cast<T>(0.5);
+    ukf.beta = static_cast<T>(2);
+    ukf.calculate_weights();
+
+    /* シミュレーション */
     std::size_t simulation_steps = 200;
 
     auto x_true_initial = make_StateSpaceState<STATE_SIZE>(
