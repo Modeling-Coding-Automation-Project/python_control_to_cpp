@@ -510,7 +510,7 @@ class KalmanFilterDeploy:
         code_text += "constexpr std::size_t INPUT_SIZE = decltype(lkf_state_space.B)::ROWS;\n"
         code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(lkf_state_space.C)::COLS;\n\n"
 
-        code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
+        code_text += "auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(lkf.Q.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(lkf.Q[i, i]) + ")"
@@ -521,7 +521,7 @@ class KalmanFilterDeploy:
                 code_text += ",\n"
         code_text += ");\n\n"
 
-        code_text += "auto R = make_DiagMatrix<OUTPUT_SIZE>(\n"
+        code_text += "auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
         for i in range(lkf.R.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(lkf.R[i, i]) + ")"
