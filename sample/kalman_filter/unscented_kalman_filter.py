@@ -2,7 +2,7 @@
 Extended Kalman Filter sample code
 
 Reference URL:
-https://inzkyk.xyz/kalman_filter/extended_kalman_filters/#subsection:11.4.1
+https://inzkyk.xyz/kalman_filter/unscented_kalman_filter/#section:10.15
 """
 import os
 import sys
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 
-from python_control.kalman_filter import ExtendedKalmanFilter
+from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 # %% bicycle model example
@@ -46,23 +46,16 @@ r = wheelbase / sympy.tan(steering_angle)
 fxu = sympy.Matrix([[x - r * sympy.sin(theta) + r * sympy.sin(theta + beta)],
                     [y + r * sympy.cos(theta) - r * sympy.cos(theta + beta)],
                     [theta + beta]])
-fxu_jacobian = fxu.jacobian(X)
-print("fxu_jacobian:\n", fxu_jacobian)
 
 hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2)],
                    [sympy.atan2(landmark_1_y - y, landmark_1_x - x) - theta],
                    [sympy.sqrt((landmark_2_x - x) ** 2 +
                                (landmark_2_y - y) ** 2)],
                    [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
-hx_jacobian = hx.jacobian(X)
-print("hx_jacobian:\n", hx_jacobian)
 
 # Save functions to separate files
 KalmanFilterDeploy.write_state_function_code_from_sympy(fxu, X, U)
-KalmanFilterDeploy.write_state_function_code_from_sympy(fxu_jacobian, X, U)
-
 KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx, X)
-KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 
 # %% design EKF
 
@@ -80,32 +73,34 @@ class Parameters:
         self.landmark_2_y = landmark_2_y
 
 
-Parameters_ekf = Parameters(
+Parameters_ukf = Parameters(
     delta_time=0.1, wheelbase=0.5,
     landmark_1_x=landmarks[0, 0], landmark_1_y=landmarks[1, 0],
     landmark_2_x=landmarks[0, 1], landmark_2_y=landmarks[1, 1])
 
 Number_of_Delay = 5
 
-Q_ekf = np.diag([1.0, 1.0, 1.0])
-R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 100.0
+Q_ukf = np.diag([0.01, 0.01, 0.001])
+R_ukf = np.diag([1.0, 1.0, 1.0, 1.0])
 
 import fxu
-import fxu_jacobian
 import hx
-import hx_jacobian
-ekf = ExtendedKalmanFilter(fxu.function, hx.function,
-                           fxu_jacobian.function, hx_jacobian.function,
-                           Q_ekf, R_ekf, Parameters_ekf, Number_of_Delay)
+# ukf = UnscentedKalmanFilter_Basic(fxu.function, hx.function,
+#                                   Q_ukf, R_ukf, Parameters_ukf,
+#                                   Number_of_Delay, kappa=0.5)
 
-# You can create cpp header which can easily define EKF as C++ code
-deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(ekf)
+ukf = UnscentedKalmanFilter(fxu.function, hx.function,
+                            Q_ukf, R_ukf, Parameters_ukf,
+                            Number_of_Delay)
+
+# You can create cpp header which can easily define UKF as C++ code
+deployed_file_names = KalmanFilterDeploy.generate_UKF_cpp_code(ukf)
 print(deployed_file_names)
 
 # %% bicycle model simulation
 
 sim_delta_time = 0.1
-sim_wheelbase = Parameters_ekf.wheelbase
+sim_wheelbase = Parameters_ukf.wheelbase
 simulation_time = 20.0
 
 
@@ -154,14 +149,14 @@ def run_simulation():
     x = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
     u = np.array([[2.0], [0.1]])  # inputs v, steering_angle
 
-    ekf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
+    ukf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
 
     x_true = []
     x_estimated = []
     y_measured = []
     time = np.arange(0, simulation_time, sim_delta_time)
 
-    y_store = [np.zeros((R_ekf.shape[0], 1))] * (Number_of_Delay + 1)
+    y_store = [np.zeros((R_ukf.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
 
     u_true = []
@@ -181,10 +176,10 @@ def run_simulation():
         y_measured.append(y_store[delay_index])
 
         # estimate
-        ekf.predict(u)
-        ekf.update(y_store[delay_index])
+        ukf.predict(u)
+        ukf.update(y_store[delay_index])
 
-        x_estimated.append(ekf.x_hat)
+        x_estimated.append(ukf.x_hat)
 
     x_true = np.array(x_true)
     u_true = np.array(u_true)

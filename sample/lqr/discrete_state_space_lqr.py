@@ -55,7 +55,7 @@ Dd = sys_d.D
 Q = np.diag([1.0, 0.0, 1.0, 0.0])
 R = np.diag([1.0])
 
-# You can create cpp header which can easily define state space as C++ code
+# You can create cpp header which can easily define LQR as C++ code
 deployed_file_names = LQR_Deploy.generate_LQR_cpp_code(Ac, Bc, Q, R)
 print(deployed_file_names)
 

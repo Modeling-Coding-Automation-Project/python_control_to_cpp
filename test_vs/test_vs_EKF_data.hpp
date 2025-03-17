@@ -5,7 +5,6 @@
 
 namespace EKF_TestData {
 
-using namespace Base::Math;
 using namespace PythonNumpy;
 using namespace PythonControl;
 
@@ -41,6 +40,7 @@ auto bicycle_model_state_function(
     const StateSpaceInputType<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> StateSpaceStateType<T, STATE_SIZE> {
 
+    using namespace PythonMath;
 
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();
@@ -63,6 +63,8 @@ auto bicycle_model_state_function_jacobian(
     const StateSpaceStateType<T, STATE_SIZE> &X,
     const StateSpaceInputType<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type {
+
+    using namespace PythonMath;
 
     T theta = X.template get<2, 0>();
     T v = U.template get<0, 0>();
@@ -91,6 +93,8 @@ auto bicycle_model_measurement_function(
     const StateSpaceStateType<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> StateSpaceOutputType<T, OUTPUT_SIZE> {
 
+    using namespace PythonMath;
+
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();
     T theta = X.template get<2, 0>();
@@ -117,6 +121,8 @@ template <typename T, typename C_Type>
 auto bicycle_model_measurement_function_jacobian(
     const StateSpaceStateType<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> C_Type {
+
+    using namespace PythonMath;
 
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();

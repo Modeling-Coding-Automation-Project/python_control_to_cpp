@@ -591,23 +591,23 @@ class KalmanFilterDeploy:
         # create state and measurement functions
         fxu_name = ekf.state_function.__module__
         state_function_code, state_function_U_size, _ = \
-            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_name,
+            KalmanFilterDeploy.create_state_and_measurement_function_code(fxu_name,
                                                                           "X_Type")
 
         fxu_jacobian_name = ekf.state_function_jacobian.__module__
         state_function_jacobian_code, _, A_SparseAvailable_list = \
-            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, fxu_jacobian_name,
+            KalmanFilterDeploy.create_state_and_measurement_function_code(fxu_jacobian_name,
                                                                           "A_Type")
         ekf_A = A_SparseAvailable_list[0]
 
         hx_name = ekf.measurement_function.__module__
         measurement_function_code, _, _ = \
-            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_name,
+            KalmanFilterDeploy.create_state_and_measurement_function_code(hx_name,
                                                                           "Y_Type")
 
         hx_jacobian_name = ekf.measurement_function_jacobian.__module__
         measurement_function_jacobian_code, _, C_SparseAvailable_list = \
-            KalmanFilterDeploy.create_state_and_measurement_function_code(ekf, hx_jacobian_name,
+            KalmanFilterDeploy.create_state_and_measurement_function_code(hx_jacobian_name,
                                                                           "C_Type")
         ekf_C = C_SparseAvailable_list[0]
 
@@ -764,13 +764,13 @@ class KalmanFilterDeploy:
         return deployed_file_names
 
     @staticmethod
-    def create_state_and_measurement_function_code(ekf, function_name, return_type):
-        fxu_file_path = KalmanFilterDeploy.find_file(
+    def create_state_and_measurement_function_code(function_name, return_type):
+        function_file_path = KalmanFilterDeploy.find_file(
             f"{function_name}.py", os.getcwd())
         state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
-            fxu_file_path)
+            function_file_path)
 
-        extractor = FunctionExtractor(fxu_file_path)
+        extractor = FunctionExtractor(function_file_path)
         functions = extractor.extract()
         state_function_code = []
         SparseAvailable_list = []
@@ -785,3 +785,155 @@ class KalmanFilterDeploy:
             x for x in SparseAvailable_list if x is not None]
 
         return state_function_code, state_function_U_size, SparseAvailable_list
+
+    @staticmethod
+    def generate_UKF_cpp_code(ukf, file_name=None):
+        deployed_file_names = []
+
+        ControlDeploy.restrict_data_type(ukf.Q.dtype.name)
+
+        type_name = NumpyDeploy.check_dtype(ukf.Q)
+
+        # %% inspect arguments
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the variable name that matches the matrix_in value
+        variable_name = None
+        for name, value in caller_locals.items():
+            if value is ukf:
+                variable_name = name
+                break
+        # Get the caller's file name
+        if file_name is None:
+            caller_file_full_path = frame.f_code.co_filename
+            caller_file_name = os.path.basename(caller_file_full_path)
+            caller_file_name_without_ext = os.path.splitext(caller_file_name)[
+                0]
+        else:
+            caller_file_name_without_ext = file_name
+
+        # %% code generation
+        code_file_name = caller_file_name_without_ext + "_" + variable_name
+        code_file_name_ext = code_file_name + ".hpp"
+
+        # generate parameter class code
+        parameter_code = KalmanFilterDeploy.generate_parameter_cpp_code(
+            ukf.Parameters, type_name)
+
+        # create state and measurement functions
+        fxu_name = ukf.state_function.__module__
+        state_function_code, state_function_U_size, _ = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(fxu_name,
+                                                                          "X_Type")
+
+        hx_name = ukf.measurement_function.__module__
+        measurement_function_code, _, _ = \
+            KalmanFilterDeploy.create_state_and_measurement_function_code(hx_name,
+                                                                          "Y_Type")
+
+        state_size = ukf.Q.shape[0]
+        measurement_size = ukf.R.shape[0]
+
+        # create cpp code
+        code_text = ""
+
+        file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
+
+        code_text += "#ifndef " + file_header_macro_name + "\n"
+        code_text += "#define " + file_header_macro_name + "\n\n"
+
+        code_text += "#include \"python_math.hpp\"\n"
+        code_text += "#include \"python_control.hpp\"\n\n"
+
+        namespace_name = code_file_name
+
+        code_text += "namespace " + namespace_name + " {\n\n"
+
+        code_text += "using namespace PythonNumpy;\n"
+        code_text += "using namespace PythonControl;\n\n"
+
+        code_text += f"constexpr std::size_t STATE_SIZE = {state_size};\n"
+        code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
+        code_text += f"constexpr std::size_t OUTPUT_SIZE = {measurement_size};\n\n"
+
+        code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
+        code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
+        code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
+
+        code_text += parameter_code
+        code_text += "\n"
+
+        code_text += "namespace state_function {\n\n"
+
+        code_text += "using namespace PythonMath;\n\n"
+
+        for code in state_function_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace state_function\n\n"
+
+        code_text += "namespace measurement_function {\n\n"
+
+        code_text += "using namespace PythonMath;\n\n"
+
+        for code in measurement_function_code:
+            code_text += code
+            code_text += "\n"
+
+        code_text += "} // namespace measurement_function\n\n"
+
+        code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
+        for i in range(ukf.Q.shape[0]):
+            code_text += "    static_cast<" + \
+                type_name + ">(" + str(ukf.Q[i, i]) + ")"
+            if i == ukf.Q.shape[0] - 1:
+                code_text += "\n"
+                break
+            else:
+                code_text += ",\n"
+        code_text += ");\n\n"
+
+        code_text += "auto R = make_DiagMatrix<OUTPUT_SIZE>(\n"
+        for i in range(ukf.R.shape[0]):
+            code_text += "    static_cast<" + \
+                type_name + ">(" + str(ukf.R[i, i]) + ")"
+            if i == ukf.R.shape[0] - 1:
+                code_text += "\n"
+                break
+            else:
+                code_text += ",\n"
+        code_text += ");\n\n"
+
+        code_text += "using type = UnscentedKalmanFilter_Type<" + \
+            "U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += "    Parameter_Type parameters;\n\n"
+
+        code_text += "    StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
+            "        state_function::function;\n\n"
+
+        code_text += "    MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
+            "        measurement_function::function;\n\n"
+
+        code_text += "    return UnscentedKalmanFilter_Type<\n" + \
+            "        U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "        Q, R, state_function_object, measurement_function_object,\n" + \
+            "        parameters);\n\n"
+
+        code_text += "}\n\n"
+
+        code_text += "} // namespace " + namespace_name + "\n\n"
+
+        code_text += "#endif // " + file_header_macro_name + "\n"
+
+        code_file_name_ext = ControlDeploy.write_to_file(
+            code_text, code_file_name_ext)
+
+        deployed_file_names.append(code_file_name_ext)
+
+        return deployed_file_names

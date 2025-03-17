@@ -44,22 +44,11 @@ auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
                                   const BicycleModelParameter<T> &parameters)
     -> StateSpaceStateType<T, STATE_SIZE>;
 
-template <typename T, typename A_Type>
-auto bicycle_model_state_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const StateSpaceInputType<T, INPUT_SIZE> &U,
-    const BicycleModelParameter<T> &parameters) -> A_Type;
-
 template <typename T>
 auto bicycle_model_measurement_function(
     const StateSpaceStateType<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
     -> StateSpaceOutputType<T, OUTPUT_SIZE>;
-
-template <typename T, typename C_Type>
-auto bicycle_model_measurement_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const BicycleModelParameter<T> &parameters) -> C_Type;
 
 int main(void) {
   /* Create plant model */
@@ -67,24 +56,11 @@ int main(void) {
   using U_Type = StateSpaceInputType<double, INPUT_SIZE>;
   using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;
 
-  using SparseAvailable_A =
-      SparseAvailable<ColumnAvailable<true, false, true>,
-                      ColumnAvailable<false, true, true>,
-                      ColumnAvailable<false, false, true>>;
-
-  using A_Type = SparseMatrix_Type<double, SparseAvailable_A>;
-
-  using SparseAvailable_C = SparseAvailable<
-      ColumnAvailable<true, true, false>, ColumnAvailable<true, true, true>,
-      ColumnAvailable<true, true, false>, ColumnAvailable<true, true, true>>;
-
-  using C_Type = SparseMatrix_Type<double, SparseAvailable_C>;
-
-  auto Q = make_DiagMatrix<STATE_SIZE>(1.0, 1.0, 1.0);
+  auto Q = make_DiagMatrix<STATE_SIZE>(0.01, 0.01, 0.001);
 
   using Q_Type = decltype(Q);
 
-  auto R = make_DiagMatrix<OUTPUT_SIZE>(100.0, 100.0, 100.0, 100.0);
+  auto R = make_DiagMatrix<OUTPUT_SIZE>(1.0, 1.0, 1.0, 1.0);
 
   using R_Type = decltype(R);
 
@@ -97,24 +73,12 @@ int main(void) {
   StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
       state_function = bicycle_model_state_function<double>;
 
-  StateFunctionJacobian_Object<A_Type, X_Type, U_Type,
-                               BicycleModelParameter<double>>
-      state_function_jacobian =
-          bicycle_model_state_function_jacobian<double, A_Type>;
-
   MeasurementFunction_Object<Y_Type, X_Type, BicycleModelParameter<double>>
       measurement_function = bicycle_model_measurement_function<double>;
 
-  MeasurementFunctionJacobian_Object<C_Type, X_Type,
-                                     BicycleModelParameter<double>>
-      measurement_function_jacobian =
-          bicycle_model_measurement_function_jacobian<double, C_Type>;
-
   /* define EKF */
-  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
-                       NUMBER_OF_DELAY>
-      ekf(Q, R, state_function, state_function_jacobian, measurement_function,
-          measurement_function_jacobian, parameters);
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
+      ukf(Q, R, state_function, measurement_function, parameters);
 
   /* simulation */
   auto x_true_initial = make_StateSpaceState<STATE_SIZE>(2.0, 6.0, 0.3);
@@ -122,9 +86,9 @@ int main(void) {
 
   auto u = make_StateSpaceInput<INPUT_SIZE>(2.0, 0.1);
 
-  ekf.X_hat.template set<0, 0>(0.0);
-  ekf.X_hat.template set<1, 0>(0.0);
-  ekf.X_hat.template set<2, 0>(0.0);
+  ukf.X_hat.template set<0, 0>(0.0);
+  ukf.X_hat.template set<1, 0>(0.0);
+  ukf.X_hat.template set<2, 0>(0.0);
 
   std::array<StateSpaceOutputType<double, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)>
       y_store;
@@ -143,11 +107,11 @@ int main(void) {
       delay_index = 0;
     }
 
-    ekf.predict(u);
-    ekf.update(y_store[delay_index]);
+    ukf.predict(u);
+    ukf.update(y_store[delay_index]);
 
     for (std::size_t j = 0; j < STATE_SIZE; j++) {
-      std::cout << "X_hat[" << j << "]: " << ekf.X_hat(j, 0) << ", ";
+      std::cout << "X_hat[" << j << "]: " << ukf.X_hat(j, 0) << ", ";
     }
     std::cout << std::endl;
   }
@@ -192,44 +156,6 @@ auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
        {delta_time * v * tan(steering_angle) / wheelbase + theta}});
 }
 
-template <typename T, typename A_Type>
-auto bicycle_model_state_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const StateSpaceInputType<T, INPUT_SIZE> &U,
-    const BicycleModelParameter<T> &parameters) -> A_Type {
-
-  using namespace PythonMath;
-
-  T theta = X.template get<2, 0>();
-  T v = U.template get<0, 0>();
-  T steering_angle = U.template get<1, 0>();
-
-  T wheelbase = parameters.wheelbase;
-  T delta_time = parameters.delta_time;
-
-  A_Type A;
-
-  A.template set<0, 0>(1);
-  A.template set<0, 1>(0);
-  A.template set<0, 2>(
-      -wheelbase * cos(theta) / tan(steering_angle) +
-      wheelbase *
-          cos(delta_time * v * tan(steering_angle) / wheelbase + theta) /
-          tan(steering_angle));
-  A.template set<1, 0>(0);
-  A.template set<1, 1>(1);
-  A.template set<1, 2>(
-      -wheelbase * sin(theta) / tan(steering_angle) +
-      wheelbase *
-          sin(delta_time * v * tan(steering_angle) / wheelbase + theta) /
-          tan(steering_angle));
-  A.template set<2, 0>(0);
-  A.template set<2, 1>(0);
-  A.template set<2, 2>(1);
-
-  return A;
-}
-
 template <typename T>
 auto bicycle_model_measurement_function(
     const StateSpaceStateType<T, STATE_SIZE> &X,
@@ -257,50 +183,4 @@ auto bicycle_model_measurement_function(
        {-theta + atan2(dif_1_y, dif_1_x)},
        {sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y)},
        {-theta + atan2(dif_2_y, dif_2_x)}});
-}
-
-template <typename T, typename C_Type>
-auto bicycle_model_measurement_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const BicycleModelParameter<T> &parameters) -> C_Type {
-
-  using namespace PythonMath;
-
-  T x = X.template get<0, 0>();
-  T y = X.template get<1, 0>();
-
-  T landmark_1_x = parameters.landmark_1_x;
-  T landmark_2_x = parameters.landmark_2_x;
-  T landmark_2_y = parameters.landmark_2_y;
-  T landmark_1_y = parameters.landmark_1_y;
-
-  C_Type C;
-
-  T dif_1_x = landmark_1_x - x;
-  T dif_1_y = landmark_1_y - y;
-  T dif_2_x = landmark_2_x - x;
-  T dif_2_y = landmark_2_y - y;
-
-  C.template set<0, 0>((-landmark_1_x + x) /
-                       sqrt(dif_1_x * dif_1_x + dif_1_y * dif_1_y));
-  C.template set<0, 1>((-landmark_1_y + y) /
-                       sqrt(dif_1_x * dif_1_x + dif_1_y * dif_1_y));
-  C.template set<0, 2>(0);
-  C.template set<1, 0>(-(-landmark_1_y + y) /
-                       (dif_1_x * dif_1_x + dif_1_y * dif_1_y));
-  C.template set<1, 1>(-(landmark_1_x - x) /
-                       (dif_1_x * dif_1_x + dif_1_y * dif_1_y));
-  C.template set<1, 2>(-1);
-  C.template set<2, 0>((-landmark_2_x + x) /
-                       sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y));
-  C.template set<2, 1>((-landmark_2_y + y) /
-                       sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y));
-  C.template set<2, 2>(0);
-  C.template set<3, 0>(-(-landmark_2_y + y) /
-                       (dif_2_x * dif_2_x + dif_2_y * dif_2_y));
-  C.template set<3, 1>(-(landmark_2_x - x) /
-                       (dif_2_x * dif_2_x + dif_2_y * dif_2_y));
-  C.template set<3, 2>(-1);
-
-  return C;
 }

@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # Define Kalman filter
     lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
 
-    # You can create cpp header which can easily define state space as C++ code
+    # You can create cpp header which can easily define LKF as C++ code
     deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(lkf)
     print(deployed_file_names)
 
@@ -72,13 +72,15 @@ if __name__ == "__main__":
     # Generate data
     np.random.seed(0)
 
-    x_true = np.zeros((A.shape[0], num_steps, 1))
-    x_estimate = np.zeros((A.shape[0], num_steps, 1))
-    x_estimate[:, 0, 0] = lkf.get_x_hat().flatten()
-    y_measured = np.zeros((C.shape[0], num_steps, 1))
-    x_true[:, 0, 0] = np.array([0.0, 0.0, 0.0, 0.1])
+    x_true = [np.zeros((A.shape[0], 1))] * num_steps
+    x_true[0] = np.array([[0.0], [0.0], [0.0], [0.1]])
 
-    y_store = np.zeros((C.shape[0], Number_of_Delay + 1))
+    x_estimate = [np.zeros((A.shape[0], 1))] * num_steps
+    x_estimate[0] = lkf.get_x_hat()
+
+    y_measured = [np.zeros((C.shape[0], 1))] * num_steps
+
+    y_store = [np.zeros((C.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
 
     for k in range(1, num_steps):
@@ -88,21 +90,19 @@ if __name__ == "__main__":
         v = np.random.multivariate_normal(np.zeros(C.shape[0]), R_real)
 
         # system response
-        x_true[:, k, 0] = (A @ x_true[:, k - 1,
-                                      0].reshape(-1, 1) + B @ u + w.reshape(-1, 1)).flatten()
-        y_store[:, delay_index] = (
-            C @ x_true[:, k, 0].reshape(-1, 1) + v.reshape(-1, 1)).flatten()
+        x_true[k] = A @ x_true[k - 1] + B @ u + w.reshape(-1, 1)
+        y_store[delay_index] = C @ x_true[k] + v.reshape(-1, 1)
 
         # system delay
         delay_index += 1
         if delay_index > Number_of_Delay:
             delay_index = 0
 
-        y_measured[:, k, 0] = y_store[:, delay_index]
+        y_measured[k] = y_store[delay_index]
 
         # Kalman filter
-        lkf.predict_and_update(u, y_measured[:, k, 0].reshape(-1, 1))
-        x_estimate[:, k, 0] = lkf.get_x_hat().flatten()
+        lkf.predict_and_update(u, y_measured[k])
+        x_estimate[k] = lkf.get_x_hat()
 
     # Kalman Gain
     print("Kalman Gain:\n", lkf.G)
@@ -111,16 +111,16 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(3, 2)
     fig.suptitle("True state and observation")
 
-    axs[0, 0].plot(x_true[0, :, 0], label="True x0")
-    axs[0, 0].plot(x_estimate[0, :, 0], label="Estimated x0")
-    axs[0, 0].plot(y_measured[0, :, 0], label="Measured y0")
+    axs[0, 0].plot([x[0, 0] for x in x_true], label="True x0")
+    axs[0, 0].plot([x[0, 0] for x in x_estimate], label="Estimated x0")
+    axs[0, 0].plot([x[0, 0] for x in y_measured], label="Measured y0")
     axs[0, 0].legend()
     axs[0, 0].set_ylabel("Value")
     axs[0, 0].grid(True)
 
-    axs[1, 0].plot(x_true[2, :, 0], label="True x2")
-    axs[1, 0].plot(x_estimate[2, :, 0], label="Estimated x2")
-    axs[1, 0].plot(y_measured[1, :, 0], label="Measured y1")
+    axs[1, 0].plot([x[2, 0] for x in x_true], label="True x2")
+    axs[1, 0].plot([x[2, 0] for x in x_estimate], label="Estimated x2")
+    axs[1, 0].plot([x[1, 0] for x in y_measured], label="Measured y1")
     axs[1, 0].legend()
     axs[1, 0].set_ylabel("Value")
     axs[1, 0].grid(True)
@@ -135,15 +135,15 @@ if __name__ == "__main__":
     axs[1, 1].set_ylabel("Value")
     axs[1, 1].grid(True)
 
-    axs[2, 0].plot(x_true[1, :, 0], label="True x1")
-    axs[2, 0].plot(x_estimate[1, :, 0], label="Estimated x1")
+    axs[2, 0].plot([x[1, 0] for x in x_true], label="True x1")
+    axs[2, 0].plot([x[1, 0] for x in x_estimate], label="Estimated x1")
     axs[2, 0].legend()
     axs[2, 0].set_xlabel("Time")
     axs[2, 0].set_ylabel("Value")
     axs[2, 0].grid(True)
 
-    axs[2, 1].plot(x_true[3, :, 0], label="True x3")
-    axs[2, 1].plot(x_estimate[3, :, 0], label="Estimated x3")
+    axs[2, 1].plot([x[3, 0] for x in x_true], label="True x3")
+    axs[2, 1].plot([x[3, 0] for x in x_estimate], label="Estimated x3")
     axs[2, 1].legend()
     axs[2, 1].set_xlabel("Time")
     axs[2, 1].set_ylabel("Value")
