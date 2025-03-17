@@ -93,6 +93,10 @@ ukf = UnscentedKalmanFilter(fxu.function, hx.function,
                             Q_ukf, R_ukf, Parameters_ukf,
                             Number_of_Delay)
 
+# You can create cpp header which can easily define UKF as C++ code
+deployed_file_names = KalmanFilterDeploy.generate_UKF_cpp_code(ukf)
+print(deployed_file_names)
+
 # %% bicycle model simulation
 
 sim_delta_time = 0.1
