@@ -526,15 +526,16 @@ template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
           std::size_t Index, std::size_t End_Index>
 struct UpdateSigmaPointMatrix_Loop {
   static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
-                         const T &x_lambda) {
+                         const T &sigma_point_weight) {
 
     PythonNumpy::set_row<(Index + 1)>(
-        Kai, X + x_lambda * PythonNumpy::get_row<Index>(SP));
+        Kai, X + sigma_point_weight * PythonNumpy::get_row<Index>(SP));
     PythonNumpy::set_row<(Index + X_Type::COLS + 1)>(
-        Kai, X - x_lambda * PythonNumpy::get_row<Index>(SP));
+        Kai, X - sigma_point_weight * PythonNumpy::get_row<Index>(SP));
 
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, (Index + 1),
-                                (End_Index - 1)>::set(Kai, X, SP, x_lambda);
+                                (End_Index - 1)>::set(Kai, X, SP,
+                                                      sigma_point_weight);
   }
 };
 
@@ -542,17 +543,17 @@ template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
           std::size_t Index>
 struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
   static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
-                         const T &x_lambda) {
+                         const T &sigma_point_weight) {
     // Do nothing.
     static_cast<void>(Kai);
     static_cast<void>(X);
     static_cast<void>(SP);
-    static_cast<void>(x_lambda);
+    static_cast<void>(sigma_point_weight);
   }
 };
 
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
-using SetRowVectorsToMatrix =
+using UpdateSigmaPointMatrix =
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
 
 /* calc state function with each sigma points */
@@ -772,7 +773,7 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), lambda_weight(static_cast<_T>(0)),
+        beta(static_cast<_T>(2)), sigma_point_weight(static_cast<_T>(0)),
         w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
         parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
@@ -787,8 +788,8 @@ public:
                                   Number_Of_Delay> &input)
       : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
         alpha(input.alpha), beta(input.beta),
-        lambda_weight(input.lambda_weight), w_m(input.w_m), W(input.W),
-        X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
+        sigma_point_weight(input.sigma_point_weight), w_m(input.w_m),
+        W(input.W), X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
         parameters(input.parameters),
         _P_YY_R_inv_solver(input._P_YY_R_inv_solver),
         _state_function(input._state_function),
@@ -806,7 +807,7 @@ public:
       this->kappa = input.kappa;
       this->alpha = input.alpha;
       this->beta = input.beta;
-      this->lambda_weight = input.lambda_weight;
+      this->sigma_point_weight = input.sigma_point_weight;
       this->w_m = input.w_m;
       this->W = input.W;
       this->X_hat = input.X_hat;
@@ -827,7 +828,7 @@ public:
       : Q(std::move(input.Q)), R(std::move(input.R)), P(std::move(input.P)),
         G(std::move(input.G)), kappa(std::move(input.kappa)),
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
-        lambda_weight(std::move(input.lambda_weight)),
+        sigma_point_weight(std::move(input.sigma_point_weight)),
         w_m(std::move(input.w_m)), W(std::move(input.W)),
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
         Y_store(std::move(input.Y_store)),
@@ -848,7 +849,7 @@ public:
       this->kappa = std::move(input.kappa);
       this->alpha = std::move(input.alpha);
       this->beta = std::move(input.beta);
-      this->lambda_weight = std::move(input.lambda_weight);
+      this->sigma_point_weight = std::move(input.sigma_point_weight);
       this->w_m = std::move(input.w_m);
       this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
@@ -865,20 +866,22 @@ public:
 public:
   /* Function */
   inline void calc_weights(void) {
-    this->lambda_weight = this->alpha * this->alpha *
-                              (static_cast<_T>(_STATE_SIZE) + this->kappa) -
-                          static_cast<_T>(_STATE_SIZE);
+    _T lambda_weight = this->alpha * this->alpha *
+                           (static_cast<_T>(_STATE_SIZE) + this->kappa) -
+                       static_cast<_T>(_STATE_SIZE);
 
-    this->w_m = this->lambda_weight /
-                (static_cast<_T>(_STATE_SIZE) + this->lambda_weight);
+    this->w_m = lambda_weight / (static_cast<_T>(_STATE_SIZE) + lambda_weight);
 
     this->W.template set<0, 0>(this->w_m + static_cast<_T>(1) -
                                this->alpha * this->alpha + this->beta);
 
     UKF_Operation::SetRestOfW<_T, _W_Type, 1>::set(
-        this->W, static_cast<_T>(1) /
-                     (static_cast<_T>(2) *
-                      (static_cast<_T>(_STATE_SIZE) + this->lambda_weight)));
+        this->W,
+        static_cast<_T>(1) / (static_cast<_T>(2) *
+                              (static_cast<_T>(_STATE_SIZE) + lambda_weight)));
+
+    this->sigma_point_weight =
+        PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + lambda_weight);
   }
 
   inline auto calc_sigma_points(const _State_Type &X_in, const P_Type &P_in)
@@ -887,15 +890,13 @@ public:
     _P_Chol_Solver_Type P_cholesky_solver =
         PythonNumpy::make_LinalgSolverCholesky<P_Type>();
     _Kai_Type Kai;
-    _T x_lambda =
-        PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + this->lambda_weight);
 
     auto SP = P_cholesky_solver.solve(P_in);
 
     PythonNumpy::set_row<0>(Kai, X_in);
-    UKF_Operation::SetRowVectorsToMatrix<_T, _Kai_Type, _State_Type,
-                                         decltype(SP)>::set(Kai, X_in, SP,
-                                                            x_lambda);
+    UKF_Operation::
+        UpdateSigmaPointMatrix<_T, _Kai_Type, _State_Type, decltype(SP)>::set(
+            Kai, X_in, SP, this->sigma_point_weight);
 
     return Kai;
   }
@@ -1001,7 +1002,7 @@ public:
   _T kappa;
   _T alpha;
   _T beta;
-  _T lambda_weight;
+  _T sigma_point_weight;
   _T w_m;
   _W_Type W;
 
