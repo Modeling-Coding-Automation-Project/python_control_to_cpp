@@ -80,11 +80,11 @@ int main(void) {
 
   using C_Type = SparseMatrix_Type<double, SparseAvailable_C>;
 
-  auto Q = make_DiagMatrix<STATE_SIZE>(1.0, 1.0, 1.0);
+  auto Q = make_KalmanFilter_Q<STATE_SIZE>(1.0, 1.0, 1.0);
 
   using Q_Type = decltype(Q);
 
-  auto R = make_DiagMatrix<OUTPUT_SIZE>(100.0, 100.0, 100.0, 100.0);
+  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(100.0, 100.0, 100.0, 100.0);
 
   using R_Type = decltype(R);
 
