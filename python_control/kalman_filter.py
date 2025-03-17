@@ -154,7 +154,7 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         self.y_store = DelayedVectorObject(R.shape[0], Number_of_Delay)
 
         self.kappa = kappa
-        self.lambda_weight = 0.0
+        self.sigma_point_weight = 0.0
 
         self.W = np.zeros((2 * self.STATE_SIZE + 1, 2 * self.STATE_SIZE + 1))
 
@@ -162,24 +162,25 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
 
     def calc_weights(self):
 
-        self.lambda_weight = self.kappa
+        lambda_weight = self.kappa
 
         self.W[0, 0] = self.kappa / \
             (self.STATE_SIZE + self.kappa)
         for i in range(1, 2 * self.STATE_SIZE + 1):
             self.W[i, i] = 1.0 / (2.0 * (self.STATE_SIZE + self.kappa))
 
+        self.sigma_point_weight = math.sqrt(self.STATE_SIZE + lambda_weight)
+
     def calc_sigma_points(self, x, P):
         SP = np.linalg.cholesky(P, upper=True)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
         Kai[:, 0] = x.flatten()
-        x_lambda = math.sqrt(self.STATE_SIZE + self.lambda_weight)
         for i in range(self.STATE_SIZE):
-            Kai[:, i + 1] = (x + x_lambda *
+            Kai[:, i + 1] = (x + self.sigma_point_weight *
                              (SP[:, i]).reshape(-1, 1)).flatten()
             Kai[:, i + self.STATE_SIZE + 1] = \
-                (x - x_lambda *
+                (x - self.sigma_point_weight *
                  (SP[:, i]).reshape(-1, 1)).flatten()
 
         return Kai
@@ -246,7 +247,7 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
 
         self.alpha = alpha
         self.beta = beta
-        self.lambda_weight = 0.0
+        self.sigma_point_weight = 0.0
 
         self.w_m = 0.0
 
@@ -254,14 +255,16 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
                          Q, R, Parameters, Number_of_Delay, self.kappa)
 
     def calc_weights(self):
-        self.lambda_weight = self.alpha * self.alpha * \
+        lambda_weight = self.alpha * self.alpha * \
             (self.STATE_SIZE + self.kappa) - self.STATE_SIZE
 
-        self.w_m = self.lambda_weight / \
-            (self.STATE_SIZE + self.lambda_weight)
+        self.w_m = lambda_weight / \
+            (self.STATE_SIZE + lambda_weight)
         self.W[0, 0] = self.w_m + 1.0 - self.alpha * self.alpha + self.beta
         for i in range(1, 2 * self.STATE_SIZE + 1):
-            self.W[i, i] = 1.0 / (2.0 * (self.STATE_SIZE + self.lambda_weight))
+            self.W[i, i] = 1.0 / (2.0 * (self.STATE_SIZE + lambda_weight))
+
+        self.sigma_point_weight = math.sqrt(self.STATE_SIZE + lambda_weight)
 
     def predict(self, u):
         Kai = self.calc_sigma_points(self.x_hat, self.P)
