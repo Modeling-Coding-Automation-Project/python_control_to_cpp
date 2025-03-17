@@ -14,7 +14,7 @@ sys_d = control.TransferFunction([0.5, 0.3, 0.1], [
     1.0, -1.8, 1.5, -0.7, 0.2], dt=0.2)
 print("\nDiscrete transfer function:\n", sys_d)
 
-# You can create cpp header which can easily define state space as C++ code
+# You can create cpp header which can easily define transfer function as C++ code
 deployed_file_names = TransferFunctionDeploy.generate_transfer_function_cpp_code(
     sys_d)
 print(deployed_file_names, "\n")
