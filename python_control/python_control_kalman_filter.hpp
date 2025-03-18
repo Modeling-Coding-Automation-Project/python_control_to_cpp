@@ -395,7 +395,7 @@ public:
   /* Move Constructor */
   ExtendedKalmanFilter(
       ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                           Parameter_Type, Number_Of_Delay> &&input)
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept
       : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
@@ -408,8 +408,9 @@ public:
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
-  operator=(ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                                 Parameter_Type, Number_Of_Delay> &&input) {
+  operator=(
+      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->A = std::move(input.A);
       this->C = std::move(input.C);
@@ -901,7 +902,7 @@ public:
   /* Move Constructor */
   UnscentedKalmanFilter(
       UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                            Number_Of_Delay> &&input)
+                            Number_Of_Delay> &&input) noexcept
       : Q(std::move(input.Q)), R(std::move(input.R)), P(std::move(input.P)),
         G(std::move(input.G)), kappa(std::move(input.kappa)),
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
@@ -917,7 +918,7 @@ public:
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
   operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                                  Number_Of_Delay> &&input) {
+                                  Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->Q = std::move(input.Q);
       this->R = std::move(input.R);
