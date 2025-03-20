@@ -30,10 +30,6 @@ x = np.array([[0],
 u = 1  # input
 n_steps = 50  # number of steps
 
-# history
-x_history = []
-y_history = []
-
 plotter = SimulationPlotter()
 
 # simulation
