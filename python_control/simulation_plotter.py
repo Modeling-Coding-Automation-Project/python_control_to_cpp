@@ -4,7 +4,9 @@ import inspect
 
 
 class SubplotsInfo:
-    def __init__(self, signal_name, shape, column, row, x_sequence, x_sequence_name):
+    def __init__(self, signal_name, shape,
+                 column, row, x_sequence,
+                 x_sequence_name, line_style):
         self.signal_name = signal_name
         self.shape = shape
         self.column = column
@@ -12,6 +14,8 @@ class SubplotsInfo:
 
         self.x_sequence = x_sequence
         self.x_sequence_name = x_sequence_name
+
+        self.line_style = line_style
 
 
 class Configuration:
@@ -43,7 +47,10 @@ class SimulationPlotter:
         else:
             self.name_to_object_dictionary[object_name] = [signal_object]
 
-    def assign(self, signal_name, position, column=0, row=0, x_sequence=None):
+    def assign(self, signal_name, position,
+               column=0, row=0, x_sequence=None,
+               line_style="-"):
+
         x_sequence_name = ""
         if x_sequence is not None:
             # %% inspect arguments
@@ -62,7 +69,9 @@ class SimulationPlotter:
         shape = np.array([[position[0]], [position[1]]], dtype=int)
 
         self.configuration.subplots_signals_list.append(
-            SubplotsInfo(signal_name, shape, column, row, x_sequence, x_sequence_name))
+            SubplotsInfo(signal_name, shape,
+                         column, row, x_sequence,
+                         x_sequence_name, line_style))
 
     def pre_plot(self, suptitle=""):
 
@@ -113,7 +122,9 @@ class SimulationPlotter:
             else:
                 ax = axs[signal_info.shape[0, 0], signal_info.shape[1, 0]]
 
-            ax.plot(x_sequence, signal, label=label_name)
+            ax.plot(x_sequence, signal,
+                    label=label_name,
+                    linestyle=signal_info.line_style)
             ax.legend()
             ax.set_xlabel(signal_info.x_sequence_name)
             ax.grid(True)

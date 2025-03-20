@@ -166,9 +166,11 @@ def main_reference_tracking():
 
     # plot
     plotter.assign("x", column=0, row=0, position=(0, 0), x_sequence=time)
-    plotter.assign("x", column=1, row=0, position=(0, 0), x_sequence=time)
-    plotter.assign("x_ref", column=0, row=0, position=(0, 0), x_sequence=time)
-    plotter.assign("x_ref", column=1, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x", column=2, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x_ref", column=0, row=0, position=(0, 0),
+                   x_sequence=time, line_style="--")
+    plotter.assign("x_ref", column=2, row=0, position=(0, 0),
+                   x_sequence=time, line_style="--")
 
     plotter.assign("u", column=0, row=0, position=(1, 0), x_sequence=time)
 
