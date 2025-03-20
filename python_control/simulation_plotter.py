@@ -12,8 +12,6 @@ class SubplotsInfo:
 
 
 class Configuration:
-    simulation_steps = 0
-
     subplots_shape = np.zeros((2, 1), dtype=int)
     subplots_signals_list = []
 
@@ -21,12 +19,9 @@ class Configuration:
 class SimulationPlotter:
     def __init__(self):
         self.configuration = Configuration()
-        self.object_list = []
         self.name_to_object_dictionary = {}
 
     def append(self, object):
-        self.object_list.append(object)
-
         # %% inspect arguments
         # Get the caller's frame
         frame = inspect.currentframe().f_back
@@ -39,15 +34,14 @@ class SimulationPlotter:
                 object_name = name
                 break
 
-        self.name_to_object_dictionary[object_name] = self.object_list
+            # %% append object
+        if object_name in self.name_to_object_dictionary:
+            self.name_to_object_dictionary[object_name].append(object)
+        else:
+            self.name_to_object_dictionary[object_name] = [object]
 
-        self.update_configuration()
-
-    def update_configuration(self):
-        self.configuration.simulation_steps = len(self.object_list)
-
-    def assign(self, signal_name, shape, column=0, row=0):
-        shape = np.array([[shape[0]], [shape[1]]], dtype=int)
+    def assign(self, signal_name, position, column=0, row=0):
+        shape = np.array([[position[0]], [position[1]]], dtype=int)
 
         self.configuration.subplots_signals_list.append(
             SubplotsInfo(signal_name, shape, column, row))
@@ -62,10 +56,10 @@ class SimulationPlotter:
 
         shape = np.zeros((2, 1), dtype=int)
         for signal_info in subplots_signals_list:
-            if shape[0, 0] < signal_info.shape[0, 0]:
-                shape[0, 0] = signal_info.shape[0, 0]
-            if shape[1, 0] < signal_info.shape[1, 0]:
-                shape[1, 0] = signal_info.shape[1, 0]
+            if shape[0, 0] < signal_info.shape[0, 0] + 1:
+                shape[0, 0] = signal_info.shape[0, 0] + 1
+            if shape[1, 0] < signal_info.shape[1, 0] + 1:
+                shape[1, 0] = signal_info.shape[1, 0] + 1
 
         self.configuration.subplots_shape = shape
 
@@ -75,13 +69,15 @@ class SimulationPlotter:
         for signal_info in subplots_signals_list:
             signal_object_list = self.name_to_object_dictionary[signal_info.signal_name]
 
-            signal = np.zeros((self.configuration.simulation_steps, 1))
+            steps = len(signal_object_list)
+
+            signal = np.zeros((steps, 1))
             if isinstance(signal_object_list[0], np.ndarray):
-                for i in range(self.configuration.simulation_steps):
+                for i in range(steps):
                     signal[i, 0] = signal_object_list[i][signal_info.column,
                                                          signal_info.row]
             else:
-                for i in range(self.configuration.simulation_steps):
+                for i in range(steps):
                     signal[i, 0] = signal_object_list[i]
 
             label_name = signal_info.signal_name + \
@@ -89,17 +85,24 @@ class SimulationPlotter:
 
             if shape[0] == 1 and shape[1] == 1:
                 axs.plot(
-                    range(self.configuration.simulation_steps),
-                    signal,
-                    label=label_name)
+                    range(steps), signal, label=label_name)
                 axs.legend()
                 axs.grid(True)
+            elif shape[0] == 1:
+                axs[signal_info.shape[1, 0]].plot(
+                    range(steps), signal, label=label_name)
+                axs[signal_info.shape[1, 0]].legend()
+                axs[signal_info.shape[1, 0]].grid(True)
+            elif shape[1] == 1:
+                axs[signal_info.shape[0, 0]].plot(
+                    range(steps), signal, label=label_name)
+                axs[signal_info.shape[0, 0]].legend()
+                axs[signal_info.shape[0, 0]].grid(True)
             else:
-                axs[signal_info.row, signal_info.column].plot(
-                    range(self.configuration.simulation_steps),
-                    signal,
-                    label=label_name)
-                axs[signal_info.row, signal_info.column].legend()
-                axs[signal_info.row, signal_info.column].grid(True)
+                axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].plot(
+                    range(steps), signal, label=label_name)
+                axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].legend()
+                axs[signal_info.shape[0, 0],
+                    signal_info.shape[1, 0]].grid(True)
 
         plt.show()
