@@ -141,6 +141,8 @@ class SimulationPlotter:
             if signal_info.x_sequence is not None:
                 for i in range(steps):
                     x_sequence_signal[i, 0] = signal_info.x_sequence[i]
+            else:
+                x_sequence_signal = np.arange(steps)
 
             signal = np.zeros((steps, 1))
             if isinstance(signal_object_list[0], np.ndarray):
