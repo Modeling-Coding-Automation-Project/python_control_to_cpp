@@ -54,6 +54,28 @@ class SimulationPlotter:
         else:
             self.name_to_object_dictionary[object_name] = [signal_object]
 
+    def append_sequence(self, signal_sequence_object):
+        # %% inspect arguments
+        # Get the caller's frame
+        frame = inspect.currentframe().f_back
+        # Get the caller's local variables
+        caller_locals = frame.f_locals
+        # Find the object_name that matches the matrix_in value
+        object_name = None
+        for name, value in caller_locals.items():
+            if value is signal_sequence_object:
+                object_name = name
+                break
+
+            # %% append object
+        for i in range(len(signal_sequence_object)):
+            if object_name in self.name_to_object_dictionary:
+                self.name_to_object_dictionary[object_name].append(
+                    signal_sequence_object[i])
+            else:
+                self.name_to_object_dictionary[object_name] = [
+                    signal_sequence_object[i]]
+
     def assign(self, signal_name, position,
                column=0, row=0, x_sequence=None,
                line_style="-"):
@@ -71,6 +93,10 @@ class SimulationPlotter:
                 if value is x_sequence:
                     x_sequence_name = name
                     break
+
+        if (x_sequence is not None) and isinstance(x_sequence, str):
+            x_sequence_name = x_sequence
+            x_sequence = self.name_to_object_dictionary[x_sequence]
 
         # %% assign object
         shape = np.array([[position[0]], [position[1]]], dtype=int)
@@ -110,9 +136,11 @@ class SimulationPlotter:
             signal_object_list = self.name_to_object_dictionary[signal_info.signal_name]
 
             steps = len(signal_object_list)
-            x_sequence = range(steps)
+
+            x_sequence_signal = np.zeros((steps, 1))
             if signal_info.x_sequence is not None:
-                x_sequence = signal_info.x_sequence
+                for i in range(steps):
+                    x_sequence_signal[i, 0] = signal_info.x_sequence[i]
 
             signal = np.zeros((steps, 1))
             if isinstance(signal_object_list[0], np.ndarray):
@@ -135,7 +163,7 @@ class SimulationPlotter:
             else:
                 ax = axs[signal_info.shape[0, 0], signal_info.shape[1, 0]]
 
-            ax.plot(x_sequence, signal,
+            ax.plot(x_sequence_signal, signal,
                     label=label_name,
                     linestyle=signal_info.line_style)
             mplcursors.cursor(ax)
