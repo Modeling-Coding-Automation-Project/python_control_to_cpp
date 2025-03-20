@@ -16,6 +16,7 @@ from sympy import symbols
 
 from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
+from python_control.simulation_plotter import SimulationPlotter
 
 # %% bicycle model example
 # state X: [x, y, theta]
@@ -146,86 +147,72 @@ def move(x, u, dt, wheelbase):
 
 def run_simulation():
 
-    x = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
+    x_true = np.array([[2.0], [6.0], [0.3]])  # initial x, y, theta
     u = np.array([[2.0], [0.1]])  # inputs v, steering_angle
 
     ukf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
 
-    x_true = []
-    x_estimated = []
-    y_measured = []
+    plotter = SimulationPlotter()
+
     time = np.arange(0, simulation_time, sim_delta_time)
 
     y_store = [np.zeros((R_ukf.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
 
-    u_true = []
-
     for i in range(round(simulation_time / sim_delta_time)):
-        x, y_store[delay_index] = move(x, u, sim_delta_time,
-                                       sim_wheelbase)  # simulate robot
-
-        x_true.append(x)
-        u_true.append(u)
+        x_true, y_store[delay_index] = move(x_true, u, sim_delta_time,
+                                            sim_wheelbase)  # simulate robot
 
         # system delay
         delay_index += 1
         if delay_index > Number_of_Delay:
             delay_index = 0
 
-        y_measured.append(y_store[delay_index])
+        y_measured = y_store[delay_index]
 
         # estimate
         ukf.predict(u)
         ukf.update(y_store[delay_index])
 
-        x_estimated.append(ukf.x_hat)
+        x_estimated = ukf.x_hat
 
-    x_true = np.array(x_true)
-    u_true = np.array(u_true)
-    y_measured = np.array(y_measured)
-    x_estimated = np.array(x_estimated)
+        plotter.append(x_true)
+        plotter.append(x_estimated)
+        plotter.append(y_measured)
+        plotter.append(u)
 
     # plot
-    fig, axs = plt.subplots(3, 2)
-    fig.suptitle("EKF for bicycle model results")
+    plotter.assign("x_true", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="px_true")
+    plotter.assign("x_estimated", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="px_estimated")
 
-    axs[0, 0].plot(time, x_true[:, 0, 0], label='true')
-    axs[0, 0].plot(time, x_estimated[:, 0, 0], label='estimated')
-    axs[0, 0].legend()
-    axs[0, 0].set_ylabel('x position (state)')
-    axs[0, 0].grid(True)
+    plotter.assign("x_true", column=1, row=0, position=(1, 0),
+                   x_sequence=time, label="py_true")
+    plotter.assign("x_estimated", column=1, row=0, position=(1, 0),
+                   x_sequence=time, label="px_estimated")
 
-    axs[1, 0].plot(time, x_true[:, 1, 0], label='true')
-    axs[1, 0].plot(time, x_estimated[:, 1, 0], label='estimated')
-    axs[1, 0].legend()
-    axs[1, 0].set_ylabel('y position (state)')
-    axs[1, 0].grid(True)
+    plotter.assign("x_true", column=2, row=0, position=(2, 0),
+                   x_sequence=time, label="theta_true")
+    plotter.assign("x_estimated", column=2, row=0, position=(2, 0),
+                   x_sequence=time, label="theta_estimated")
 
-    axs[2, 0].plot(time, x_true[:, 2, 0], label='true')
-    axs[2, 0].plot(time, x_estimated[:, 2, 0], label='estimated')
-    axs[2, 0].legend()
-    axs[2, 0].set_ylabel('theta (state)')
-    axs[2, 0].set_xlabel('time')
-    axs[2, 0].grid(True)
+    plotter.assign("u", column=0, row=0, position=(0, 1),
+                   x_sequence=time, label="v")
+    plotter.assign("u", column=1, row=0, position=(0, 1),
+                   x_sequence=time, label="steering_angle")
 
-    axs[0, 1].plot(time, u_true[:, 0, 0], label='v')
-    axs[0, 1].plot(time, u_true[:, 1, 0], label='steering angle')
-    axs[0, 1].legend()
-    axs[0, 1].set_ylabel('inputs')
-    axs[0, 1].grid(True)
+    plotter.assign("y_measured", column=0, row=0, position=(1, 1),
+                   x_sequence=time, label="r_landmark_1")
+    plotter.assign("y_measured", column=2, row=0, position=(1, 1),
+                   x_sequence=time, label="r_landmark_2")
 
-    axs[1, 1].plot(time, y_measured[:, 0, 0], label='landmark 1')
-    axs[1, 1].plot(time, y_measured[:, 2, 0], label='landmark 2')
-    axs[1, 1].legend()
-    axs[1, 1].set_ylabel('r (measured)')
-    axs[1, 1].grid(True)
+    plotter.assign("y_measured", column=1, row=0, position=(2, 1),
+                   x_sequence=time, label="angle_landmark_1")
+    plotter.assign("y_measured", column=3, row=0, position=(2, 1),
+                   x_sequence=time, label="angle_landmark_2")
 
-    axs[2, 1].plot(time, y_measured[:, 1, 0], label='landmark 1')
-    axs[2, 1].plot(time, y_measured[:, 3, 0], label='landmark 2')
-    axs[2, 1].legend()
-    axs[2, 1].set_ylabel('phi (measured)')
-    axs[2, 1].grid(True)
+    plotter.plot("UKF for bicycle model results")
 
 
 run_simulation()
