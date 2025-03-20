@@ -4,13 +4,14 @@ import inspect
 
 
 class SubplotsInfo:
-    def __init__(self, signal_name, shape, column, row, x_sequence):
+    def __init__(self, signal_name, shape, column, row, x_sequence, x_sequence_name):
         self.signal_name = signal_name
         self.shape = shape
         self.column = column
         self.row = row
 
         self.x_sequence = x_sequence
+        self.x_sequence_name = x_sequence_name
 
 
 class Configuration:
@@ -23,7 +24,7 @@ class SimulationPlotter:
         self.configuration = Configuration()
         self.name_to_object_dictionary = {}
 
-    def append(self, object):
+    def append(self, signal_object):
         # %% inspect arguments
         # Get the caller's frame
         frame = inspect.currentframe().f_back
@@ -32,21 +33,36 @@ class SimulationPlotter:
         # Find the object_name that matches the matrix_in value
         object_name = None
         for name, value in caller_locals.items():
-            if value is object:
+            if value is signal_object:
                 object_name = name
                 break
 
             # %% append object
         if object_name in self.name_to_object_dictionary:
-            self.name_to_object_dictionary[object_name].append(object)
+            self.name_to_object_dictionary[object_name].append(signal_object)
         else:
-            self.name_to_object_dictionary[object_name] = [object]
+            self.name_to_object_dictionary[object_name] = [signal_object]
 
     def assign(self, signal_name, position, column=0, row=0, x_sequence=None):
+        x_sequence_name = ""
+        if x_sequence is not None:
+            # %% inspect arguments
+            # Get the caller's frame
+            frame = inspect.currentframe().f_back
+            # Get the caller's local variables
+            caller_locals = frame.f_locals
+            # Find the object_name that matches the matrix_in value
+            x_sequence_name = None
+            for name, value in caller_locals.items():
+                if value is x_sequence:
+                    x_sequence_name = name
+                    break
+
+        # %% assign object
         shape = np.array([[position[0]], [position[1]]], dtype=int)
 
         self.configuration.subplots_signals_list.append(
-            SubplotsInfo(signal_name, shape, column, row, x_sequence))
+            SubplotsInfo(signal_name, shape, column, row, x_sequence, x_sequence_name))
 
     def pre_plot(self, suptitle=""):
 
@@ -89,26 +105,18 @@ class SimulationPlotter:
                 f"[{signal_info.column}, {signal_info.row}]"
 
             if shape[0] == 1 and shape[1] == 1:
-                axs.plot(
-                    x_sequence, signal, label=label_name)
-                axs.legend()
-                axs.grid(True)
+                ax = axs
             elif shape[0] == 1:
-                axs[signal_info.shape[1, 0]].plot(
-                    x_sequence, signal, label=label_name)
-                axs[signal_info.shape[1, 0]].legend()
-                axs[signal_info.shape[1, 0]].grid(True)
+                ax = axs[signal_info.shape[1, 0]]
             elif shape[1] == 1:
-                axs[signal_info.shape[0, 0]].plot(
-                    x_sequence, signal, label=label_name)
-                axs[signal_info.shape[0, 0]].legend()
-                axs[signal_info.shape[0, 0]].grid(True)
+                ax = axs[signal_info.shape[0, 0]]
             else:
-                axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].plot(
-                    x_sequence, signal, label=label_name)
-                axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].legend()
-                axs[signal_info.shape[0, 0],
-                    signal_info.shape[1, 0]].grid(True)
+                ax = axs[signal_info.shape[0, 0], signal_info.shape[1, 0]]
+
+            ax.plot(x_sequence, signal, label=label_name)
+            ax.legend()
+            ax.set_xlabel(signal_info.x_sequence_name)
+            ax.grid(True)
 
     def plot(self, suptitle=""):
         self.pre_plot(suptitle)

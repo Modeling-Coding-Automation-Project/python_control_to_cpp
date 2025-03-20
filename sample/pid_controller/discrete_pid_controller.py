@@ -1,6 +1,12 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
 import control
 import numpy as np
 import matplotlib.pyplot as plt
+
+from python_control.simulation_plotter import SimulationPlotter
 
 # parameter
 dt = 0.2
@@ -43,7 +49,7 @@ print(plant_model_d)
 
 # discretize pid controller
 P_discrete = control.TransferFunction([Kp], [1.0], dt)
-I_discrete = control.TransferFunction([Ki*dt, 0], [1.0, -1.0], dt)
+I_discrete = control.TransferFunction([Ki * dt, 0], [1.0, -1.0], dt)
 D_discrete = control.TransferFunction([Kd, -Kd], [dt, 0.0], dt)
 
 pid_controller_d = P_discrete + I_discrete + D_discrete
@@ -70,29 +76,23 @@ x_plant = np.zeros((plant_model_d_ss.A.shape[0], 1))
 PID_discrete_ss = control.ss(pid_controller_d)
 x_PID_discrete = np.zeros((PID_discrete_ss.A.shape[0], 1))
 
+plotter = SimulationPlotter()
+
 r = 1.0
-y[0] = 0.0
+y = 0.0
 for i in range(len(time_series)):
-    if i == 0:
-        e = r - y[0]
-    else:
-        e = r - y[i - 1]
+    e = r - y
 
     # controller
     u = PID_discrete_ss.C @ x_PID_discrete + PID_discrete_ss.D * e
     x_PID_discrete = PID_discrete_ss.A @ x_PID_discrete + PID_discrete_ss.B * e
 
     # plant
-    y[i] = plant_model_d_ss.C @ x_plant + plant_model_d_ss.D * u
+    y = plant_model_d_ss.C @ x_plant + plant_model_d_ss.D * u
     x_plant = plant_model_d_ss.A @ x_plant + plant_model_d_ss.B * u
 
-print("\nDiscrete PID controller each step simulation:")
-for y_val in y:
-    print(y_val, ",")
+    plotter.append(y)
 
-# plot results of discrete system each step simulation
-plt.plot(t, y)
-plt.legend(['continuous', 'discrete', 'discrete each step'])
-plt.grid(True)
+plotter.assign("y", position=(0, 0), x_sequence=t)
 
-plt.show()
+plotter.plot("Discrete PID controller each step simulation")
