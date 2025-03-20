@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
+from python_control.simulation_plotter import SimulationPlotter
 
 
 def generate_m_sequence(length, taps):
@@ -72,16 +73,20 @@ if __name__ == "__main__":
     # Generate data
     np.random.seed(0)
 
-    x_true = [np.zeros((A.shape[0], 1))] * num_steps
-    x_true[0] = np.array([[0.0], [0.0], [0.0], [0.1]])
+    plotter = SimulationPlotter()
 
-    x_estimate = [np.zeros((A.shape[0], 1))] * num_steps
-    x_estimate[0] = lkf.get_x_hat()
-
-    y_measured = [np.zeros((C.shape[0], 1))] * num_steps
+    x_true = np.array([[0.0], [0.0], [0.0], [0.1]])
+    x_estimate = lkf.get_x_hat()
+    y_measured = np.zeros((C.shape[0], 1))
+    u = np.zeros((B.shape[1], 1))
 
     y_store = [np.zeros((C.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
+
+    plotter.append(x_true)
+    plotter.append(x_estimate)
+    plotter.append(y_measured)
+    plotter.append(u)
 
     for k in range(1, num_steps):
         u = u_data[:, k - 1].reshape(-1, 1)
@@ -90,63 +95,54 @@ if __name__ == "__main__":
         v = np.random.multivariate_normal(np.zeros(C.shape[0]), R_real)
 
         # system response
-        x_true[k] = A @ x_true[k - 1] + B @ u + w.reshape(-1, 1)
-        y_store[delay_index] = C @ x_true[k] + v.reshape(-1, 1)
+        x_true = A @ x_true + B @ u + w.reshape(-1, 1)
+        y_store[delay_index] = C @ x_true + v.reshape(-1, 1)
 
         # system delay
         delay_index += 1
         if delay_index > Number_of_Delay:
             delay_index = 0
 
-        y_measured[k] = y_store[delay_index]
+        y_measured = y_store[delay_index]
 
         # Kalman filter
-        lkf.predict_and_update(u, y_measured[k])
-        x_estimate[k] = lkf.get_x_hat()
+        lkf.predict_and_update(u, y_measured)
+        x_estimate = lkf.get_x_hat()
+
+        plotter.append(x_true)
+        plotter.append(x_estimate)
+        plotter.append(y_measured)
+        plotter.append(u)
 
     # Kalman Gain
     print("Kalman Gain:\n", lkf.G)
 
     # Plot
-    fig, axs = plt.subplots(3, 2)
-    fig.suptitle("True state and observation")
+    plotter.assign("x_true", column=0, row=0, position=(0, 0))
+    plotter.assign("x_estimate", column=0, row=0, position=(0, 0))
+    plotter.assign("y_measured", column=0, row=0, position=(0, 0))
 
-    axs[0, 0].plot([x[0, 0] for x in x_true], label="True x0")
-    axs[0, 0].plot([x[0, 0] for x in x_estimate], label="Estimated x0")
-    axs[0, 0].plot([x[0, 0] for x in y_measured], label="Measured y0")
-    axs[0, 0].legend()
-    axs[0, 0].set_ylabel("Value")
-    axs[0, 0].grid(True)
+    plotter.assign("x_true", column=2, row=0, position=(1, 0))
+    plotter.assign("x_estimate", column=2, row=0, position=(1, 0))
+    plotter.assign("y_measured", column=1, row=0, position=(1, 0))
 
-    axs[1, 0].plot([x[2, 0] for x in x_true], label="True x2")
-    axs[1, 0].plot([x[2, 0] for x in x_estimate], label="Estimated x2")
-    axs[1, 0].plot([x[1, 0] for x in y_measured], label="Measured y1")
-    axs[1, 0].legend()
-    axs[1, 0].set_ylabel("Value")
-    axs[1, 0].grid(True)
+    plotter.assign("u", column=0, row=0, position=(0, 1))
 
-    axs[0, 1].plot(u_data[0, :], label="Input u0")
-    axs[0, 1].legend()
-    axs[0, 1].set_ylabel("Value")
-    axs[0, 1].grid(True)
+    plotter.assign("u", column=1, row=0, position=(1, 1))
 
-    axs[1, 1].plot(u_data[1, :], label="Input u1")
-    axs[1, 1].legend()
-    axs[1, 1].set_ylabel("Value")
-    axs[1, 1].grid(True)
+    plotter.assign("x_true", column=1, row=0, position=(2, 0))
+    plotter.assign("x_estimate", column=1, row=0, position=(2, 0))
 
-    axs[2, 0].plot([x[1, 0] for x in x_true], label="True x1")
-    axs[2, 0].plot([x[1, 0] for x in x_estimate], label="Estimated x1")
-    axs[2, 0].legend()
-    axs[2, 0].set_xlabel("Time")
-    axs[2, 0].set_ylabel("Value")
-    axs[2, 0].grid(True)
+    plotter.assign("x_true", column=3, row=0, position=(2, 1))
+    plotter.assign("x_estimate", column=3, row=0, position=(2, 1))
 
-    axs[2, 1].plot([x[3, 0] for x in x_true], label="True x3")
-    axs[2, 1].plot([x[3, 0] for x in x_estimate], label="Estimated x3")
-    axs[2, 1].legend()
-    axs[2, 1].set_xlabel("Time")
-    axs[2, 1].set_ylabel("Value")
-    axs[2, 1].grid(True)
+    plotter.plot("True state and observation")
 
-    plt.show()
+    # axs[2, 1].plot([x[3, 0] for x in x_true], label="True x3")
+    # axs[2, 1].plot([x[3, 0] for x in x_estimate], label="Estimated x3")
+    # axs[2, 1].legend()
+    # axs[2, 1].set_xlabel("Time")
+    # axs[2, 1].set_ylabel("Value")
+    # axs[2, 1].grid(True)
+
+    # plt.show()

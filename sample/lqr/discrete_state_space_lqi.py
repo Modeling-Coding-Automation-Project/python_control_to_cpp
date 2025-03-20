@@ -179,8 +179,6 @@ def main_reference_tracking():
 
     plotter.plot("LQI Tracking")
 
-    plt.show()
-
 
 if __name__ == '__main__':
     main_reference_tracking()
