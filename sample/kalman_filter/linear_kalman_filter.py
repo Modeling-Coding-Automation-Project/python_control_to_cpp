@@ -137,12 +137,3 @@ if __name__ == "__main__":
     plotter.assign("x_estimate", column=3, row=0, position=(2, 1))
 
     plotter.plot("True state and observation")
-
-    # axs[2, 1].plot([x[3, 0] for x in x_true], label="True x3")
-    # axs[2, 1].plot([x[3, 0] for x in x_estimate], label="Estimated x3")
-    # axs[2, 1].legend()
-    # axs[2, 1].set_xlabel("Time")
-    # axs[2, 1].set_ylabel("Value")
-    # axs[2, 1].grid(True)
-
-    # plt.show()
