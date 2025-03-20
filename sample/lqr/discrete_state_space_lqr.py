@@ -176,24 +176,6 @@ def main_reference_tracking():
 
     plotter.plot("LQR Tracking")
 
-    # fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    # fig.suptitle("LQR Tracking")
-
-    # ax1.grid(True)
-    # ax1.plot(time_history, x1_history, "-b", label="x")
-    # ax1.plot(time_history, x2_history, "-g", label="theta")
-    # xref0_h = [xref[0, 0] for i in range(len(time_history))]
-    # xref1_h = [xref[2, 0] for i in range(len(time_history))]
-    # ax1.plot(time_history, xref0_h, "--b", label="target x")
-    # ax1.plot(time_history, xref1_h, "--g", label="target theta")
-    # ax1.legend()
-
-    # ax2.plot(time_history, u_history, "-r", label="input")
-    # ax2.grid(True)
-    # ax2.legend()
-
-    # plt.show()
-
 
 if __name__ == '__main__':
     main_reference_tracking()
