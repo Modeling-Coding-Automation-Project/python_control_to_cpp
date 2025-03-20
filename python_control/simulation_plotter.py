@@ -71,10 +71,10 @@ class SimulationPlotter:
         for i in range(len(signal_sequence_object)):
             if object_name in self.name_to_object_dictionary:
                 self.name_to_object_dictionary[object_name].append(
-                    signal_sequence_object[i])
+                    signal_sequence_object[i].reshape(-1, 1))
             else:
                 self.name_to_object_dictionary[object_name] = [
-                    signal_sequence_object[i]]
+                    signal_sequence_object[i].reshape(-1, 1)]
 
     def assign(self, signal_name, position,
                column=0, row=0, x_sequence=None,

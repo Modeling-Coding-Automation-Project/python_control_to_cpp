@@ -4,6 +4,7 @@ sys.path.append(os.getcwd())
 
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 from python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
@@ -86,7 +87,8 @@ if __name__ == "__main__":
     plotter.append(x_true)
     plotter.append(x_estimate)
     plotter.append(y_measured)
-    plotter.append(u)
+    u = np.array(u_data_T.reshape(50, 2))
+    plotter.append_sequence(u)
 
     for k in range(1, num_steps):
         u = u_data[:, k - 1].reshape(-1, 1)
@@ -112,7 +114,6 @@ if __name__ == "__main__":
         plotter.append(x_true)
         plotter.append(x_estimate)
         plotter.append(y_measured)
-        plotter.append(u)
 
     # Kalman Gain
     print("Kalman Gain:\n", lkf.G)
