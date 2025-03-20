@@ -4,11 +4,13 @@ import inspect
 
 
 class SubplotsInfo:
-    def __init__(self, signal_name, shape, column, row):
+    def __init__(self, signal_name, shape, column, row, x_sequence):
         self.signal_name = signal_name
         self.shape = shape
         self.column = column
         self.row = row
+
+        self.x_sequence = x_sequence
 
 
 class Configuration:
@@ -40,13 +42,13 @@ class SimulationPlotter:
         else:
             self.name_to_object_dictionary[object_name] = [object]
 
-    def assign(self, signal_name, position, column=0, row=0):
+    def assign(self, signal_name, position, column=0, row=0, x_sequence=None):
         shape = np.array([[position[0]], [position[1]]], dtype=int)
 
         self.configuration.subplots_signals_list.append(
-            SubplotsInfo(signal_name, shape, column, row))
+            SubplotsInfo(signal_name, shape, column, row, x_sequence))
 
-    def plot(self, suptitle=""):
+    def pre_plot(self, suptitle=""):
 
         subplots_signals_list = self.configuration.subplots_signals_list
 
@@ -70,6 +72,9 @@ class SimulationPlotter:
             signal_object_list = self.name_to_object_dictionary[signal_info.signal_name]
 
             steps = len(signal_object_list)
+            x_sequence = range(steps)
+            if signal_info.x_sequence is not None:
+                x_sequence = signal_info.x_sequence
 
             signal = np.zeros((steps, 1))
             if isinstance(signal_object_list[0], np.ndarray):
@@ -85,24 +90,27 @@ class SimulationPlotter:
 
             if shape[0] == 1 and shape[1] == 1:
                 axs.plot(
-                    range(steps), signal, label=label_name)
+                    x_sequence, signal, label=label_name)
                 axs.legend()
                 axs.grid(True)
             elif shape[0] == 1:
                 axs[signal_info.shape[1, 0]].plot(
-                    range(steps), signal, label=label_name)
+                    x_sequence, signal, label=label_name)
                 axs[signal_info.shape[1, 0]].legend()
                 axs[signal_info.shape[1, 0]].grid(True)
             elif shape[1] == 1:
                 axs[signal_info.shape[0, 0]].plot(
-                    range(steps), signal, label=label_name)
+                    x_sequence, signal, label=label_name)
                 axs[signal_info.shape[0, 0]].legend()
                 axs[signal_info.shape[0, 0]].grid(True)
             else:
                 axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].plot(
-                    range(steps), signal, label=label_name)
+                    x_sequence, signal, label=label_name)
                 axs[signal_info.shape[0, 0], signal_info.shape[1, 0]].legend()
                 axs[signal_info.shape[0, 0],
                     signal_info.shape[1, 0]].grid(True)
+
+    def plot(self, suptitle=""):
+        self.pre_plot(suptitle)
 
         plt.show()
