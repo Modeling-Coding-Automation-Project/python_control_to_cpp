@@ -23,6 +23,12 @@ class Configuration:
     subplots_shape = np.zeros((2, 1), dtype=int)
     subplots_signals_list = []
 
+    window_width_base = 6
+    window_height_base = 4
+
+    window_width_each_subplot = 4
+    window_height_each_subplot = 2
+
 
 class SimulationPlotter:
     def __init__(self):
@@ -91,7 +97,13 @@ class SimulationPlotter:
 
         self.configuration.subplots_shape = shape
 
-        fig, axs = plt.subplots(shape[0, 0], shape[1, 0])
+        figure_size = (self.configuration.window_width_base +
+                       self.configuration.window_width_each_subplot *
+                       (shape[1, 0] - 1),
+                       self.configuration.window_height_base +
+                       self.configuration.window_height_each_subplot * (shape[0, 0] - 1))
+
+        fig, axs = plt.subplots(shape[0, 0], shape[1, 0], figsize=figure_size)
         fig.suptitle(suptitle)
 
         for signal_info in subplots_signals_list:
