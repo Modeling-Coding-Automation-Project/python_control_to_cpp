@@ -157,8 +157,9 @@ def run_simulation():
 
     ekf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
 
-    time = []
     plotter = SimulationPlotter()
+
+    time = np.arange(0, simulation_time, sim_delta_time)
 
     y_store = [np.zeros((R_ekf.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
@@ -185,55 +186,34 @@ def run_simulation():
         plotter.append(y_measured)
         plotter.append(u)
 
-        time.append(i * sim_delta_time)
-
     # plot
     plotter.assign("x_true", column=0, row=0, position=(0, 0), x_sequence=time)
     plotter.assign("x_estimated", column=0, row=0,
                    position=(0, 0), x_sequence=time)
 
+    plotter.assign("x_true", column=1, row=0, position=(1, 0), x_sequence=time)
+    plotter.assign("x_estimated", column=1, row=0,
+                   position=(1, 0), x_sequence=time)
+
+    plotter.assign("x_true", column=2, row=0, position=(2, 0), x_sequence=time)
+    plotter.assign("x_estimated", column=2, row=0,
+                   position=(2, 0), x_sequence=time)
+
+    plotter.assign("u", column=0, row=0, position=(0, 1), x_sequence=time)
+    plotter.assign("u", column=1, row=0,
+                   position=(0, 1), x_sequence=time)
+
+    plotter.assign("y_measured", column=0, row=0,
+                   position=(1, 1), x_sequence=time)
+    plotter.assign("y_measured", column=2, row=0,
+                   position=(1, 1), x_sequence=time)
+
+    plotter.assign("y_measured", column=1, row=0,
+                   position=(2, 1), x_sequence=time)
+    plotter.assign("y_measured", column=3, row=0,
+                   position=(2, 1), x_sequence=time)
+
     plotter.plot("EKF for bicycle model results")
-
-    # # plot
-    # fig, axs = plt.subplots(3, 2)
-    # fig.suptitle("EKF for bicycle model results")
-
-    # axs[0, 0].plot(time, x_true[:, 0, 0], label='true')
-    # axs[0, 0].plot(time, x_estimated[:, 0, 0], label='estimated')
-    # axs[0, 0].legend()
-    # axs[0, 0].set_ylabel('x position (state)')
-    # axs[0, 0].grid(True)
-
-    # axs[1, 0].plot(time, x_true[:, 1, 0], label='true')
-    # axs[1, 0].plot(time, x_estimated[:, 1, 0], label='estimated')
-    # axs[1, 0].legend()
-    # axs[1, 0].set_ylabel('y position (state)')
-    # axs[1, 0].grid(True)
-
-    # axs[2, 0].plot(time, x_true[:, 2, 0], label='true')
-    # axs[2, 0].plot(time, x_estimated[:, 2, 0], label='estimated')
-    # axs[2, 0].legend()
-    # axs[2, 0].set_ylabel('theta (state)')
-    # axs[2, 0].set_xlabel('time')
-    # axs[2, 0].grid(True)
-
-    # axs[0, 1].plot(time, u_true[:, 0, 0], label='v')
-    # axs[0, 1].plot(time, u_true[:, 1, 0], label='steering angle')
-    # axs[0, 1].legend()
-    # axs[0, 1].set_ylabel('inputs')
-    # axs[0, 1].grid(True)
-
-    # axs[1, 1].plot(time, y_measured[:, 0, 0], label='landmark 1')
-    # axs[1, 1].plot(time, y_measured[:, 2, 0], label='landmark 2')
-    # axs[1, 1].legend()
-    # axs[1, 1].set_ylabel('r (measured)')
-    # axs[1, 1].grid(True)
-
-    # axs[2, 1].plot(time, y_measured[:, 1, 0], label='landmark 1')
-    # axs[2, 1].plot(time, y_measured[:, 3, 0], label='landmark 2')
-    # axs[2, 1].legend()
-    # axs[2, 1].set_ylabel('phi (measured)')
-    # axs[2, 1].grid(True)
 
 
 run_simulation()
