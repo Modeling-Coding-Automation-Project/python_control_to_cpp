@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import mplcursors
 import numpy as np
 import inspect
 
@@ -125,6 +126,7 @@ class SimulationPlotter:
             ax.plot(x_sequence, signal,
                     label=label_name,
                     linestyle=signal_info.line_style)
+            mplcursors.cursor(ax)
             ax.legend()
             ax.set_xlabel(signal_info.x_sequence_name)
             ax.grid(True)

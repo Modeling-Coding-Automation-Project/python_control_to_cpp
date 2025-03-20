@@ -16,6 +16,7 @@ import numpy as np
 import scipy.linalg as la
 
 from python_control.lqr_deploy import LQI_Deploy
+from python_control.simulation_plotter import SimulationPlotter
 
 simulation_time = 10.0
 dt = 0.1
@@ -125,9 +126,8 @@ def main_reference_tracking():
 
     e_y_integral = np.zeros((1, 1))
 
-    time_history = [0.0]
-    x_history = [x[1, 0]]
-    u_history = [0.0]
+    time = []
+    plotter = SimulationPlotter()
 
     # simulation
     while t <= simulation_time:
@@ -140,27 +140,21 @@ def main_reference_tracking():
 
         x = process(x, u0)
 
-        x_history.append(x[1, 0])
+        plotter.append(y_ref)
+        plotter.append(x)
+        plotter.append(u)
 
-        u_history.append(u0)
-        time_history.append(t)
+        time.append(t)
         t += dt
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.suptitle("LQR Tracking")
+    plotter.assign("x", column=0, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x", column=1, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("y_ref", column=0, row=0, position=(
+        0, 0), x_sequence=time, line_style="--")
 
-    ax1.grid(True)
-    ax1.plot(time_history, x_history, "-b", label="x")
+    plotter.assign("u", column=0, row=0, position=(1, 0), x_sequence=time)
 
-    xref = [xref[1, 0] for i in range(len(time_history))]
-    ax1.plot(time_history, xref, "--b", label="target x")
-    ax1.legend()
-
-    ax2.plot(time_history, u_history, "-r", label="input")
-    ax2.grid(True)
-    ax2.legend()
-
-    plt.show()
+    plotter.plot("LQI Tracking")
 
 
 if __name__ == '__main__':
