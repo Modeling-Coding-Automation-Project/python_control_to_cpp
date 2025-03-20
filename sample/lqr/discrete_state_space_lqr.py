@@ -15,6 +15,7 @@ import numpy as np
 import scipy.linalg as la
 
 from python_control.lqr_deploy import LQR_Deploy
+from python_control.simulation_plotter import SimulationPlotter
 
 simulation_time = 10.0
 dt = 0.1
@@ -139,50 +140,57 @@ def main_reference_tracking():
     ])
     u = np.matrix([0])
 
-    xref = np.matrix([
+    x_ref = np.matrix([
         [1.0],
         [0.0],
         [0.0],
         [0.0]
     ])
 
-    time_history = [0.0]
-    x1_history = [x[0, 0]]
-    x2_history = [x[2, 0]]
-    u_history = [0.0]
+    time = []
+    plotter = SimulationPlotter()
 
     # simulation
     while t <= simulation_time:
-        u = K * (xref - x)
+        u = K * (x_ref - x)
         u0 = float(u[0, 0])
 
         x = process(x, u0)
 
-        x1_history.append(x[0, 0])
-        x2_history.append(x[2, 0])
+        plotter.append(x_ref)
+        plotter.append(x)
+        plotter.append(u)
 
-        u_history.append(u0)
-        time_history.append(t)
+        time.append(t)
         t += dt
 
     # plot
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
-    fig.suptitle("LQR Tracking")
+    plotter.assign("x", column=0, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x", column=1, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x_ref", column=0, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x_ref", column=1, row=0, position=(0, 0), x_sequence=time)
 
-    ax1.grid(True)
-    ax1.plot(time_history, x1_history, "-b", label="x")
-    ax1.plot(time_history, x2_history, "-g", label="theta")
-    xref0_h = [xref[0, 0] for i in range(len(time_history))]
-    xref1_h = [xref[2, 0] for i in range(len(time_history))]
-    ax1.plot(time_history, xref0_h, "--b", label="target x")
-    ax1.plot(time_history, xref1_h, "--g", label="target theta")
-    ax1.legend()
+    plotter.assign("u", column=0, row=0, position=(1, 0), x_sequence=time)
 
-    ax2.plot(time_history, u_history, "-r", label="input")
-    ax2.grid(True)
-    ax2.legend()
+    plotter.plot("LQR Tracking")
 
-    plt.show()
+    # fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+    # fig.suptitle("LQR Tracking")
+
+    # ax1.grid(True)
+    # ax1.plot(time_history, x1_history, "-b", label="x")
+    # ax1.plot(time_history, x2_history, "-g", label="theta")
+    # xref0_h = [xref[0, 0] for i in range(len(time_history))]
+    # xref1_h = [xref[2, 0] for i in range(len(time_history))]
+    # ax1.plot(time_history, xref0_h, "--b", label="target x")
+    # ax1.plot(time_history, xref1_h, "--g", label="target theta")
+    # ax1.legend()
+
+    # ax2.plot(time_history, u_history, "-r", label="input")
+    # ax2.grid(True)
+    # ax2.legend()
+
+    # plt.show()
 
 
 if __name__ == '__main__':
