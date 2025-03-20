@@ -187,31 +187,35 @@ def run_simulation():
         plotter.append(u)
 
     # plot
-    plotter.assign("x_true", column=0, row=0, position=(0, 0), x_sequence=time)
-    plotter.assign("x_estimated", column=0, row=0,
-                   position=(0, 0), x_sequence=time)
+    plotter.assign("x_true", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="px_true")
+    plotter.assign("x_estimated", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="px_estimated")
 
-    plotter.assign("x_true", column=1, row=0, position=(1, 0), x_sequence=time)
-    plotter.assign("x_estimated", column=1, row=0,
-                   position=(1, 0), x_sequence=time)
+    plotter.assign("x_true", column=1, row=0, position=(1, 0),
+                   x_sequence=time, label="py_true")
+    plotter.assign("x_estimated", column=1, row=0, position=(1, 0),
+                   x_sequence=time, label="px_estimated")
 
-    plotter.assign("x_true", column=2, row=0, position=(2, 0), x_sequence=time)
-    plotter.assign("x_estimated", column=2, row=0,
-                   position=(2, 0), x_sequence=time)
+    plotter.assign("x_true", column=2, row=0, position=(2, 0),
+                   x_sequence=time, label="theta_true")
+    plotter.assign("x_estimated", column=2, row=0, position=(2, 0),
+                   x_sequence=time, label="theta_estimated")
 
-    plotter.assign("u", column=0, row=0, position=(0, 1), x_sequence=time)
-    plotter.assign("u", column=1, row=0,
-                   position=(0, 1), x_sequence=time)
+    plotter.assign("u", column=0, row=0, position=(0, 1),
+                   x_sequence=time, label="v")
+    plotter.assign("u", column=1, row=0, position=(0, 1),
+                   x_sequence=time, label="steering_angle")
 
-    plotter.assign("y_measured", column=0, row=0,
-                   position=(1, 1), x_sequence=time)
-    plotter.assign("y_measured", column=2, row=0,
-                   position=(1, 1), x_sequence=time)
+    plotter.assign("y_measured", column=0, row=0, position=(1, 1),
+                   x_sequence=time, label="r_landmark_1")
+    plotter.assign("y_measured", column=2, row=0, position=(1, 1),
+                   x_sequence=time, label="r_landmark_2")
 
-    plotter.assign("y_measured", column=1, row=0,
-                   position=(2, 1), x_sequence=time)
-    plotter.assign("y_measured", column=3, row=0,
-                   position=(2, 1), x_sequence=time)
+    plotter.assign("y_measured", column=1, row=0, position=(2, 1),
+                   x_sequence=time, label="angle_landmark_1")
+    plotter.assign("y_measured", column=3, row=0, position=(2, 1),
+                   x_sequence=time, label="angle_landmark_2")
 
     plotter.plot("EKF for bicycle model results")
 

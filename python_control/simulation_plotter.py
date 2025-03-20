@@ -7,7 +7,7 @@ import inspect
 class SubplotsInfo:
     def __init__(self, signal_name, shape,
                  column, row, x_sequence,
-                 x_sequence_name, line_style):
+                 x_sequence_name, line_style, label):
         self.signal_name = signal_name
         self.shape = shape
         self.column = column
@@ -17,6 +17,7 @@ class SubplotsInfo:
         self.x_sequence_name = x_sequence_name
 
         self.line_style = line_style
+        self.label = label
 
 
 class Configuration:
@@ -78,7 +79,7 @@ class SimulationPlotter:
 
     def assign(self, signal_name, position,
                column=0, row=0, x_sequence=None,
-               line_style="-"):
+               line_style="-", label=""):
 
         x_sequence_name = ""
         if x_sequence is not None:
@@ -104,7 +105,7 @@ class SimulationPlotter:
         self.configuration.subplots_signals_list.append(
             SubplotsInfo(signal_name, shape,
                          column, row, x_sequence,
-                         x_sequence_name, line_style))
+                         x_sequence_name, line_style, label))
 
     def pre_plot(self, suptitle=""):
 
@@ -153,8 +154,11 @@ class SimulationPlotter:
                 for i in range(steps):
                     signal[i, 0] = signal_object_list[i]
 
-            label_name = signal_info.signal_name + \
-                f"[{signal_info.column}, {signal_info.row}]"
+            if signal_info.label == "":
+                label_name = signal_info.signal_name + \
+                    f"[{signal_info.column}, {signal_info.row}]"
+            else:
+                label_name = signal_info.label
 
             if shape[0] == 1 and shape[1] == 1:
                 ax = axs
