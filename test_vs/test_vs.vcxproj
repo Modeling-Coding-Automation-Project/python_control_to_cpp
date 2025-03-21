@@ -142,6 +142,7 @@
     <ClInclude Include="MCAP_tester\include\MCAP_tester.hpp" />
     <ClInclude Include="test_vs_data.hpp" />
     <ClInclude Include="test_vs_EKF_data.hpp" />
+    <ClInclude Include="test_vs_LS_data.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

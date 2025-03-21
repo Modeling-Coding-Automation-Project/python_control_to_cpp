@@ -115,7 +115,7 @@ public:
 
     auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
 
-    this->_weights = this->_lstsq_solver(X_ex, Y);
+    this->_weights = this->_lstsq_solver.solve(X_ex, Y);
   }
 
   inline auto predict(const X_Type &X) const -> Y_Type {
@@ -142,6 +142,15 @@ private:
   _Wights_Type _weights;
   _LstsqSolver_Type _lstsq_solver;
 };
+
+/* make Least Squares */
+template <typename X_Type>
+inline auto make_LeastSquares(void) -> LeastSquares<X_Type> {
+  return LeastSquares<X_Type>();
+}
+
+/* Least Squares type */
+template <typename X_Type> using LeastSquares_Type = LeastSquares<X_Type>;
 
 } // namespace PythonControl
 
