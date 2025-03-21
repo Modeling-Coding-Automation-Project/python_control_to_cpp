@@ -24,7 +24,7 @@ class LeastSquares:
 
 
 class RecursiveLeastSquares:
-    def __init__(self, feature_size, lambda_factor=0.9, delta=1.0):
+    def __init__(self, feature_size, lambda_factor=0.9, delta=0.1):
         self.RLS_size = feature_size + 1  # Add bias term
         self.lambda_factor = lambda_factor
         self.delta = delta
