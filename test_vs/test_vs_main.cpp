@@ -1450,6 +1450,19 @@ void check_python_control_least_squares(void) {
     tester.expect_near(weights.matrix.data, weights_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LeastSquares fit.");
 
+    auto Y_predicted = ls.predict(X);
+
+    Matrix<DefDense, T, 3, Y_SIZE> Y_predicted_answer_part({
+        {static_cast<T>(1.02100123)},
+        {static_cast<T>(13.44101992)},
+        {static_cast<T>(8.93927031)}
+    });
+
+    for (std::size_t i = 0; i < 3; i++) {
+        tester.expect_near(Y_predicted(i, 0), Y_predicted_answer_part(i, 0), NEAR_LIMIT_STRICT,
+            "check LeastSquares predict.");
+    }
+
 
     tester.throw_error_if_test_failed();
 }
