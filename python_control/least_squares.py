@@ -28,7 +28,7 @@ class RecursiveLeastSquares:
         self.RLS_size = feature_size + 1  # Add bias term
         self.lambda_factor = lambda_factor
         self.delta = delta
-        self.P = np.eye(self.RLS_size) / delta
+        self.P = np.eye(self.RLS_size) * delta
         self.weights = np.zeros((self.RLS_size, 1))
 
     def update(self, x, y_true):
