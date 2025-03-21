@@ -22,8 +22,8 @@ weights_true = np.array([[0.5], [-0.2], [0.3]])
 y = weights_true[0, 0] * x1 + weights_true[1, 0] * x2 + offset
 X = np.column_stack((x1, x2))
 
-# Learn the model
-model = RecursiveLeastSquares(feature_size=2, lambda_factor=0.9)
+# Learn the rls model
+rls = RecursiveLeastSquares(feature_size=2, lambda_factor=0.9)
 
 plotter = SimulationPlotter()
 
@@ -31,16 +31,16 @@ for i in range(n_samples):
     x = X[i].reshape(-1, 1)
     y_true = y[i].reshape(-1, 1)
 
-    model.update(x, y_true)
+    rls.update(x, y_true)
 
-    weights_predicted = copy.deepcopy(model.get_weights())
+    weights_predicted = copy.deepcopy(rls.get_weights())
     plotter.append(weights_predicted)
     plotter.append(weights_true)
 
-predictions = model.predict(X)
+predictions = rls.predict(X)
 
 print("true weights:", weights_true.T)
-print("predicted weights:", model.get_weights().T)
+print("predicted weights:", rls.get_weights().T)
 print("true y:", y[:5])
 print("predicted y:", predictions[:5].T)
 
