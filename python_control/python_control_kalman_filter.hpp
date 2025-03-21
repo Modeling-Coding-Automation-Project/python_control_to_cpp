@@ -57,9 +57,8 @@ private:
   static constexpr std::size_t _OUTPUT_SIZE =
       DiscreteStateSpace_Type::Original_Y_Type::COLS;
 
-  using _C_P_CT_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
 public:
   /* Type  */
@@ -311,9 +310,8 @@ private:
       PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
                                                         Parameter_Type>;
 
-  using _C_P_CT_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
 public:
   /* Type  */
@@ -741,7 +739,7 @@ private:
   static constexpr std::size_t _STATE_SIZE = State_Type::COLS;
 
   using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
 
 public:
   /* Type */
@@ -840,11 +838,10 @@ private:
                                                 Parameter_Type>;
 
   using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
 
-  using _P_YY_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _P_YY_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
   using _W_Type = PythonNumpy::DiagMatrix_Type<_T, (2 * _STATE_SIZE + 1)>;
 
