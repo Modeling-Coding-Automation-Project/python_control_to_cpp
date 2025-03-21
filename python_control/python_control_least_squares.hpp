@@ -186,7 +186,7 @@ public:
         _lambda_factor_inv(
             static_cast<_T>(1) /
             static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
-        _weights(), _P(PythonNumpy::make_DiagMatrix<RLS_SIZE>(
+        _weights(), _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
                            static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
                            .create_dense()),
         _lambda_X_P_Solver() {}

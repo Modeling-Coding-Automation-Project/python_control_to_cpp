@@ -1511,6 +1511,34 @@ void check_python_control_least_squares(void) {
         RLS_weights_store(2, i) = RLS_weights(2, 0);
     }
 
+    Matrix<DefDense, T, (RLS_X_SIZE + 1), 1> RLS_weight_answer_last({
+        {static_cast<T>(0.49970984)},
+        {static_cast<T>(-0.19947724)},
+        {static_cast<T>(0.29828256)}
+    });
+
+    for (std::size_t i = 0; i < (RLS_X_SIZE + 1); i++) {
+        tester.expect_near(
+            RLS_weights_store(i, RLS_NUMBER_OF_DATA - 1), RLS_weight_answer_last(i, 0),
+            NEAR_LIMIT_STRICT,
+            "check RecursiveLeastSquares update.");
+    }
+
+    /* 予測 */
+    RLS_X_Type x_last;
+    x_last(0, 0) = RLS_X(RLS_NUMBER_OF_DATA - 1, 0);
+    x_last(1, 0) = RLS_X(RLS_NUMBER_OF_DATA - 1, 1);
+
+    auto RLS_Y_predicted = rls.predict(x_last);
+
+    Matrix<DefDense, T, 1, Y_SIZE> RLS_Y_predicted_answer_last({
+        {static_cast<T>(-0.71824759)}
+        });
+
+    tester.expect_near(RLS_Y_predicted.matrix.data,
+        RLS_Y_predicted_answer_last.matrix.data, NEAR_LIMIT_STRICT,
+        "check RecursiveLeastSquares predict.");
+
 
     tester.throw_error_if_test_failed();
 }
