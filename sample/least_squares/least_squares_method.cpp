@@ -19,7 +19,7 @@ double get_LS_test_Y(std::size_t i, std::size_t j);
 int main(void) {
   /* define Least Squares */
   using X_Type = DenseMatrix_Type<double, LS_NUMBER_OF_DATA, X_SIZE>;
-  LeastSquares_Type<X_Type> ls = make_LeastSquares<X_Type>();
+  auto ls = make_LeastSquares<X_Type>();
 
   /* fit */
   Matrix<DefDense, double, LS_NUMBER_OF_DATA, X_SIZE> X;
