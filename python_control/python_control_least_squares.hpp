@@ -10,6 +10,9 @@ namespace PythonControl {
 
 constexpr double LEAST_SQUARES_DIVISION_MIN = 1.0e-10;
 
+constexpr double LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT = 0.9;
+constexpr double LEAST_SQUARES_DELTA_DEFAULT = 0.1;
+
 /* Least Squares Input, Output Type */
 template <typename T, std::size_t Vector_Size>
 using LeastSquaresInputType =
@@ -151,6 +154,136 @@ inline auto make_LeastSquares(void) -> LeastSquares<X_Type> {
 
 /* Least Squares type */
 template <typename X_Type> using LeastSquares_Type = LeastSquares<X_Type>;
+
+/* Recursive Least Squares Method */
+template <typename X_Type> class RecursiveLeastSquares {
+private:
+  /* Type */
+  using _T = typename X_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Value data type must be float or double.");
+
+  // plus 1 for bias
+  using _Wights_Type = StateSpaceStateType<_T, (X_Type::COLS + 1)>;
+
+  using _P_Type =
+      PythonNumpy::DenseMatrix_Type<_T, (X_Type::COLS + 1), (X_Type::COLS + 1)>;
+
+  using _lambda_X_P_Solver_Type = PythonNumpy::LinalgSolverInv_Type<_P_Type>;
+
+public:
+  /* Constant */
+  static constexpr std::size_t RLS_SIZE = X_Type::COLS + 1;
+
+  using Y_Type = StateSpaceOutputType<_T, 1>;
+
+public:
+  /* Constructor */
+  RecursiveLeastSquares()
+      : _lambda_factor(static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
+        _lambda_factor_inv(
+            static_cast<_T>(1) /
+            static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
+        _weights(), _P(PythonNumpy::make_DiagMatrix<RLS_SIZE>(
+                           static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
+                           .create_dense()),
+        _lambda_X_P_Solver() {}
+
+  /* Copy Constructor */
+  RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
+      : _lambda_factor(input._lambda_factor),
+        _lambda_factor_inv(input._lambda_factor_inv), _weights(input._weights),
+        _P(input._P), _lambda_X_P_Solver(input._lambda_X_P_Solver) {}
+
+  RecursiveLeastSquares<X_Type> &
+  operator=(const RecursiveLeastSquares<X_Type> &input) {
+    if (this != &input) {
+      this->_lambda_factor = input._lambda_factor;
+      this->_lambda_factor_inv = input._lambda_factor_inv;
+      this->_weights = input._weights;
+      this->_P = input._P;
+      this->_lambda_X_P_Solver = input._lambda_X_P_Solver;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  RecursiveLeastSquares(RecursiveLeastSquares<X_Type> &&input) noexcept
+      : _lambda_factor(std::move(input._lambda_factor)),
+        _lambda_factor_inv(std::move(input._lambda_factor_inv)),
+        _weights(std::move(input._weights)), _P(std::move(input._P)),
+        _lambda_X_P_Solver(std::move(input._lambda_X_P)) {}
+
+  RecursiveLeastSquares<X_Type> &
+  operator=(RecursiveLeastSquares<X_Type> &&input) noexcept {
+    if (this != &input) {
+      this->_lambda_factor = std::move(input._lambda_factor);
+      this->_lambda_factor_inv = std::move(input._lambda_factor_inv);
+      this->_weights = std::move(input._weights);
+      this->_P = std::move(input._P);
+      this->_lambda_X_P_Solver = std::move(input._lambda_X_P_Solver);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void set_lambda(const _T &lambda_in) {
+    this->_lambda_factor = lambda_in;
+    this->_lambda_factor_inv = static_cast<_T>(1) / lambda_in;
+  }
+
+  inline void update(const X_Type &X, const Y_Type &Y_true) {
+
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
+
+    auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
+
+    auto Y = PythonNumpy::A_mul_BTranspose(X_ex, this->_weights);
+
+    auto Y_dif = Y_true - Y;
+
+    auto P_x = this->_P * X_ex;
+
+    auto lambda_X_P_inv = _lambda_X_P_Solver.solve(
+        this->lambda_factor + PythonNumpy::ATranspose_mul_B(X_ex, P_x));
+
+    auto K = P_x * lambda_X_P_inv;
+
+    this->_weights = this->_weights + K * Y_dif;
+
+    this->_P = (this->_P - K * PythonNumpy::ATranspose_mul_B(X_ex, this->_P)) *
+               this->_lambda_factor_inv;
+  }
+
+  inline auto predict(const X_Type &X) const -> Y_Type {
+
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
+
+    auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
+
+    return PythonNumpy::A_mul_BTranspose(X_ex, this->_weights);
+  }
+
+  inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }
+
+  inline void set_inv_solver_decay_rate(const _T &decay_rate_in) {
+    this->_lambda_X_P_Solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void set_inv_solver_division_min(const _T &division_min_in) {
+    this->_lambda_X_P_Solver.set_division_min(division_min_in);
+  }
+
+private:
+  /* Variables */
+  _T _lambda_factor;
+  _T _lambda_factor_inv;
+  _Wights_Type _weights;
+  _P_Type _P;
+  _lambda_X_P_Solver_Type _lambda_X_P_Solver;
+};
 
 } // namespace PythonControl
 
