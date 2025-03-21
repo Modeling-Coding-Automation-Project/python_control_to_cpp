@@ -171,8 +171,6 @@ private:
   using _P_Type =
       PythonNumpy::DenseMatrix_Type<_T, (X_Type::COLS + 1), (X_Type::COLS + 1)>;
 
-  using _lambda_X_P_Solver_Type = PythonNumpy::LinalgSolverInv_Type<_P_Type>;
-
 public:
   /* Constant */
   static constexpr std::size_t RLS_SIZE = X_Type::COLS + 1;
@@ -188,14 +186,13 @@ public:
             static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
         _weights(), _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
                            static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
-                           .create_dense()),
-        _lambda_X_P_Solver() {}
+                           .create_dense()) {}
 
   /* Copy Constructor */
   RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
       : _lambda_factor(input._lambda_factor),
         _lambda_factor_inv(input._lambda_factor_inv), _weights(input._weights),
-        _P(input._P), _lambda_X_P_Solver(input._lambda_X_P_Solver) {}
+        _P(input._P) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(const RecursiveLeastSquares<X_Type> &input) {
@@ -204,7 +201,6 @@ public:
       this->_lambda_factor_inv = input._lambda_factor_inv;
       this->_weights = input._weights;
       this->_P = input._P;
-      this->_lambda_X_P_Solver = input._lambda_X_P_Solver;
     }
     return *this;
   }
@@ -213,8 +209,7 @@ public:
   RecursiveLeastSquares(RecursiveLeastSquares<X_Type> &&input) noexcept
       : _lambda_factor(std::move(input._lambda_factor)),
         _lambda_factor_inv(std::move(input._lambda_factor_inv)),
-        _weights(std::move(input._weights)), _P(std::move(input._P)),
-        _lambda_X_P_Solver(std::move(input._lambda_X_P_Solver)) {}
+        _weights(std::move(input._weights)), _P(std::move(input._P)) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(RecursiveLeastSquares<X_Type> &&input) noexcept {
@@ -223,7 +218,6 @@ public:
       this->_lambda_factor_inv = std::move(input._lambda_factor_inv);
       this->_weights = std::move(input._weights);
       this->_P = std::move(input._P);
-      this->_lambda_X_P_Solver = std::move(input._lambda_X_P_Solver);
     }
     return *this;
   }
@@ -290,7 +284,6 @@ private:
   _T _lambda_factor_inv;
   _Wights_Type _weights;
   _P_Type _P;
-  _lambda_X_P_Solver_Type _lambda_X_P_Solver;
 };
 
 /* make Recursive Least Squares */
