@@ -213,7 +213,7 @@ public:
       : _lambda_factor(std::move(input._lambda_factor)),
         _lambda_factor_inv(std::move(input._lambda_factor_inv)),
         _weights(std::move(input._weights)), _P(std::move(input._P)),
-        _lambda_X_P_Solver(std::move(input._lambda_X_P)) {}
+        _lambda_X_P_Solver(std::move(input._lambda_X_P_Solver)) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(RecursiveLeastSquares<X_Type> &&input) noexcept {
@@ -284,6 +284,16 @@ private:
   _P_Type _P;
   _lambda_X_P_Solver_Type _lambda_X_P_Solver;
 };
+
+/* make Recursive Least Squares */
+template <typename X_Type>
+inline auto make_RecursiveLeastSquares(void) -> RecursiveLeastSquares<X_Type> {
+  return RecursiveLeastSquares<X_Type>();
+}
+
+/* Least Recursive Squares type */
+template <typename X_Type>
+using RecursiveLeastSquares_Type = RecursiveLeastSquares<X_Type>;
 
 } // namespace PythonControl
 

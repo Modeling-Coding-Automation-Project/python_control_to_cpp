@@ -1421,20 +1421,23 @@ void check_python_control_least_squares(void) {
     using X_Type = DenseMatrix_Type<T, LS_NUMBER_OF_DATA, X_SIZE>;
 
     LeastSquares_Type<X_Type> ls = make_LeastSquares<X_Type>();
+    LeastSquares_Type<X_Type> ls_copy = ls;
+    LeastSquares_Type<X_Type> ls_move = std::move(ls_copy);
+    ls = ls_move;
 
 
     /* 推定実行 */
     Matrix<DefDense, T, LS_NUMBER_OF_DATA, X_SIZE> X;
     for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
         for (std::size_t j = 0; j < X_SIZE; j++) {
-            X(i, j) = static_cast<T>(LS_TestData::LS_test_X(i, j));
+            X(i, j) = static_cast<T>(LS_TestData::test_X(i, j));
         }
     }
 
     Matrix<DefDense, T, LS_NUMBER_OF_DATA, Y_SIZE> Y;
     for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
         for (std::size_t j = 0; j < Y_SIZE; j++) {
-            Y(i, j) = static_cast<T>(LS_TestData::LS_test_Y(i, j));
+            Y(i, j) = static_cast<T>(LS_TestData::test_Y(i, j));
         }
     }
 
@@ -1462,6 +1465,35 @@ void check_python_control_least_squares(void) {
         tester.expect_near(Y_predicted(i, 0), Y_predicted_answer_part(i, 0), NEAR_LIMIT_STRICT,
             "check LeastSquares predict.");
     }
+
+
+    /* 逐次最小二乗法定義 */
+    constexpr std::size_t RLS_NUMBER_OF_DATA = RLS_TestData::RLS_NUMBER_OF_DATA;
+    constexpr std::size_t RLS_X_SIZE = RLS_TestData::X_SIZE;
+    constexpr std::size_t RLS_Y_SIZE = RLS_TestData::Y_SIZE;
+
+    using RLS_X_Type = StateSpaceStateType<T, RLS_X_SIZE>;
+
+    RecursiveLeastSquares_Type<RLS_X_Type> rls = make_RecursiveLeastSquares<RLS_X_Type>();
+    RecursiveLeastSquares_Type<RLS_X_Type> rls_copy = rls;
+    RecursiveLeastSquares_Type<RLS_X_Type> rls_move = std::move(rls_copy);
+    rls = rls_move;
+
+    /* 推定実行 */
+    Matrix<DefDense, T, RLS_NUMBER_OF_DATA, RLS_X_SIZE> RLS_X;
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < RLS_X_SIZE; j++) {
+            RLS_X(i, j) = static_cast<T>(RLS_TestData::test_X(i, j));
+        }
+    }
+
+    Matrix<DefDense, T, RLS_NUMBER_OF_DATA, RLS_Y_SIZE> RLS_Y;
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < RLS_Y_SIZE; j++) {
+            RLS_Y(i, j) = static_cast<T>(RLS_TestData::test_Y(i, j));
+        }
+    }
+
 
 
     tester.throw_error_if_test_failed();
