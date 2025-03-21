@@ -12,7 +12,7 @@ from python_control.simulation_plotter import SimulationPlotter
 
 # Create data
 np.random.seed(42)
-n_samples = 20
+n_samples = 100
 x1 = np.random.rand(n_samples) * 10
 x2 = np.random.rand(n_samples) * 10
 offset = np.random.normal(0.3, 0.01, n_samples)
@@ -39,10 +39,10 @@ for i in range(n_samples):
 
 predictions = model.predict(X)
 
-print("true weights:", [1.5, -0.8, 0.3])
-print("predicted weights:", model.get_weights())
+print("true weights:", weights_true.T)
+print("predicted weights:", model.get_weights().T)
 print("true y:", y[:5])
-print("predicted y:", predictions[:5])
+print("predicted y:", predictions[:5].T)
 
 # Plot the results
 plotter.assign("weights_predicted", column=0, row=0, position=(0, 0))
