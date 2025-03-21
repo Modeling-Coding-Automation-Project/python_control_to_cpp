@@ -1,6 +1,7 @@
 #ifndef __PYTHON_CONTROL_LEAST_SQUARES_HPP__
 #define __PYTHON_CONTROL_LEAST_SQUARES_HPP__
 
+#include "base_utility.hpp"
 #include "python_numpy.hpp"
 
 #include <array>
@@ -240,14 +241,21 @@ public:
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
-    auto Y = PythonNumpy::A_mul_BTranspose(X_ex, this->_weights);
+    auto Y = PythonNumpy::ATranspose_mul_B(X_ex, this->_weights);
 
     auto Y_dif = Y_true - Y;
 
     auto P_x = this->_P * X_ex;
 
-    auto lambda_X_P_inv = _lambda_X_P_Solver.solve(
-        this->lambda_factor + PythonNumpy::ATranspose_mul_B(X_ex, P_x));
+    // lambda_X_P is scalar
+    _T lambda_X_P =
+        this->_lambda_factor +
+        PythonNumpy::ATranspose_mul_B(X_ex, P_x).template get<0, 0>();
+
+    auto lambda_X_P_inv =
+        static_cast<_T>(1) /
+        Base::Utility::avoid_zero_divide(
+            lambda_X_P, static_cast<_T>(LEAST_SQUARES_DIVISION_MIN));
 
     auto K = P_x * lambda_X_P_inv;
 
@@ -263,7 +271,7 @@ public:
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
-    return PythonNumpy::A_mul_BTranspose(X_ex, this->_weights);
+    return PythonNumpy::ATranspose_mul_B(X_ex, this->_weights);
   }
 
   inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }

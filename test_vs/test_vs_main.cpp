@@ -1494,6 +1494,22 @@ void check_python_control_least_squares(void) {
         }
     }
 
+    Matrix<DefDense, T, (RLS_X_SIZE + 1), RLS_NUMBER_OF_DATA> RLS_weights_store;
+
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        RLS_X_Type x;
+        x(0, 0) = RLS_X(i, 0);
+        x(1, 0) = RLS_X(i, 1);
+
+        auto y_true = make_DenseMatrix<1, RLS_Y_SIZE>(RLS_Y(i, 0));
+
+        rls.update(x, y_true);
+
+        auto RLS_weights = rls.get_weights();
+        RLS_weights_store(0, i) = RLS_weights(0, 0);
+        RLS_weights_store(1, i) = RLS_weights(1, 0);
+        RLS_weights_store(2, i) = RLS_weights(2, 0);
+    }
 
 
     tester.throw_error_if_test_failed();
