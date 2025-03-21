@@ -9,7 +9,7 @@ class LeastSquares:
 
         X = np.hstack([X, np.ones((X.shape[0], 1))])  # Add bias term
 
-        self.weights = np.linalg.lstsq(X, y, rcond=None)[0]
+        self.weights = np.linalg.lstsq(X, y)[0]
 
     def predict(self, X):
 
