@@ -7,7 +7,7 @@ import control
 import matplotlib.pyplot as plt
 
 from python_control.state_space_deploy import StateSpaceDeploy
-
+from python_control.simulation_plotter import SimulationPlotter
 
 # define state-space model
 A = np.array([[0.7, 0.2],
@@ -30,32 +30,18 @@ x = np.array([[0],
 u = 1  # input
 n_steps = 50  # number of steps
 
-# history
-x_history = []
-y_history = []
+plotter = SimulationPlotter()
 
 # simulation
 for _ in range(n_steps):
     y = C @ x + D * u
     x = A @ x + B * u
 
-    x_history.append(x.flatten())
-    y_history.append(y.flatten()[0])
+    plotter.append(x)
+    plotter.append(y)
 
-# plot results
-x_history = np.array(x_history)
-y_history = np.array(y_history)
+plotter.assign("x", column=0, row=0, position=(0, 0))
+plotter.assign("x", column=1, row=0, position=(0, 0))
+plotter.assign("y", column=0, row=0, position=(1, 0))
 
-print("\nx_history:\n", x_history)
-print("\n\ny_history:\n", y_history)
-
-plt.figure(figsize=(10, 6))
-plt.plot(range(n_steps), x_history[:, 0], label="x1[k] (State 1)")
-plt.plot(range(n_steps), x_history[:, 1], label="x2[k] (State 2)")
-plt.plot(range(n_steps), y_history, label="y[k] (Output)")
-plt.xlabel("Time step k")
-plt.ylabel("Value")
-plt.title("Discrete-Time State-Space Response")
-plt.legend()
-plt.grid()
-plt.show()
+plotter.plot("Discrete-Time State-Space Response")

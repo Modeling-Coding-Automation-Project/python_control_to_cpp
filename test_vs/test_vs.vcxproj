@@ -134,6 +134,7 @@
   <ItemGroup>
     <ClInclude Include="..\python_control\python_control.hpp" />
     <ClInclude Include="..\python_control\python_control_kalman_filter.hpp" />
+    <ClInclude Include="..\python_control\python_control_least_squares.hpp" />
     <ClInclude Include="..\python_control\python_control_lqr.hpp" />
     <ClInclude Include="..\python_control\python_control_pid_controller.hpp" />
     <ClInclude Include="..\python_control\python_control_state_space.hpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="MCAP_tester\include\MCAP_tester.hpp" />
     <ClInclude Include="test_vs_data.hpp" />
     <ClInclude Include="test_vs_EKF_data.hpp" />
+    <ClInclude Include="test_vs_LS_data.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

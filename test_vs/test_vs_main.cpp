@@ -7,6 +7,7 @@
 #include "MCAP_tester.hpp"
 #include "test_vs_data.hpp"
 #include "test_vs_EKF_data.hpp"
+#include "test_vs_LS_data.hpp"
 
 
 using namespace Tester;
@@ -1402,6 +1403,145 @@ void check_python_control_unscented_kalman_filter(void) {
 }
 
 
+template <typename T>
+void check_python_control_least_squares(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    //constexpr T NEAR_LIMIT_SOFT = 5.0e-2F;
+
+    /* 最小二乗法定義 */
+    constexpr std::size_t LS_NUMBER_OF_DATA = LS_TestData::LS_NUMBER_OF_DATA;
+    constexpr std::size_t X_SIZE = LS_TestData::X_SIZE;
+    constexpr std::size_t Y_SIZE = LS_TestData::Y_SIZE;
+
+    using X_Type = DenseMatrix_Type<T, LS_NUMBER_OF_DATA, X_SIZE>;
+
+    LeastSquares_Type<X_Type> ls = make_LeastSquares<X_Type>();
+    LeastSquares_Type<X_Type> ls_copy = ls;
+    LeastSquares_Type<X_Type> ls_move = std::move(ls_copy);
+    ls = ls_move;
+
+
+    /* 推定実行 */
+    Matrix<DefDense, T, LS_NUMBER_OF_DATA, X_SIZE> X;
+    for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < X_SIZE; j++) {
+            X(i, j) = static_cast<T>(LS_TestData::test_X(i, j));
+        }
+    }
+
+    Matrix<DefDense, T, LS_NUMBER_OF_DATA, Y_SIZE> Y;
+    for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < Y_SIZE; j++) {
+            Y(i, j) = static_cast<T>(LS_TestData::test_Y(i, j));
+        }
+    }
+
+    ls.fit(X, Y);
+    auto weights = ls.get_weights();
+
+    Matrix<DefDense, T, (X_SIZE + 1), 1> weights_answer({
+        { static_cast<T>(1.50065106)},
+        { static_cast<T>(-0.79889541)},
+        { static_cast<T>(0.28852566)}
+        });
+
+    tester.expect_near(weights.matrix.data, weights_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check LeastSquares fit.");
+
+    auto Y_predicted = ls.predict(X);
+
+    Matrix<DefDense, T, 3, Y_SIZE> Y_predicted_answer_part({
+        {static_cast<T>(1.02100123)},
+        {static_cast<T>(13.44101992)},
+        {static_cast<T>(8.93927031)}
+    });
+
+    for (std::size_t i = 0; i < 3; i++) {
+        tester.expect_near(Y_predicted(i, 0), Y_predicted_answer_part(i, 0), NEAR_LIMIT_STRICT,
+            "check LeastSquares predict.");
+    }
+
+
+    /* 逐次最小二乗法定義 */
+    constexpr std::size_t RLS_NUMBER_OF_DATA = RLS_TestData::RLS_NUMBER_OF_DATA;
+    constexpr std::size_t RLS_X_SIZE = RLS_TestData::X_SIZE;
+    constexpr std::size_t RLS_Y_SIZE = RLS_TestData::Y_SIZE;
+
+    using RLS_X_Type = StateSpaceStateType<T, RLS_X_SIZE>;
+
+    RecursiveLeastSquares_Type<RLS_X_Type> rls =
+        make_RecursiveLeastSquares<RLS_X_Type>(static_cast<T>(0), static_cast<T>(0.1));
+    RecursiveLeastSquares_Type<RLS_X_Type> rls_copy = rls;
+    RecursiveLeastSquares_Type<RLS_X_Type> rls_move = std::move(rls_copy);
+    rls = rls_move;
+
+    rls.set_lambda(static_cast<T>(0.9));
+
+    /* 推定実行 */
+    Matrix<DefDense, T, RLS_NUMBER_OF_DATA, RLS_X_SIZE> RLS_X;
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < RLS_X_SIZE; j++) {
+            RLS_X(i, j) = static_cast<T>(RLS_TestData::test_X(i, j));
+        }
+    }
+
+    Matrix<DefDense, T, RLS_NUMBER_OF_DATA, RLS_Y_SIZE> RLS_Y;
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        for (std::size_t j = 0; j < RLS_Y_SIZE; j++) {
+            RLS_Y(i, j) = static_cast<T>(RLS_TestData::test_Y(i, j));
+        }
+    }
+
+    Matrix<DefDense, T, (RLS_X_SIZE + 1), RLS_NUMBER_OF_DATA> RLS_weights_store;
+
+    for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
+        RLS_X_Type x;
+        x(0, 0) = RLS_X(i, 0);
+        x(1, 0) = RLS_X(i, 1);
+
+        rls.update(x, RLS_Y(i, 0));
+
+        auto RLS_weights = rls.get_weights();
+        RLS_weights_store(0, i) = RLS_weights(0, 0);
+        RLS_weights_store(1, i) = RLS_weights(1, 0);
+        RLS_weights_store(2, i) = RLS_weights(2, 0);
+    }
+
+    Matrix<DefDense, T, (RLS_X_SIZE + 1), 1> RLS_weight_answer_last({
+        {static_cast<T>(0.49970984)},
+        {static_cast<T>(-0.19947724)},
+        {static_cast<T>(0.29828256)}
+    });
+
+    for (std::size_t i = 0; i < (RLS_X_SIZE + 1); i++) {
+        tester.expect_near(
+            RLS_weights_store(i, RLS_NUMBER_OF_DATA - 1), RLS_weight_answer_last(i, 0),
+            NEAR_LIMIT_STRICT,
+            "check RecursiveLeastSquares update.");
+    }
+
+    /* 予測 */
+    RLS_X_Type x_last;
+    x_last(0, 0) = RLS_X(RLS_NUMBER_OF_DATA - 1, 0);
+    x_last(1, 0) = RLS_X(RLS_NUMBER_OF_DATA - 1, 1);
+
+    auto RLS_Y_predicted = rls.predict(x_last);
+
+    T RLS_Y_predicted_answer_last = static_cast<T>(-0.71824759);
+
+    tester.expect_near(RLS_Y_predicted,
+        RLS_Y_predicted_answer_last, NEAR_LIMIT_STRICT,
+        "check RecursiveLeastSquares predict.");
+
+
+    tester.throw_error_if_test_failed();
+}
+
 
 int main(void) {
 
@@ -1432,6 +1572,10 @@ int main(void) {
     check_python_control_unscented_kalman_filter<double>();
 
     check_python_control_unscented_kalman_filter<float>();
+
+    check_python_control_least_squares<double>();
+
+    check_python_control_least_squares<float>();
 
 
     return 0;

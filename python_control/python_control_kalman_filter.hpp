@@ -57,9 +57,8 @@ private:
   static constexpr std::size_t _OUTPUT_SIZE =
       DiscreteStateSpace_Type::Original_Y_Type::COLS;
 
-  using _C_P_CT_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
 public:
   /* Type  */
@@ -311,9 +310,8 @@ private:
       PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
                                                         Parameter_Type>;
 
-  using _C_P_CT_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
 public:
   /* Type  */
@@ -395,7 +393,7 @@ public:
   /* Move Constructor */
   ExtendedKalmanFilter(
       ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                           Parameter_Type, Number_Of_Delay> &&input)
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept
       : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
@@ -408,8 +406,9 @@ public:
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
-  operator=(ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                                 Parameter_Type, Number_Of_Delay> &&input) {
+  operator=(
+      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->A = std::move(input.A);
       this->C = std::move(input.C);
@@ -728,6 +727,89 @@ using MeasurementFunctionEachSigmaPoints =
 
 } // namespace UKF_Operation
 
+/* Sigma Points Calculator */
+template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
+private:
+  /* Type */
+  using _T = typename State_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Matrix value data type must be float or double.");
+
+  static constexpr std::size_t _STATE_SIZE = State_Type::COLS;
+
+  using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
+
+public:
+  /* Type */
+  using Kai_Type =
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, (2 * _STATE_SIZE + 1)>;
+
+public:
+  /* Constructor */
+  SigmaPointsCalculator(){};
+
+  /* Copy Constructor */
+  SigmaPointsCalculator(const SigmaPointsCalculator<State_Type, P_Type> &input)
+      : sigma_point_weight(input.sigma_point_weight),
+        _P_cholesky_solver(input._P_cholesky_solver) {}
+
+  SigmaPointsCalculator<State_Type, P_Type> &
+  operator=(const SigmaPointsCalculator<State_Type, P_Type> &input) {
+    if (this != &input) {
+      this->sigma_point_weight = input.sigma_point_weight;
+      this->_P_cholesky_solver = input._P_cholesky_solver;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  SigmaPointsCalculator(
+      SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept
+      : sigma_point_weight(std::move(input.sigma_point_weight)),
+        _P_cholesky_solver(std::move(input._P_cholesky_solver)) {}
+
+  SigmaPointsCalculator<State_Type, P_Type> &
+  operator=(SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept {
+    if (this != &input) {
+      this->sigma_point_weight = std::move(input.sigma_point_weight);
+      this->_P_cholesky_solver = std::move(input._P_cholesky_solver);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void set_weight(const _T &sigma_point_weight_in) {
+    this->sigma_point_weight = sigma_point_weight_in;
+  }
+
+  inline auto calculate(const State_Type &X_in, const P_Type &P_in)
+      -> Kai_Type {
+
+    _P_cholesky_solver = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
+    Kai_Type Kai;
+
+    auto SP = _P_cholesky_solver.solve(P_in);
+
+    PythonNumpy::set_row<0>(Kai, X_in);
+    UKF_Operation::UpdateSigmaPointMatrix<
+        _T, Kai_Type, State_Type, decltype(SP)>::set(Kai, X_in, SP,
+                                                     this->sigma_point_weight);
+
+    return Kai;
+  }
+
+public:
+  /* Variable */
+  _T sigma_point_weight;
+
+private:
+  /* Variable */
+  _P_Chol_Solver_Type _P_cholesky_solver;
+};
+
 /* Unscented Kalman Filter */
 template <typename U_Type, typename Q_Type, typename R_Type,
           typename Parameter_Type, std::size_t Number_Of_Delay = 0>
@@ -756,20 +838,24 @@ private:
                                                 Parameter_Type>;
 
   using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
-      PythonNumpy::Matrix<PythonNumpy::DefDense, _T, _STATE_SIZE, _STATE_SIZE>>;
+      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
 
-  using _P_YY_R_Inv_Type =
-      PythonNumpy::LinalgSolverInv_Type<PythonNumpy::Matrix<
-          PythonNumpy::DefDense, _T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using _P_YY_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
 
   using _W_Type = PythonNumpy::DiagMatrix_Type<_T, (2 * _STATE_SIZE + 1)>;
 
   using _Kai_Type =
       PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, (2 * _STATE_SIZE + 1)>;
 
+  using _P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+
+  using _SigmaPointsCalculator_Type =
+      SigmaPointsCalculator<_State_Type, _P_Type>;
+
 public:
   /* Type  */
-  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+  using P_Type = _P_Type;
   using P_xy_Type =
       PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
   using P_yy_Type =
@@ -802,11 +888,11 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), sigma_point_weight(static_cast<_T>(0)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
-        parameters(parameters), _P_YY_R_inv_solver(),
+        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
+        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
-        _measurement_function(measurement_function) {
+        _measurement_function(measurement_function),
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
 
     this->calculate_weights();
   }
@@ -818,11 +904,11 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), sigma_point_weight(static_cast<_T>(0)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
-        parameters(parameters), _P_YY_R_inv_solver(),
+        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
+        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
-        _measurement_function(measurement_function) {
+        _measurement_function(measurement_function),
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
 
     this->calculate_weights();
   }
@@ -835,10 +921,11 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<_T>(2)),
-        sigma_point_weight(static_cast<_T>(0)), w_m(static_cast<_T>(0)), W(),
-        X_hat(), X_d(), Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
-        _measurement_function(measurement_function) {
+        _measurement_function(measurement_function),
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
 
     this->calculate_weights();
   }
@@ -851,10 +938,11 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
-        sigma_point_weight(static_cast<_T>(0)), w_m(static_cast<_T>(0)), W(),
-        X_hat(), X_d(), Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
-        _measurement_function(measurement_function) {
+        _measurement_function(measurement_function),
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
 
     this->calculate_weights();
   }
@@ -864,13 +952,16 @@ public:
       const UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                                   Number_Of_Delay> &input)
       : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
-        alpha(input.alpha), beta(input.beta),
-        sigma_point_weight(input.sigma_point_weight), w_m(input.w_m),
-        W(input.W), X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
+        alpha(input.alpha), beta(input.beta), w_m(input.w_m), W(input.W),
+        X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
         parameters(input.parameters),
         _P_YY_R_inv_solver(input._P_YY_R_inv_solver),
         _state_function(input._state_function),
-        _measurement_function(input._measurement_function) {}
+        _measurement_function(input._measurement_function),
+        _predict_sigma_points_calculator(
+            input._predict_sigma_points_calculator),
+        _update_sigma_points_calculator(input._update_sigma_points_calculator) {
+  }
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
@@ -884,7 +975,6 @@ public:
       this->kappa = input.kappa;
       this->alpha = input.alpha;
       this->beta = input.beta;
-      this->sigma_point_weight = input.sigma_point_weight;
       this->w_m = input.w_m;
       this->W = input.W;
       this->X_hat = input.X_hat;
@@ -894,6 +984,10 @@ public:
       this->_P_YY_R_inv_solver = input._P_YY_R_inv_solver;
       this->_state_function = input._state_function;
       this->_measurement_function = input._measurement_function;
+      this->_predict_sigma_points_calculator =
+          input._predict_sigma_points_calculator;
+      this->_update_sigma_points_calculator =
+          input._update_sigma_points_calculator;
     }
     return *this;
   }
@@ -901,23 +995,26 @@ public:
   /* Move Constructor */
   UnscentedKalmanFilter(
       UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                            Number_Of_Delay> &&input)
+                            Number_Of_Delay> &&input) noexcept
       : Q(std::move(input.Q)), R(std::move(input.R)), P(std::move(input.P)),
         G(std::move(input.G)), kappa(std::move(input.kappa)),
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
-        sigma_point_weight(std::move(input.sigma_point_weight)),
         w_m(std::move(input.w_m)), W(std::move(input.W)),
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
         Y_store(std::move(input.Y_store)),
         parameters(std::move(input.parameters)),
         _P_YY_R_inv_solver(std::move(input._P_YY_R_inv_solver)),
-        _state_function(input._state_function),
-        _measurement_function(input._measurement_function) {}
+        _state_function(std::move(input._state_function)),
+        _measurement_function(std::move(input._measurement_function)),
+        _predict_sigma_points_calculator(
+            std::move(input._predict_sigma_points_calculator)),
+        _update_sigma_points_calculator(
+            std::move(input._update_sigma_points_calculator)) {}
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
   operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                                  Number_Of_Delay> &&input) {
+                                  Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->Q = std::move(input.Q);
       this->R = std::move(input.R);
@@ -926,7 +1023,6 @@ public:
       this->kappa = std::move(input.kappa);
       this->alpha = std::move(input.alpha);
       this->beta = std::move(input.beta);
-      this->sigma_point_weight = std::move(input.sigma_point_weight);
       this->w_m = std::move(input.w_m);
       this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
@@ -936,6 +1032,10 @@ public:
       this->_P_YY_R_inv_solver = std::move(input._P_YY_R_inv_solver);
       this->_state_function = std::move(input._state_function);
       this->_measurement_function = std::move(input._measurement_function);
+      this->_predict_sigma_points_calculator =
+          std::move(input._predict_sigma_points_calculator);
+      this->_update_sigma_points_calculator =
+          std::move(input._update_sigma_points_calculator);
     }
     return *this;
   }
@@ -957,30 +1057,17 @@ public:
         static_cast<_T>(1) / (static_cast<_T>(2) *
                               (static_cast<_T>(_STATE_SIZE) + lambda_weight)));
 
-    this->sigma_point_weight =
+    _T sigma_point_weight =
         PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + lambda_weight);
-  }
 
-  inline auto calculate_sigma_points(const _State_Type &X_in,
-                                     const P_Type &P_in) -> _Kai_Type {
-
-    _P_Chol_Solver_Type P_cholesky_solver =
-        PythonNumpy::make_LinalgSolverCholesky<P_Type>();
-    _Kai_Type Kai;
-
-    auto SP = P_cholesky_solver.solve(P_in);
-
-    PythonNumpy::set_row<0>(Kai, X_in);
-    UKF_Operation::
-        UpdateSigmaPointMatrix<_T, _Kai_Type, _State_Type, decltype(SP)>::set(
-            Kai, X_in, SP, this->sigma_point_weight);
-
-    return Kai;
+    this->_predict_sigma_points_calculator.set_weight(sigma_point_weight);
+    this->_update_sigma_points_calculator.set_weight(sigma_point_weight);
   }
 
   inline void predict(const U_Type &U) {
 
-    auto Kai = this->calculate_sigma_points(this->X_hat, this->P);
+    auto Kai =
+        this->_predict_sigma_points_calculator.calculate(this->X_hat, this->P);
 
     UKF_Operation::StateFunctionEachSigmaPoints<
         _Kai_Type, _StateFunction_Object, U_Type,
@@ -1013,7 +1100,8 @@ public:
 
   inline void update(const _Measurement_Type &Y) {
 
-    auto Kai = this->calculate_sigma_points(this->X_hat, this->P);
+    auto Kai =
+        this->_update_sigma_points_calculator.calculate(this->X_hat, this->P);
 
     auto Y_d = PythonNumpy::make_DenseMatrixZeros<_T, _OUTPUT_SIZE,
                                                   (2 * _STATE_SIZE + 1)>();
@@ -1079,7 +1167,6 @@ public:
   _T kappa;
   _T alpha;
   _T beta;
-  _T sigma_point_weight;
   _T w_m;
   _W_Type W;
 
@@ -1094,6 +1181,9 @@ private:
   _P_YY_R_Inv_Type _P_YY_R_inv_solver;
   _StateFunction_Object _state_function;
   _MeasurementFunction_Object _measurement_function;
+
+  _SigmaPointsCalculator_Type _predict_sigma_points_calculator;
+  _SigmaPointsCalculator_Type _update_sigma_points_calculator;
 };
 
 /* Unscented Kalman Filter Type */
