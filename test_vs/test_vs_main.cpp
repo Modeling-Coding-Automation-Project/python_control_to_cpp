@@ -1501,9 +1501,7 @@ void check_python_control_least_squares(void) {
         x(0, 0) = RLS_X(i, 0);
         x(1, 0) = RLS_X(i, 1);
 
-        auto y_true = make_DenseMatrix<1, RLS_Y_SIZE>(RLS_Y(i, 0));
-
-        rls.update(x, y_true);
+        rls.update(x, RLS_Y(i, 0));
 
         auto RLS_weights = rls.get_weights();
         RLS_weights_store(0, i) = RLS_weights(0, 0);

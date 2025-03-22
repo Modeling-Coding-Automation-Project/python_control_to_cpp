@@ -175,8 +175,6 @@ public:
   /* Constant */
   static constexpr std::size_t RLS_SIZE = X_Type::COLS + 1;
 
-  using Y_Type = StateSpaceOutputType<_T, 1>;
-
 public:
   /* Constructor */
   RecursiveLeastSquares()
@@ -229,15 +227,15 @@ public:
     this->_lambda_factor_inv = static_cast<_T>(1) / lambda_in;
   }
 
-  inline void update(const X_Type &X, const Y_Type &Y_true) {
+  inline void update(const X_Type &X, const _T &y_true) {
 
     auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
-    auto Y = PythonNumpy::ATranspose_mul_B(X_ex, this->_weights);
+    auto y = PythonNumpy::ATranspose_mul_B(X_ex, this->_weights);
 
-    auto Y_dif = Y_true - Y;
+    auto y_dif = y_true - y.template get<0, 0>();
 
     auto P_x = this->_P * X_ex;
 
@@ -253,16 +251,10 @@ public:
 
     auto K = P_x * lambda_X_P_inv;
 
-    this->_weights = this->_weights + K * Y_dif;
+    this->_weights = this->_weights + K * y_dif;
 
     this->_P = (this->_P - K * PythonNumpy::ATranspose_mul_B(X_ex, this->_P)) *
                this->_lambda_factor_inv;
-  }
-
-  inline void update(const X_Type &X, const _T &Y_true) {
-    Y_Type Y_true_matrix({{Y_true}});
-
-    this->update(X, Y_true_matrix);
   }
 
   inline auto predict(const X_Type &X) const -> _T {
