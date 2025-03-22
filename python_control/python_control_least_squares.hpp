@@ -186,6 +186,19 @@ public:
                            static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
                            .create_dense()) {}
 
+  RecursiveLeastSquares(const _T &lambda_in)
+      : _lambda_factor(static_cast<_T>(lambda_in)),
+        _lambda_factor_inv(static_cast<_T>(1) / static_cast<_T>(lambda_in)),
+        _weights(), _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
+                           static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
+                           .create_dense()) {}
+
+  RecursiveLeastSquares(const _T &lambda_in, const _T &delta_in)
+      : _lambda_factor(lambda_in),
+        _lambda_factor_inv(static_cast<_T>(1) / lambda_in), _weights(),
+        _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(delta_in)
+               .create_dense()) {}
+
   /* Copy Constructor */
   RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
       : _lambda_factor(input._lambda_factor),
@@ -289,6 +302,18 @@ private:
 template <typename X_Type>
 inline auto make_RecursiveLeastSquares(void) -> RecursiveLeastSquares<X_Type> {
   return RecursiveLeastSquares<X_Type>();
+}
+
+template <typename X_Type, typename T>
+inline auto make_RecursiveLeastSquares(const T &lambda_in)
+    -> RecursiveLeastSquares<X_Type> {
+  return RecursiveLeastSquares<X_Type>(lambda_in);
+}
+
+template <typename X_Type, typename T>
+inline auto make_RecursiveLeastSquares(const T &lambda_in, const T &delta_in)
+    -> RecursiveLeastSquares<X_Type> {
+  return RecursiveLeastSquares<X_Type>(lambda_in, delta_in);
 }
 
 /* Least Recursive Squares type */

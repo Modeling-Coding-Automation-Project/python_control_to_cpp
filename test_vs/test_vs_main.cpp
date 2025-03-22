@@ -1474,10 +1474,13 @@ void check_python_control_least_squares(void) {
 
     using RLS_X_Type = StateSpaceStateType<T, RLS_X_SIZE>;
 
-    RecursiveLeastSquares_Type<RLS_X_Type> rls = make_RecursiveLeastSquares<RLS_X_Type>();
+    RecursiveLeastSquares_Type<RLS_X_Type> rls =
+        make_RecursiveLeastSquares<RLS_X_Type>(static_cast<T>(0), static_cast<T>(0.1));
     RecursiveLeastSquares_Type<RLS_X_Type> rls_copy = rls;
     RecursiveLeastSquares_Type<RLS_X_Type> rls_move = std::move(rls_copy);
     rls = rls_move;
+
+    rls.set_lambda(static_cast<T>(0.9));
 
     /* 推定実行 */
     Matrix<DefDense, T, RLS_NUMBER_OF_DATA, RLS_X_SIZE> RLS_X;
