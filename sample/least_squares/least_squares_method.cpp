@@ -42,6 +42,8 @@ int main(void) {
   for (std::size_t i = 0; i < (X_SIZE + 1); i++) {
     std::cout << "weights[" << i << "] = " << weights(i, 0) << std::endl;
   }
+
+  return 0;
 }
 
 Matrix<DefDense, double, LS_NUMBER_OF_DATA, X_SIZE>

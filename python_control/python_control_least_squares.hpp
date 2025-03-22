@@ -259,13 +259,20 @@ public:
                this->_lambda_factor_inv;
   }
 
-  inline auto predict(const X_Type &X) const -> Y_Type {
+  inline void update(const X_Type &X, const _T &Y_true) {
+    Y_Type Y_true_matrix({{Y_true}});
+
+    this->update(X, Y_true_matrix);
+  }
+
+  inline auto predict(const X_Type &X) const -> _T {
 
     auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
-    return PythonNumpy::ATranspose_mul_B(X_ex, this->_weights);
+    return PythonNumpy::ATranspose_mul_B(X_ex, this->_weights)
+        .template get<0, 0>();
   }
 
   inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }

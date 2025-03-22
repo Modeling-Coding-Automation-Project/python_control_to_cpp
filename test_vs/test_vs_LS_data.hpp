@@ -274,7 +274,7 @@ Matrix<DefDense, double, RLS_NUMBER_OF_DATA, Y_SIZE> test_Y({
     { 1.4794073315723024 },
     { 0.6475343889972032 },
     { -1.3596860543531093 },
-    { -0.7111153372781778 },
+    { -0.7111153372781778 }
 });
 
 } // namespace RLS_TestData
