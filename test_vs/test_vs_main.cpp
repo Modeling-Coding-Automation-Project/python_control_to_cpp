@@ -1531,12 +1531,10 @@ void check_python_control_least_squares(void) {
 
     auto RLS_Y_predicted = rls.predict(x_last);
 
-    Matrix<DefDense, T, 1, Y_SIZE> RLS_Y_predicted_answer_last({
-        {static_cast<T>(-0.71824759)}
-        });
+    T RLS_Y_predicted_answer_last = static_cast<T>(-0.71824759);
 
-    tester.expect_near(RLS_Y_predicted.matrix.data,
-        RLS_Y_predicted_answer_last.matrix.data, NEAR_LIMIT_STRICT,
+    tester.expect_near(RLS_Y_predicted,
+        RLS_Y_predicted_answer_last, NEAR_LIMIT_STRICT,
         "check RecursiveLeastSquares predict.");
 
 
