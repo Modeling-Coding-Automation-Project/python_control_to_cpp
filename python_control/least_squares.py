@@ -2,12 +2,12 @@ import numpy as np
 
 
 class LeastSquares:
-    def __init__(self, state_size=0):
-        self.state_size = state_size
-        if state_size <= 0:
+    def __init__(self, X):
+        self.state_size = X.shape[1]
+        if self.state_size <= 0:
             raise ValueError("State size must be greater than 0.")
 
-        self.weights = None
+        self.weights = np.zeros((self.state_size + 1, 1), dtype=X.dtype)
 
     def fit(self, X, y):
 
@@ -20,8 +20,6 @@ class LeastSquares:
 
     def predict(self, X):
 
-        if self.weights is None:
-            raise ValueError("Model is not trained yet. Call fit() first.")
         X = np.hstack([X, np.ones((X.shape[0], 1))])  # Add bias term
 
         return X @ self.weights

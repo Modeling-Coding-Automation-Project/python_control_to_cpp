@@ -19,9 +19,14 @@ y = 1.5 * x1 - 0.8 * x2 + offset
 X = np.column_stack((x1, x2))
 
 # Learn the model
-model = LeastSquares(state_size=X.shape[1])
-model.fit(X, y)
-predictions = model.predict(X)
+ls = LeastSquares(X)
+ls.fit(X, y)
+predictions = ls.predict(X)
+
+print("true weights:", [1.5, -0.8, 0.3])
+print("predicted weights:", ls.get_weights())
+print("true y:", y[:5])
+print("predicted y:", predictions[:5])
 
 # plot
 fig, axs = plt.subplots(3, 1)
@@ -36,8 +41,3 @@ axs[2].legend()
 axs[2].grid(True)
 
 plt.show()
-
-print("true weights:", [1.5, -0.8, 0.3])
-print("predicted weights:", model.get_weights())
-print("true y:", y[:5])
-print("predicted y:", predictions[:5])
