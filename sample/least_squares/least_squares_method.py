@@ -19,7 +19,7 @@ y = 1.5 * x1 - 0.8 * x2 + offset
 X = np.column_stack((x1, x2))
 
 # Learn the model
-model = LeastSquares()
+model = LeastSquares(state_size=X.shape[1])
 model.fit(X, y)
 predictions = model.predict(X)
 

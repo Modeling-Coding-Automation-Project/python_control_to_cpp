@@ -2,10 +2,17 @@ import numpy as np
 
 
 class LeastSquares:
-    def __init__(self):
+    def __init__(self, state_size=0):
+        self.state_size = state_size
+        if state_size <= 0:
+            raise ValueError("State size must be greater than 0.")
+
         self.weights = None
 
     def fit(self, X, y):
+
+        if X.shape[1] != self.state_size:
+            raise ValueError("Wrong state size.")
 
         X = np.hstack([X, np.ones((X.shape[0], 1))])  # Add bias term
 
