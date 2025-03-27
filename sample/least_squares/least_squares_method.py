@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from python_control.least_squares import LeastSquares
+from python_control.least_squares_deploy import LeastSquaresDeploy
 
 # Create data
 np.random.seed(42)
@@ -18,8 +19,13 @@ offset = np.random.normal(0.3, 0.01, n_samples)
 y = 1.5 * x1 - 0.8 * x2 + offset
 X = np.column_stack((x1, x2))
 
-# Learn the model
 ls = LeastSquares(X)
+
+# You can create cpp header which can easily define least squares as C++ code
+deployed_file_names = LeastSquaresDeploy.generate_LS_cpp_code(ls)
+print(deployed_file_names)
+
+# Learn the model
 ls.fit(X, y)
 predictions = ls.predict(X)
 

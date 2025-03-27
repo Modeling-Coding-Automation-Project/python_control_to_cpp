@@ -7,6 +7,8 @@ class LeastSquares:
         if self.state_size <= 0:
             raise ValueError("State size must be greater than 0.")
 
+        self.number_of_data = X.shape[0]
+
         self.weights = np.zeros((self.state_size + 1, 1), dtype=X.dtype)
 
     def fit(self, X, y):
