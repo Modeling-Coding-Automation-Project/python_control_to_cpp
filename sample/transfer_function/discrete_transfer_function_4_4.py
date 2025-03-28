@@ -23,7 +23,6 @@ print(deployed_file_names, "\n")
 T, yout = control.step_response(sys_d)
 
 # plot results
-# plot results
 plt.plot(T, yout)
 plt.xlabel('Time (s)')
 plt.ylabel('Response')
