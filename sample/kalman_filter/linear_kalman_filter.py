@@ -49,7 +49,8 @@ if __name__ == "__main__":
     lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
 
     # You can create cpp header which can easily define LKF as C++ code
-    deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(lkf)
+    deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(
+        lkf, number_of_delay=Number_of_Delay)
     print(deployed_file_names)
 
     # Initial state

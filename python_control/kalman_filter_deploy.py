@@ -442,7 +442,7 @@ class KalmanFilterDeploy:
         return code_text
 
     @staticmethod
-    def generate_LKF_cpp_code(lkf, file_name=None):
+    def generate_LKF_cpp_code(lkf, file_name=None, number_of_delay=0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(lkf.A.dtype.name)
@@ -479,7 +479,7 @@ class KalmanFilterDeploy:
 
         exec(f"{variable_name}_ss = control.ss(lkf.A, lkf.B, lkf.C, lkf_D, dt)")
         ss_file_names = eval(
-            f"StateSpaceDeploy.generate_state_space_cpp_code({variable_name}_ss, caller_file_name_without_ext)")
+            f"StateSpaceDeploy.generate_state_space_cpp_code({variable_name}_ss, caller_file_name_without_ext, number_of_delay={number_of_delay})")
 
         deployed_file_names.append(ss_file_names)
         ss_file_name = ss_file_names[-1]
@@ -503,6 +503,8 @@ class KalmanFilterDeploy:
 
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
+
+        code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
 
         code_text += f"auto lkf_state_space = {ss_file_name_no_extension}::make();\n\n"
 
@@ -532,12 +534,13 @@ class KalmanFilterDeploy:
                 code_text += ",\n"
         code_text += ");\n\n"
 
-        code_text += "using type = LinearKalmanFilter_Type<" + \
-            "decltype(lkf_state_space), decltype(Q), decltype(R)>;\n\n"
+        code_text += "using type = LinearKalmanFilter_Type<\n" + \
+            "    decltype(lkf_state_space), decltype(Q), decltype(R)>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
-        code_text += "    return make_LinearKalmanFilter(lkf_state_space, Q, R);\n\n"
+        code_text += "    return make_LinearKalmanFilter(\n" + \
+            "    lkf_state_space, Q, R);\n\n"
 
         code_text += "}\n\n"
 
