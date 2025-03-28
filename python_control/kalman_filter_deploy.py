@@ -556,7 +556,7 @@ class KalmanFilterDeploy:
         return deployed_file_names
 
     @staticmethod
-    def generate_EKF_cpp_code(ekf, file_name=None):
+    def generate_EKF_cpp_code(ekf, file_name=None, number_of_delay=0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ekf.A.dtype.name)
@@ -649,6 +649,8 @@ class KalmanFilterDeploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
+
         code_text += f"using A_Type = {A_file_name_no_extension}::type;\n"
         code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
 
@@ -728,8 +730,8 @@ class KalmanFilterDeploy:
                 code_text += ",\n"
         code_text += ");\n\n"
 
-        code_text += "using type = ExtendedKalmanFilter_Type<" + \
-            "A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
+        code_text += "using type = ExtendedKalmanFilter_Type<\n" + \
+            "    A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
@@ -748,7 +750,7 @@ class KalmanFilterDeploy:
             "        measurement_function_jacobian::function;\n\n"
 
         code_text += "    return ExtendedKalmanFilter_Type<\n" + \
-            "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>(\n" + \
             "        Q, R, state_function_object, state_function_jacobian_object,\n" + \
             "        measurement_function_object, measurement_function_jacobian_object,\n" + \
             "        parameters);\n\n"
