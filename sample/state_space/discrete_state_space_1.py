@@ -22,7 +22,7 @@ sys = control.ss(A, B, C, D, dt)
 
 # You can create cpp header which can easily define state space as C++ code
 deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(
-    sys, delay_step=0)
+    sys, number_of_delay=0)
 print(deployed_file_names)
 
 # initialize state and input
