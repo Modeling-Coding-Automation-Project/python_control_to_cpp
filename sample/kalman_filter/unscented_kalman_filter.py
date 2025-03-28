@@ -95,7 +95,8 @@ ukf = UnscentedKalmanFilter(fxu.function, hx.function,
                             Number_of_Delay)
 
 # You can create cpp header which can easily define UKF as C++ code
-deployed_file_names = KalmanFilterDeploy.generate_UKF_cpp_code(ukf)
+deployed_file_names = KalmanFilterDeploy.generate_UKF_cpp_code(
+    ukf, number_of_delay=Number_of_Delay)
 print(deployed_file_names)
 
 # %% bicycle model simulation

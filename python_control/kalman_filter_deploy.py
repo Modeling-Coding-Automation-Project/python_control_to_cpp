@@ -792,7 +792,7 @@ class KalmanFilterDeploy:
         return state_function_code, state_function_U_size, SparseAvailable_list
 
     @staticmethod
-    def generate_UKF_cpp_code(ukf, file_name=None):
+    def generate_UKF_cpp_code(ukf, file_name=None, number_of_delay=0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ukf.Q.dtype.name)
@@ -859,6 +859,8 @@ class KalmanFilterDeploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
+
         code_text += f"constexpr std::size_t STATE_SIZE = {state_size};\n"
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
         code_text += f"constexpr std::size_t OUTPUT_SIZE = {measurement_size};\n\n"
@@ -912,8 +914,8 @@ class KalmanFilterDeploy:
                 code_text += ",\n"
         code_text += ");\n\n"
 
-        code_text += "using type = UnscentedKalmanFilter_Type<" + \
-            "U_Type, decltype(Q), decltype(R), Parameter_Type>;\n\n"
+        code_text += "using type = UnscentedKalmanFilter_Type<\n" + \
+            "    U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
@@ -926,7 +928,7 @@ class KalmanFilterDeploy:
             "        measurement_function::function;\n\n"
 
         code_text += "    return UnscentedKalmanFilter_Type<\n" + \
-            "        U_Type, decltype(Q), decltype(R), Parameter_Type>(\n" + \
+            "        U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>(\n" + \
             "        Q, R, state_function_object, measurement_function_object,\n" + \
             "        parameters);\n\n"
 
