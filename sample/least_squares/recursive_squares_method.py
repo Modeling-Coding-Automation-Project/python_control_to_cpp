@@ -8,6 +8,7 @@ import copy
 import matplotlib.pyplot as plt
 
 from python_control.least_squares import RecursiveLeastSquares
+from python_control.least_squares_deploy import LeastSquaresDeploy
 from python_control.simulation_plotter import SimulationPlotter
 
 # Create data
@@ -22,8 +23,12 @@ weights_true = np.array([[0.5], [-0.2], [0.3]])
 y = weights_true[0, 0] * x1 + weights_true[1, 0] * x2 + offset
 X = np.column_stack((x1, x2))
 
-# Learn the rls model
-rls = RecursiveLeastSquares(feature_size=2, lambda_factor=0.9)
+# Create Recursive Least Squares object
+rls = RecursiveLeastSquares(feature_size=X.shape[1], lambda_factor=0.9)
+
+# You can create cpp header which can easily define least squares as C++ code
+deployed_file_names = LeastSquaresDeploy.generate_RLS_cpp_code(rls)
+print(deployed_file_names)
 
 plotter = SimulationPlotter()
 
