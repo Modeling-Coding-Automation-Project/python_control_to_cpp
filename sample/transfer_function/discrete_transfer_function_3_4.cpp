@@ -6,11 +6,13 @@ using namespace PythonControl;
 
 int main(void) {
   /* Define transfer function */
-  auto numerator_3_4 = make_TransferFunctionNumerator<4>(
+  constexpr std::size_t NUMERATOR_SIZE = 4;
+  auto numerator_3_4 = make_TransferFunctionNumerator<NUMERATOR_SIZE>(
       0.0012642614672828678, 0.0037594540384011665, -0.002781625665309928,
       -0.0009364784774175128);
 
-  auto denominator_3_4 = make_TransferFunctionDenominator<5>(
+  constexpr std::size_t DENOMINATOR_SIZE = 5;
+  auto denominator_3_4 = make_TransferFunctionDenominator<DENOMINATOR_SIZE>(
       1.0, -3.565195017021459, 4.815115383504625, -2.9189348011558485,
       0.6703200460356397);
 

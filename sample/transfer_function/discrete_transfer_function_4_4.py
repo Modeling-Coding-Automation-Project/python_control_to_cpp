@@ -16,13 +16,12 @@ print("\nDiscrete transfer function:\n", sys_d)
 
 # You can create cpp header which can easily define transfer function as C++ code
 deployed_file_names = TransferFunctionDeploy.generate_transfer_function_cpp_code(
-    sys_d)
+    sys_d, number_of_delay=0)
 print(deployed_file_names, "\n")
 
 # step response
 T, yout = control.step_response(sys_d)
 
-# plot results
 # plot results
 plt.plot(T, yout)
 plt.xlabel('Time (s)')

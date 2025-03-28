@@ -13,7 +13,7 @@ class StateSpaceDeploy:
         pass
 
     @staticmethod
-    def generate_state_space_cpp_code(state_space, file_name=None):
+    def generate_state_space_cpp_code(state_space, file_name=None, number_of_delay=0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(state_space.A.dtype.name)
@@ -88,6 +88,8 @@ class StateSpaceDeploy:
 
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
+
         code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
 
         code_text += f"auto B = {B_file_name_no_extension}::make();\n\n"
@@ -98,12 +100,13 @@ class StateSpaceDeploy:
 
         code_text += f"{type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
 
-        code_text += "using type = DiscreteStateSpace_Type<" + \
-            "decltype(A), decltype(B), decltype(C), decltype(D)>;\n\n"
+        code_text += "using type = DiscreteStateSpace_Type<\n" + \
+            "    decltype(A), decltype(B), decltype(C), decltype(D), NUMBER_OF_DELAY>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
-        code_text += f"  return make_DiscreteStateSpace(A, B, C, D, dt);\n\n"
+        code_text += f"  return make_DiscreteStateSpace<NUMBER_OF_DELAY>(\n" + \
+            "    A, B, C, D, dt);\n\n"
 
         code_text += "}\n\n"
 

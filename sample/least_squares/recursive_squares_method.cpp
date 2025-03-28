@@ -24,14 +24,14 @@ int main(void) {
   rls.set_lambda(0.9);
 
   /* fit */
-  Matrix<DefDense, double, RLS_NUMBER_OF_DATA, X_SIZE> X;
+  DenseMatrix_Type<double, RLS_NUMBER_OF_DATA, X_SIZE> X;
   for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
     for (std::size_t j = 0; j < X_SIZE; j++) {
       X(i, j) = get_RLS_test_X(i, j);
     }
   }
 
-  Matrix<DefDense, double, RLS_NUMBER_OF_DATA, Y_SIZE> Y;
+  DenseMatrix_Type<double, RLS_NUMBER_OF_DATA, Y_SIZE> Y;
   for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
     for (std::size_t j = 0; j < Y_SIZE; j++) {
       Y(i, j) = get_RLS_test_Y(i, j);
@@ -58,7 +58,7 @@ int main(void) {
   return 0;
 }
 
-Matrix<DefDense, double, RLS_NUMBER_OF_DATA, X_SIZE>
+DenseMatrix_Type<double, RLS_NUMBER_OF_DATA, X_SIZE>
     RLS_test_X({{3.745401188473625, 0.3142918568673425},
                 {9.50714306409916, 6.364104112637804},
                 {7.319939418114051, 3.143559810763267},
@@ -160,7 +160,7 @@ Matrix<DefDense, double, RLS_NUMBER_OF_DATA, X_SIZE>
                 {0.2541912674409519, 8.870864242651173},
                 {1.0789142699330445, 7.798755458576238}});
 
-Matrix<DefDense, double, RLS_NUMBER_OF_DATA, Y_SIZE> RLS_test_Y(
+DenseMatrix_Type<double, RLS_NUMBER_OF_DATA, Y_SIZE> RLS_test_Y(
     {{2.103041975647559},    {3.7830732464936294},  {3.3341884716373587},
      {2.2690075244755135},   {-0.7163820005285557}, {0.5861264725923812},
      {-0.24226082020228867}, {3.126343987874917},   {2.8382319110305256},

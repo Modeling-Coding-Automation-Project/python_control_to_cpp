@@ -68,7 +68,8 @@ T_d, yout_d = control.step_response(sys_d)
 sys = control.ss(A, B, C, D, dt)
 
 # You can create cpp header which can easily define state space as C++ code
-deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(sys)
+deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(
+    sys, number_of_delay=0)
 print(deployed_file_names)
 
 plot_y_response(T_d, yout_d)

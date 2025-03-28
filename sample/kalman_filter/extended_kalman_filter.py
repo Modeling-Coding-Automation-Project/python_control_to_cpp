@@ -100,7 +100,8 @@ ekf = ExtendedKalmanFilter(fxu.function, hx.function,
                            Q_ekf, R_ekf, Parameters_ekf, Number_of_Delay)
 
 # You can create cpp header which can easily define EKF as C++ code
-deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(ekf)
+deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(
+    ekf, number_of_delay=Number_of_Delay)
 print(deployed_file_names)
 
 # %% bicycle model simulation

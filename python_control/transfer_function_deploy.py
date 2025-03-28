@@ -13,7 +13,7 @@ class TransferFunctionDeploy(ControlDeploy):
         super().__init__()
 
     @staticmethod
-    def generate_transfer_function_cpp_code(transfer_function, file_name=None):
+    def generate_transfer_function_cpp_code(transfer_function, file_name=None, number_of_delay=0):
         deployed_file_names = []
         den_factors = transfer_function.den[0][0]
         num_factors = transfer_function.num[0][0]
@@ -57,13 +57,17 @@ class TransferFunctionDeploy(ControlDeploy):
 
         code_text += "#include \"python_control.hpp\"\n\n"
 
-        namespace_name = "namespace python_control_gen_" + variable_name
+        namespace_name = code_file_name
 
-        code_text += namespace_name + " {\n\n"
+        code_text += "namespace " + namespace_name + " {\n\n"
 
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += f"auto numerator = make_TransferFunctionNumerator<{num_factors.shape[0]}>(\n"
+        code_text += f"constexpr std::size_t NUMERATOR_SIZE = {num_factors.shape[0]};\n"
+        code_text += f"constexpr std::size_t DENOMINATOR_SIZE = {den_factors.shape[0]};\n"
+        code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
+
+        code_text += "auto numerator = make_TransferFunctionNumerator<NUMERATOR_SIZE>(\n"
 
         for i in range(num_factors.shape[0]):
             code_text += f"  static_cast<{type_name}>({num_factors[i]})"
@@ -72,7 +76,7 @@ class TransferFunctionDeploy(ControlDeploy):
             else:
                 code_text += "\n);\n\n"
 
-        code_text += f"auto denominator = make_TransferFunctionDenominator<{den_factors.shape[0]}>(\n"
+        code_text += "auto denominator = make_TransferFunctionDenominator<DENOMINATOR_SIZE>(\n"
 
         for i in range(den_factors.shape[0]):
             code_text += f"  static_cast<{type_name}>({den_factors[i]})"
@@ -83,12 +87,13 @@ class TransferFunctionDeploy(ControlDeploy):
 
         code_text += f"{type_name} dt = static_cast<{type_name}>({transfer_function.dt});\n\n"
 
-        code_text += "using type = " + "DiscreteTransferFunction<" + \
-            "decltype(numerator), decltype(denominator)>;\n\n"
+        code_text += "using type = " + "DiscreteTransferFunction<\n" + \
+            "    decltype(numerator), decltype(denominator), NUMBER_OF_DELAY>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
-        code_text += f"  return make_DiscreteTransferFunction(numerator, denominator, dt);\n\n"
+        code_text += f"  return make_DiscreteTransferFunction<NUMBER_OF_DELAY>(\n" + \
+            "numerator, denominator, dt);\n\n"
 
         code_text += "}\n\n"
 

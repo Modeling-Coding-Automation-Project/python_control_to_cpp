@@ -88,7 +88,7 @@ int main(void) {
   return 0;
 }
 
-Matrix<DefDense, double, LKF_SIM_STEP_MAX, 2> lkf_test_input(
+DenseMatrix_Type<double, LKF_SIM_STEP_MAX, 2> lkf_test_input(
     {{0.5, 0.5},   {0.5, 0.5},  {-0.5, -0.5}, {-0.5, 0.5}, {-0.5, -0.5},
      {0.5, 0.5},   {-0.5, 0.5}, {-0.5, 0.5},  {0.5, 0.5},  {0.5, -0.5},
      {-0.5, -0.5}, {0.5, -0.5}, {-0.5, 0.5},  {0.5, -0.5}, {0.5, -0.5},
