@@ -182,7 +182,7 @@ void check_python_control_state_space(void) {
     /* むだ時間 */
     constexpr std::size_t DELAY_STEP = 3;
 
-    DiscreteStateSpace<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
+    DiscreteStateSpace_Type<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
         sys_delay = make_DiscreteStateSpace<DELAY_STEP>(A, B, C, D, dt);
 
     DiscreteStateSpace<decltype(A), decltype(B), decltype(C), decltype(D), DELAY_STEP>
