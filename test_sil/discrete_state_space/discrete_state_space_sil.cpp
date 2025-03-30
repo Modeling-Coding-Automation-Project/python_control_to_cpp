@@ -1,4 +1,4 @@
-#include "discrete_state_space_sil_wrapper.hpp"
+#include "discrete_state_space_SIL_wrapper.hpp"
 #include "python_control.hpp"
 
 #include <pybind11/numpy.h>
