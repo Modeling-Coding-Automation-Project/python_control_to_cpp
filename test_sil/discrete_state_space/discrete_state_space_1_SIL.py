@@ -6,7 +6,8 @@ import numpy as np
 import control
 import matplotlib.pyplot as plt
 
-from test_sil.discrete_state_space import DiscreteStateSpaceSIL
+from python_control.state_space_deploy import StateSpaceDeploy
+from test_sil.SIL_operator import SIL_CodeGenerator
 
 # define state-space model
 A = np.array([[0.7, 0.2],
@@ -19,6 +20,14 @@ D = np.array([[0]])
 dt = 0.01
 sys = control.ss(A, B, C, D, dt)
 
+deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(
+    sys, number_of_delay=0)
+
+current_dir = os.path.dirname(__file__)
+generator = SIL_CodeGenerator(deployed_file_names, current_dir)
+generator.build_SIL_code()
+
+from test_sil.discrete_state_space import DiscreteStateSpaceSIL
 DiscreteStateSpaceSIL.initialize()
 
 # initialize state and input
