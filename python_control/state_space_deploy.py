@@ -100,6 +100,10 @@ class StateSpaceDeploy:
 
         code_text += f"{type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
 
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::COLS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;\n\n"
+
         code_text += "using type = DiscreteStateSpace_Type<\n" + \
             "    decltype(A), decltype(B), decltype(C), decltype(D), NUMBER_OF_DELAY>;\n\n"
 
