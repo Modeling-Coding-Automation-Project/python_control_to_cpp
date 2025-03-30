@@ -1,5 +1,10 @@
 import os
-import sys
+import subprocess
+
+
+def snake_to_camel(snake_str):
+    components = snake_str.split('_')
+    return ''.join(x.title() for x in components)
 
 
 class SIL_CodeGenerator:
@@ -33,6 +38,21 @@ class SIL_CodeGenerator:
         with open(os.path.join(self.SIL_folder, file_name), "w", encoding="utf-8") as f:
             f.write(code_text)
 
+    def build_pybind11_code(self):
+
+        build_folder = os.path.join(self.SIL_folder, "build")
+        generated_file_name = snake_to_camel(self.folder_name) + "SIL"
+
+        subprocess.run(f"rm -rf {build_folder}", shell=True)
+        subprocess.run(f"mkdir -p {build_folder}", shell=True)
+        subprocess.run(
+            f"cmake -S {self.SIL_folder} -B {build_folder}", shell=True)
+        subprocess.run(f"make -C {build_folder}", shell=True)
+
+        subprocess.run(
+            f"mv {build_folder}/{generated_file_name}.*so {self.SIL_folder}", shell=True)
+
     def build_SIL_code(self):
         self.move_deployed_files()
         self.generate_wrapper_code()
+        self.build_pybind11_code()

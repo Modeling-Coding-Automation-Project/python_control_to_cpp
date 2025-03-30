@@ -6,13 +6,14 @@
 
 namespace py = pybind11;
 
-constexpr std::size_t INPUT_SIZE = discrete_state_space_wrapper::INPUT_SIZE;
-constexpr std::size_t STATE_SIZE = discrete_state_space_wrapper::STATE_SIZE;
-constexpr std::size_t OUTPUT_SIZE = discrete_state_space_wrapper::OUTPUT_SIZE;
+constexpr std::size_t INPUT_SIZE = discrete_state_space_SIL_wrapper::INPUT_SIZE;
+constexpr std::size_t STATE_SIZE = discrete_state_space_SIL_wrapper::STATE_SIZE;
+constexpr std::size_t OUTPUT_SIZE =
+    discrete_state_space_SIL_wrapper::OUTPUT_SIZE;
 
-discrete_state_space_wrapper::type sys;
+discrete_state_space_SIL_wrapper::type sys;
 
-void initialize(void) { sys = discrete_state_space_wrapper::make(); }
+void initialize(void) { sys = discrete_state_space_SIL_wrapper::make(); }
 
 void update(py::array_t<double> U_in) {
 
