@@ -53,10 +53,10 @@ for _ in range(n_steps):
     Y = DiscreteStateSpaceSIL.get_Y()
 
     tester.expect_near(X[0, 0], x[0, 0], NEAR_LIMIT,
-                       "Discrete state space SIL, check X_0.")
+                       "Discrete state space 1 SIL, check X_0.")
     tester.expect_near(X[1, 0], x[1, 0], NEAR_LIMIT,
-                       "Discrete state space SIL, check X_1.")
+                       "Discrete state space 1 SIL, check X_1.")
     tester.expect_near(Y[0, 0], y[0, 0], NEAR_LIMIT,
-                       "Discrete state space SIL, check Y.")
+                       "Discrete state space 1 SIL, check Y.")
 
 tester.throw_error_if_test_failed()
