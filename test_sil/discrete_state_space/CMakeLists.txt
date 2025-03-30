@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(pybind11 REQUIRED)
 
-pybind11_add_module(DiscreteStateSpaceSIL discrete_state_space_sil.cpp)
+pybind11_add_module(DiscreteStateSpaceSIL discrete_state_space_SIL.cpp)
 
 target_include_directories(DiscreteStateSpaceSIL PRIVATE
     ${CMAKE_SOURCE_DIR}/../../python_control
