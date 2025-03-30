@@ -8,14 +8,15 @@ import matplotlib.pyplot as plt
 
 from python_control.state_space_deploy import StateSpaceDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
+from test_sil.MCAP_tester import MCAPTester
 
 # define state-space model
 A = np.array([[0.7, 0.2],
               [-0.3, 0.8]])
 B = np.array([[0.1],
               [0.2]])
-C = np.array([[2, 0]])
-D = np.array([[0]])
+C = np.array([[2.0, 0.0]])
+D = np.array([[0.0]])
 
 dt = 0.01
 sys = control.ss(A, B, C, D, dt)
@@ -31,12 +32,15 @@ from test_sil.discrete_state_space import DiscreteStateSpaceSIL
 DiscreteStateSpaceSIL.initialize()
 
 # initialize state and input
-x = np.array([[0],
-              [0]])
-u = 1  # input
+x = np.array([[0.0],
+              [0.0]])
+u = 1.0  # input
 n_steps = 50  # number of steps
 
 # simulation
+tester = MCAPTester()
+NEAR_LIMIT = 1e-5
+
 for _ in range(n_steps):
     y = C @ x + D * u
     x = A @ x + B * u
@@ -48,7 +52,11 @@ for _ in range(n_steps):
     X = DiscreteStateSpaceSIL.get_X()
     Y = DiscreteStateSpaceSIL.get_Y()
 
-    print("X_0:", X[0, 0], ", ", x[0, 0])
-    print("X_1:", X[1, 0], ", ", x[1, 0])
-    print("Y:", Y[0, 0], ", ", y[0, 0])
-    print("\n")
+    tester.expect_near(X[0, 0], x[0, 0], NEAR_LIMIT,
+                       "Discrete state space, check X_0.")
+    tester.expect_near(X[1, 0], x[1, 0], NEAR_LIMIT,
+                       "Discrete state space, check X_1.")
+    tester.expect_near(Y[0, 0], y[0, 0], NEAR_LIMIT,
+                       "Discrete state space, check Y.")
+
+tester.throw_error_if_test_failed()
