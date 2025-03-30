@@ -292,9 +292,9 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
 
-  using _State_Type = PythonControl::StateSpaceStateType<_T, _STATE_SIZE>;
+  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
-      PythonControl::StateSpaceOutputType<_T, _OUTPUT_SIZE>;
+      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
   using _MeasurementStored_Type =
       PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
 
@@ -825,9 +825,9 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
 
-  using _State_Type = PythonControl::StateSpaceStateType<_T, _STATE_SIZE>;
+  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
-      PythonControl::StateSpaceOutputType<_T, _OUTPUT_SIZE>;
+      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
   using _MeasurementStored_Type =
       PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
 

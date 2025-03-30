@@ -36,9 +36,9 @@ public:
 
 template <typename T>
 auto bicycle_model_state_function(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const StateSpaceInputType<T, INPUT_SIZE> &U,
-    const BicycleModelParameter<T> &parameters) -> StateSpaceStateType<T, STATE_SIZE> {
+    const StateSpaceState_Type<T, STATE_SIZE> &X,
+    const StateSpaceInput_Type<T, INPUT_SIZE> &U,
+    const BicycleModelParameter<T> &parameters) -> StateSpaceState_Type<T, STATE_SIZE> {
 
     using namespace PythonMath;
 
@@ -51,7 +51,7 @@ auto bicycle_model_state_function(
     T wheelbase = parameters.wheelbase;
     T delta_time = parameters.delta_time;
 
-    return StateSpaceStateType<T, STATE_SIZE>({
+    return StateSpaceState_Type<T, STATE_SIZE>({
         {-wheelbase * sin(theta) / tan(steering_angle) + wheelbase * sin(delta_time * v * tan(steering_angle) / wheelbase + theta) / tan(steering_angle) + x},
         {wheelbase * cos(theta) / tan(steering_angle) - wheelbase * cos(delta_time * v * tan(steering_angle) / wheelbase + theta) / tan(steering_angle) + y},
         {delta_time * v * tan(steering_angle) / wheelbase + theta}
@@ -60,8 +60,8 @@ auto bicycle_model_state_function(
 
 template <typename T, typename A_Type>
 auto bicycle_model_state_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
-    const StateSpaceInputType<T, INPUT_SIZE> &U,
+    const StateSpaceState_Type<T, STATE_SIZE> &X,
+    const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type {
 
     using namespace PythonMath;
@@ -90,8 +90,8 @@ auto bicycle_model_state_function_jacobian(
 
 template <typename T>
 auto bicycle_model_measurement_function(
-    const StateSpaceStateType<T, STATE_SIZE>& X,
-    const BicycleModelParameter<T>& parameters) -> StateSpaceOutputType<T, OUTPUT_SIZE> {
+    const StateSpaceState_Type<T, STATE_SIZE>& X,
+    const BicycleModelParameter<T>& parameters) -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {
 
     using namespace PythonMath;
 
@@ -109,7 +109,7 @@ auto bicycle_model_measurement_function(
     T dif_2_x = landmark_2_x - x;
     T dif_2_y = landmark_2_y - y;
 
-    return StateSpaceOutputType<T, OUTPUT_SIZE>({
+    return StateSpaceOutput_Type<T, OUTPUT_SIZE>({
         {sqrt(dif_1_x * dif_1_x + dif_1_y * dif_1_y)},
         {-theta + atan2(dif_1_y, dif_1_x)},
         {sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y)},
@@ -119,7 +119,7 @@ auto bicycle_model_measurement_function(
 
 template <typename T, typename C_Type>
 auto bicycle_model_measurement_function_jacobian(
-    const StateSpaceStateType<T, STATE_SIZE>& X,
+    const StateSpaceState_Type<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> C_Type {
 
     using namespace PythonMath;

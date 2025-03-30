@@ -153,7 +153,7 @@ class LeastSquaresDeploy:
         code_text += f"constexpr std::size_t X_SIZE = {state_size};\n"
         code_text += f"constexpr std::size_t Y_SIZE = {output_size};\n\n"
 
-        code_text += f"using X_Type = StateSpaceStateType<{type_name}, "
+        code_text += f"using X_Type = StateSpaceState_Type<{type_name}, "
         code_text += "X_SIZE>;\n\n"
 
         code_text += "using type = RecursiveLeastSquares_Type<X_Type>;\n\n"

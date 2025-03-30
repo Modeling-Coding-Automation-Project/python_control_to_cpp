@@ -39,22 +39,22 @@ public:
 };
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
-                                  const StateSpaceInputType<T, INPUT_SIZE> &U,
+auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+                                  const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
-    -> StateSpaceStateType<T, STATE_SIZE>;
+    -> StateSpaceState_Type<T, STATE_SIZE>;
 
 template <typename T>
 auto bicycle_model_measurement_function(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
+    const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
-    -> StateSpaceOutputType<T, OUTPUT_SIZE>;
+    -> StateSpaceOutput_Type<T, OUTPUT_SIZE>;
 
 int main(void) {
   /* Create plant model */
-  using X_Type = StateSpaceStateType<double, STATE_SIZE>;
-  using U_Type = StateSpaceInputType<double, INPUT_SIZE>;
-  using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;
+  using X_Type = StateSpaceState_Type<double, STATE_SIZE>;
+  using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;
+  using Y_Type = StateSpaceOutput_Type<double, OUTPUT_SIZE>;
 
   auto Q = make_KalmanFilter_Q<STATE_SIZE>(0.01, 0.01, 0.001);
 
@@ -90,7 +90,7 @@ int main(void) {
   ukf.X_hat.template set<1, 0>(0.0);
   ukf.X_hat.template set<2, 0>(0.0);
 
-  std::array<StateSpaceOutputType<double, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)>
+  std::array<StateSpaceOutput_Type<double, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)>
       y_store;
 
   std::size_t delay_index = 0;
@@ -126,10 +126,10 @@ int main(void) {
 }
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
-                                  const StateSpaceInputType<T, INPUT_SIZE> &U,
+auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+                                  const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
-    -> StateSpaceStateType<T, STATE_SIZE> {
+    -> StateSpaceState_Type<T, STATE_SIZE> {
 
   using namespace PythonMath;
 
@@ -142,7 +142,7 @@ auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
   T wheelbase = parameters.wheelbase;
   T delta_time = parameters.delta_time;
 
-  return StateSpaceStateType<T, STATE_SIZE>(
+  return StateSpaceState_Type<T, STATE_SIZE>(
       {{-wheelbase * sin(theta) / tan(steering_angle) +
         wheelbase *
             sin(delta_time * v * tan(steering_angle) / wheelbase + theta) /
@@ -158,9 +158,9 @@ auto bicycle_model_state_function(const StateSpaceStateType<T, STATE_SIZE> &X,
 
 template <typename T>
 auto bicycle_model_measurement_function(
-    const StateSpaceStateType<T, STATE_SIZE> &X,
+    const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
-    -> StateSpaceOutputType<T, OUTPUT_SIZE> {
+    -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {
 
   using namespace PythonMath;
 
@@ -178,7 +178,7 @@ auto bicycle_model_measurement_function(
   T dif_2_x = landmark_2_x - x;
   T dif_2_y = landmark_2_y - y;
 
-  return StateSpaceOutputType<T, OUTPUT_SIZE>(
+  return StateSpaceOutput_Type<T, OUTPUT_SIZE>(
       {{sqrt(dif_1_x * dif_1_x + dif_1_y * dif_1_y)},
        {-theta + atan2(dif_1_y, dif_1_x)},
        {sqrt(dif_2_x * dif_2_x + dif_2_y * dif_2_y)},

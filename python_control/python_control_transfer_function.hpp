@@ -463,7 +463,7 @@ private:
       typename ForDiscreteTransferFunction::DiscreteStateSpace_D_Type<
           _T, _IS_STRICTLY_PROPER>::type;
 
-  using _U_Type = PythonControl::StateSpaceInputType<_T, 1>;
+  using _U_Type = PythonControl::StateSpaceInput_Type<_T, 1>;
 
   using _State_Space_Type = PythonControl::DiscreteStateSpace<
       _DiscreteStateSpace_A_type, _DiscreteStateSpace_B_type,

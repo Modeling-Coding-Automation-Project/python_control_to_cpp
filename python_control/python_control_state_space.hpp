@@ -149,13 +149,13 @@ private:
 };
 
 template <typename T, std::size_t Vector_Size>
-using StateSpaceInputType = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
+using StateSpaceInput_Type = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
 
 template <typename T, std::size_t Vector_Size>
-using StateSpaceStateType = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
+using StateSpaceState_Type = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
 
 template <typename T, std::size_t Vector_Size>
-using StateSpaceOutputType = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
+using StateSpaceOutput_Type = PythonNumpy::DenseMatrix_Type<T, Vector_Size, 1>;
 
 namespace MakeStateSpaceVector {
 
@@ -189,9 +189,9 @@ inline void assign_values(StateSpaceVectorType &input, T value_1, U value_2,
 /* make State Space Vector  */
 template <std::size_t Vector_Size, typename T, typename... Args>
 inline auto make_StateSpaceInput(T value_1, Args... args)
-    -> StateSpaceInputType<T, Vector_Size> {
+    -> StateSpaceInput_Type<T, Vector_Size> {
 
-  StateSpaceInputType<T, Vector_Size> input;
+  StateSpaceInput_Type<T, Vector_Size> input;
 
   MakeStateSpaceVector::assign_values<0>(input, value_1, args...);
 
@@ -200,9 +200,9 @@ inline auto make_StateSpaceInput(T value_1, Args... args)
 
 template <std::size_t Vector_Size, typename T, typename... Args>
 inline auto make_StateSpaceState(T value_1, Args... args)
-    -> StateSpaceStateType<T, Vector_Size> {
+    -> StateSpaceState_Type<T, Vector_Size> {
 
-  StateSpaceStateType<T, Vector_Size> input;
+  StateSpaceState_Type<T, Vector_Size> input;
 
   MakeStateSpaceVector::assign_values<0>(input, value_1, args...);
 
@@ -211,9 +211,9 @@ inline auto make_StateSpaceState(T value_1, Args... args)
 
 template <std::size_t Vector_Size, typename T, typename... Args>
 inline auto make_StateSpaceOutput(T value_1, Args... args)
-    -> StateSpaceOutputType<T, Vector_Size> {
+    -> StateSpaceOutput_Type<T, Vector_Size> {
 
-  StateSpaceOutputType<T, Vector_Size> input;
+  StateSpaceOutput_Type<T, Vector_Size> input;
 
   MakeStateSpaceVector::assign_values<0>(input, value_1, args...);
 
@@ -236,7 +236,7 @@ private:
   static constexpr std::size_t _Output_Size = C_Type::COLS;
 
 public:
-  using Original_U_Type = PythonControl::StateSpaceInputType<_T, _Input_Size>;
+  using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
   using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
   using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
 

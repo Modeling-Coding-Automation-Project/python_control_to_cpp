@@ -26,7 +26,7 @@ void update(py::array_t<double> U_in) {
 
   /* substitute */
   double *U_data_ptr = static_cast<double *>(U_info.ptr);
-  PythonControl::StateSpaceInputType<double, INPUT_SIZE> U;
+  PythonControl::StateSpaceInput_Type<double, INPUT_SIZE> U;
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
     U.access(i, 0) = U_data_ptr[i];
   }

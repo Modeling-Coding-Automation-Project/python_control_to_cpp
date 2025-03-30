@@ -18,7 +18,7 @@ double get_RLS_test_Y(std::size_t i, std::size_t j);
 
 int main(void) {
   /* define Least Squares */
-  using X_Type = StateSpaceStateType<double, X_SIZE>;
+  using X_Type = StateSpaceState_Type<double, X_SIZE>;
   auto rls = make_RecursiveLeastSquares<X_Type>();
 
   rls.set_lambda(0.9);

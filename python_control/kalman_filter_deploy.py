@@ -661,9 +661,9 @@ class KalmanFilterDeploy:
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
         code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::COLS;\n\n"
 
-        code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
-        code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
-        code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
+        code_text += "using X_Type = StateSpaceState_Type<double, STATE_SIZE>;\n"
+        code_text += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n"
+        code_text += "using Y_Type = StateSpaceOutput_Type<double, OUTPUT_SIZE>;\n\n"
 
         code_text += parameter_code
         code_text += "\n"
@@ -865,9 +865,9 @@ class KalmanFilterDeploy:
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
         code_text += f"constexpr std::size_t OUTPUT_SIZE = {measurement_size};\n\n"
 
-        code_text += "using X_Type = StateSpaceStateType<double, STATE_SIZE>;\n"
-        code_text += "using U_Type = StateSpaceInputType<double, INPUT_SIZE>;\n"
-        code_text += "using Y_Type = StateSpaceOutputType<double, OUTPUT_SIZE>;\n\n"
+        code_text += "using X_Type = StateSpaceState_Type<double, STATE_SIZE>;\n"
+        code_text += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n"
+        code_text += "using Y_Type = StateSpaceOutput_Type<double, OUTPUT_SIZE>;\n\n"
 
         code_text += parameter_code
         code_text += "\n"

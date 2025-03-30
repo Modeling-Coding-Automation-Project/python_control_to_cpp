@@ -996,16 +996,16 @@ void check_python_control_linear_kalman_filter(void) {
         static_cast<T>(0.0)));
 
     // data set
-    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_true;
+    std::array<StateSpaceState_Type<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_true;
     x_true[0](0, 0) = static_cast<T>(0.0);
     x_true[0](1, 0) = static_cast<T>(0.0);
     x_true[0](2, 0) = static_cast<T>(0.0);
     x_true[0](3, 0) = static_cast<T>(0.1);
 
-    std::array<StateSpaceStateType<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_estimate;
+    std::array<StateSpaceState_Type<T, STATE_SIZE>, TestData::LKF_SIM_STEP_MAX> x_estimate;
     x_estimate[0] = lkf.get_x_hat();
 
-    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, TestData::LKF_SIM_STEP_MAX> y_measured;
+    std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, TestData::LKF_SIM_STEP_MAX> y_measured;
 
     /* シミュレーション */
     for (std::size_t i = 1; i < TestData::LKF_SIM_STEP_MAX; i++) {
@@ -1042,7 +1042,7 @@ void check_python_control_linear_kalman_filter(void) {
 
     x_estimate[0] = lkf_delay.get_x_hat();
 
-    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+    std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
@@ -1138,9 +1138,9 @@ void check_python_control_extended_kalman_filter(void) {
     constexpr std::size_t INPUT_SIZE = EKF_TestData::INPUT_SIZE;
     constexpr std::size_t OUTPUT_SIZE = EKF_TestData::OUTPUT_SIZE;
 
-    using X_Type = StateSpaceStateType<T, STATE_SIZE>;
-    using U_Type = StateSpaceInputType<T, INPUT_SIZE>;
-    using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
+    using X_Type = StateSpaceState_Type<T, STATE_SIZE>;
+    using U_Type = StateSpaceInput_Type<T, INPUT_SIZE>;
+    using Y_Type = StateSpaceOutput_Type<T, OUTPUT_SIZE>;
 
     using SparseAvailable_A = SparseAvailable<
         ColumnAvailable<true, false, true>,
@@ -1236,7 +1236,7 @@ void check_python_control_extended_kalman_filter(void) {
 
     std::size_t store_index = 0;
 
-    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+    std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
@@ -1289,9 +1289,9 @@ void check_python_control_unscented_kalman_filter(void) {
     constexpr std::size_t INPUT_SIZE = EKF_TestData::INPUT_SIZE;
     constexpr std::size_t OUTPUT_SIZE = EKF_TestData::OUTPUT_SIZE;
 
-    using X_Type = StateSpaceStateType<T, STATE_SIZE>;
-    using U_Type = StateSpaceInputType<T, INPUT_SIZE>;
-    using Y_Type = StateSpaceOutputType<T, OUTPUT_SIZE>;
+    using X_Type = StateSpaceState_Type<T, STATE_SIZE>;
+    using U_Type = StateSpaceInput_Type<T, INPUT_SIZE>;
+    using Y_Type = StateSpaceOutput_Type<T, OUTPUT_SIZE>;
 
 
     auto Q = make_KalmanFilter_Q<STATE_SIZE>(
@@ -1366,7 +1366,7 @@ void check_python_control_unscented_kalman_filter(void) {
 
     std::size_t store_index = 0;
 
-    std::array<StateSpaceOutputType<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
+    std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
     std::size_t delay_index = 0;
 
@@ -1472,7 +1472,7 @@ void check_python_control_least_squares(void) {
     constexpr std::size_t RLS_X_SIZE = RLS_TestData::X_SIZE;
     constexpr std::size_t RLS_Y_SIZE = RLS_TestData::Y_SIZE;
 
-    using RLS_X_Type = StateSpaceStateType<T, RLS_X_SIZE>;
+    using RLS_X_Type = StateSpaceState_Type<T, RLS_X_SIZE>;
 
     RecursiveLeastSquares_Type<RLS_X_Type> rls =
         make_RecursiveLeastSquares<RLS_X_Type>(static_cast<T>(0), static_cast<T>(0.1));

@@ -70,7 +70,7 @@ private:
                     std::is_same<_T, float>::value,
                 "Value data type must be float or double.");
 
-  using _Wights_Type = StateSpaceStateType<_T, (X_Type::ROWS + 1)>;
+  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::ROWS + 1)>;
 
   using _LstsqSolver_Type = PythonNumpy::LinalgLstsqSolver_Type<
       PythonNumpy::DenseMatrix_Type<_T, X_Type::COLS, _Wights_Type::COLS>,
@@ -80,7 +80,7 @@ public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DATA = X_Type::COLS;
 
-  using Y_Type = StateSpaceOutputType<_T, NUMBER_OF_DATA>;
+  using Y_Type = StateSpaceOutput_Type<_T, NUMBER_OF_DATA>;
 
 public:
   /* Constructor */
@@ -166,7 +166,7 @@ private:
                 "Value data type must be float or double.");
 
   // plus 1 for bias
-  using _Wights_Type = StateSpaceStateType<_T, (X_Type::COLS + 1)>;
+  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::COLS + 1)>;
 
   using _P_Type =
       PythonNumpy::DenseMatrix_Type<_T, (X_Type::COLS + 1), (X_Type::COLS + 1)>;
