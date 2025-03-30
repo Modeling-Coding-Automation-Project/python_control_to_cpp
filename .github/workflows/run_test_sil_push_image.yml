@@ -19,10 +19,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: clone MCAP_repo_manager
-        run: git clone https://github.com/Modeling-Coding-Automation-Project/MCAP_repo_manager.git && cd ./MCAP_repo_manager/docker/docker_image_creation
+        run: git clone https://github.com/Modeling-Coding-Automation-Project/MCAP_repo_manager.git && cd ./MCAP_repo_manager/docker/docker_image_creation && ls -la
 
-      - name: Build Docker image
-        run: docker build -t claudeashford/mcap_env:latest .
+      # - name: Build Docker image
+      #   run: docker build -t claudeashford/mcap_env:latest .
 
-      - name: Push Docker image
-        run: docker push claudeashford/mcap_env:latest
+      # - name: Push Docker image
+      #   run: docker push claudeashford/mcap_env:latest
