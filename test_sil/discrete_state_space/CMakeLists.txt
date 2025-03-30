@@ -3,6 +3,9 @@ cmake_policy(SET CMP0148 NEW)
 
 project(DiscreteStateSpaceSIL)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(pybind11 REQUIRED)
 
 pybind11_add_module(DiscreteStateSpaceSIL discrete_state_space_sil.cpp)
