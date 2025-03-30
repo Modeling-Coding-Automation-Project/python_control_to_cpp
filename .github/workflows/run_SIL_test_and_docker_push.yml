@@ -1,0 +1,68 @@
+name: Run SIL test and docker push
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+
+  test_SIL:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        define:
+          - ""
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential
+        sudo apt install -y cmake
+        sudo apt install -y pybind11-dev
+        sudo apt install -y python3.12
+        sudo apt install -y python3.12-dev
+        sudo apt install -y python3.12-venv
+
+    - name: Set up Python environment
+      run: |
+        python3 -m venv /opt/venv_py_MCAP
+        /opt/venv_py_MCAP/bin/pip install --upgrade pip
+        /opt/venv_py_MCAP/bin/pip install --upgrade setuptools
+        /opt/venv_py_MCAP/bin/pip install numpy control pandas jupyter openpyxl sympy astor pybind11 networkx
+
+    - name: Run SIL tests
+      run: |
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
+
+  build_and_push_docker_image:
+
+    needs: test_SIL
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: clone MCAP_repo_manager
+        run: git clone https://github.com/Modeling-Coding-Automation-Project/MCAP_repo_manager.git
+
+      - name: Build Docker image
+        run: docker build -t claudeashford/mcap_env:latest ./MCAP_repo_manager/docker/docker_image_creation
+
+      - name: Push Docker image
+        run: docker push claudeashford/mcap_env:latest

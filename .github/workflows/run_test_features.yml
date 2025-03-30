@@ -2,7 +2,7 @@ name: Run test features
 
 on:
   push:
-    branches: [ develop, create_SIL ]
+    branches: [ develop ]
 
 jobs:
   test_vs:
@@ -29,64 +29,3 @@ jobs:
       run: |
         g++ -std=c++11 -Wall -Werror ${{ matrix.define }} -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility -I ./test_vs/MCAP_tester/include -o ./test_vs/app ./test_vs/test_vs_main.cpp
         ./test_vs/app
-
-  test_SIL:
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        define:
-          - ""
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y build-essential
-        sudo apt install -y cmake
-        sudo apt install -y pybind11-dev
-        sudo apt install -y python3.12
-        sudo apt install -y python3.12-dev
-        sudo apt install -y python3.12-venv
-
-    - name: Set up Python environment
-      run: |
-        python3 -m venv /opt/venv_py_MCAP
-        /opt/venv_py_MCAP/bin/pip install --upgrade pip
-        /opt/venv_py_MCAP/bin/pip install --upgrade setuptools
-        /opt/venv_py_MCAP/bin/pip install numpy control pandas jupyter openpyxl sympy astor pybind11 networkx
-
-    - name: Run SIL tests
-      run: |
-        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
-
-  build_and_push_docker_image:
-
-    needs: test_SIL
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: clone MCAP_repo_manager
-        run: git clone https://github.com/Modeling-Coding-Automation-Project/MCAP_repo_manager.git
-
-      - name: Build Docker image
-        run: docker build -t claudeashford/mcap_env:latest ./MCAP_repo_manager/docker/docker_image_creation
-
-      - name: Push Docker image
-        run: docker push claudeashford/mcap_env:latest
