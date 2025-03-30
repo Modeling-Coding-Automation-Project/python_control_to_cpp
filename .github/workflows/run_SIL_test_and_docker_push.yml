@@ -41,6 +41,7 @@ jobs:
     - name: Run SIL tests
       run: |
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_2_SIL.py
 
   build_and_push_docker_image:
 
