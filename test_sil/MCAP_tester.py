@@ -37,10 +37,14 @@ class MCAPTester:
             self.test_failed_flag = True
             return
 
-        if not np.allclose(actual, expected, atol=tolerance):
-            print(f"FAILURE: {message} Element mismatch.")
-            print()
-            self.test_failed_flag = True
+        for i in range(actual.shape[0]):
+            for j in range(actual.shape[1]):
+                if abs(actual[i, j] - expected[i, j]) > tolerance:
+                    print(
+                        f"FAILURE: {message} Element mismatch at ({i}, {j}).")
+                    print()
+                    self.test_failed_flag = True
+                    return
 
     def throw_error_if_test_failed(self):
         if self.test_failed_flag:
