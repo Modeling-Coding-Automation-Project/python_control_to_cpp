@@ -26,8 +26,9 @@ jobs:
         sudo apt install -y build-essential
         sudo apt install -y cmake
         sudo apt install -y pybind11-dev
-
-# cmake pybind11-dev python3.12 python3.12-dev python3.12-venv
+        sudo apt install -y python3.12
+        sudo apt install -y python3.12-dev
+        sudo apt install -y python3.12-venv
 
     # - name: Set up Python environment
     #   run: |
