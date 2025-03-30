@@ -1,25 +1,40 @@
 #include "discrete_state_space_sil_wrapper.hpp"
+#include "python_control.hpp"
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
 
-void initialize(py::array_t<double> A, py::array_t<double> B,
-                py::array_t<double> C, py::array_t<double> D, double dt) {
+constexpr std::size_t INPUT_SIZE = discrete_state_space_wrapper::INPUT_SIZE;
+constexpr std::size_t STATE_SIZE = discrete_state_space_wrapper::STATE_SIZE;
+constexpr std::size_t OUTPUT_SIZE = discrete_state_space_wrapper::OUTPUT_SIZE;
 
-  py::buffer_info A_info = A.request();
-  py::buffer_info B_info = B.request();
-  py::buffer_info C_info = C.request();
-  py::buffer_info D_info = D.request();
+discrete_state_space_wrapper::type sys;
 
-  if (discrete_state_space_wrapper::STATE_SIZE != A_info.shape[0]) {
-    throw std::runtime_error(
-        "A must have " +
-        std::to_string(discrete_state_space_wrapper::STATE_SIZE) + " rows");
+void initialize(void) { sys = discrete_state_space_wrapper::make(); }
+
+void update(py::array_t<double> U_in) {
+
+  py::buffer_info U_info = U_in.request();
+
+  /* check compatibility */
+  if (INPUT_SIZE != U_info.shape[0]) {
+    throw std::runtime_error("U must have " + std::to_string(INPUT_SIZE) +
+                             " inputs.");
   }
+
+  /* substitute */
+  double *U_data_ptr = static_cast<double *>(U_info.ptr);
+  PythonControl::StateSpaceInputType<double, INPUT_SIZE> U;
+  for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
+    U.access(i, 0) = U_data_ptr[i];
+  }
+
+  sys.update(U);
 }
 
 PYBIND11_MODULE(DiscreteStateSpaceSIL, m) {
   m.def("initialize", &initialize, "initialize discrete state space");
+  m.def("update", &update, "update discrete state space");
 }
