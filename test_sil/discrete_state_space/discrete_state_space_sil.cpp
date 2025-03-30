@@ -48,13 +48,11 @@ py::array_t<double> get_X(void) {
 
 py::array_t<double> get_Y(void) {
   auto Y = sys.get_Y();
-  auto result = py::array_t<double>(OUTPUT_SIZE);
-
-  py::buffer_info result_info = result.request();
-  double *result_data_ptr = static_cast<double *>(result_info.ptr);
+  py::array_t<double> result;
+  result.resize({static_cast<int>(OUTPUT_SIZE), 1});
 
   for (std::size_t i = 0; i < OUTPUT_SIZE; ++i) {
-    result_data_ptr[i] = Y.access(i, 0);
+    result.mutable_at(i, 0) = Y.access(i, 0);
   }
 
   return result;
