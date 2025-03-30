@@ -34,7 +34,37 @@ void update(py::array_t<double> U_in) {
   sys.update(U);
 }
 
+py::array_t<double> get_X(void) {
+  auto X = sys.get_X();
+  auto result = py::array_t<double>(STATE_SIZE);
+
+  py::buffer_info result_info = result.request();
+  double *result_data_ptr = static_cast<double *>(result_info.ptr);
+
+  for (std::size_t i = 0; i < STATE_SIZE; ++i) {
+    result_data_ptr[i] = X.access(i, 0);
+  }
+
+  return result;
+}
+
+py::array_t<double> get_Y(void) {
+  auto Y = sys.get_Y();
+  auto result = py::array_t<double>(OUTPUT_SIZE);
+
+  py::buffer_info result_info = result.request();
+  double *result_data_ptr = static_cast<double *>(result_info.ptr);
+
+  for (std::size_t i = 0; i < OUTPUT_SIZE; ++i) {
+    result_data_ptr[i] = Y.access(i, 0);
+  }
+
+  return result;
+}
+
 PYBIND11_MODULE(DiscreteStateSpaceSIL, m) {
   m.def("initialize", &initialize, "initialize discrete state space");
   m.def("update", &update, "update discrete state space");
+  m.def("get_X", &get_X, "get state vector X");
+  m.def("get_Y", &get_Y, "get output vector Y");
 }
