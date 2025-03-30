@@ -39,7 +39,7 @@ for _ in range(n_steps):
     X = DiscreteStateSpaceSIL.get_X()
     Y = DiscreteStateSpaceSIL.get_Y()
 
-    print("X_0:", X[0], ", ", x[0, 0])
-    print("X_1:", X[1], ", ", x[1, 0])
+    print("X_0:", X[0, 0], ", ", x[0, 0])
+    print("X_1:", X[1, 0], ", ", x[1, 0])
     print("Y:", Y[0], ", ", y[0, 0])
     print("\n")

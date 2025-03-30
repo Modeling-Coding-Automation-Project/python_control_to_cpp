@@ -36,13 +36,11 @@ void update(py::array_t<double> U_in) {
 
 py::array_t<double> get_X(void) {
   auto X = sys.get_X();
-  auto result = py::array_t<double>(STATE_SIZE);
-
-  py::buffer_info result_info = result.request();
-  double *result_data_ptr = static_cast<double *>(result_info.ptr);
+  py::array_t<double> result;
+  result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    result_data_ptr[i] = X.access(i, 0);
+    result.mutable_at(i, 0) = X.access(i, 0);
   }
 
   return result;
