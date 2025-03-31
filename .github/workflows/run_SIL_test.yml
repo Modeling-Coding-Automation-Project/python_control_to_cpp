@@ -42,6 +42,6 @@ jobs:
       run: |
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_2_SIL.py
-        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_2_4_PIL
-        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_3_4_PIL
-        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_4_4_PIL
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_2_4_SIL
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_3_4_SIL
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_4_4_SIL
