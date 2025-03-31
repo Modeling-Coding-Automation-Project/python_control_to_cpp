@@ -45,8 +45,24 @@ py::array_t<FLOAT> get_K(void) {
   return result;
 }
 
+void set_Eigen_solver_iteration_max(const int max_iteration) {
+
+  lqi.set_Eigen_solver_iteration_max(static_cast<std::size_t>(max_iteration));
+}
+
+void set_Eigen_solver_iteration_max_for_eigen_vector(const int max_iteration) {
+
+  lqi.set_Eigen_solver_iteration_max_for_eigen_vector(
+      static_cast<std::size_t>(max_iteration));
+}
+
 PYBIND11_MODULE(LqiSIL, m) {
   m.def("initialize", &initialize, "initialize discrete state space");
   m.def("solve", &solve, "solve discrete state space lqi");
   m.def("get_K", &get_K, "get K matrix");
+  m.def("set_Eigen_solver_iteration_max", &set_Eigen_solver_iteration_max,
+        "set Eigen solver iteration max");
+  m.def("set_Eigen_solver_iteration_max_for_eigen_vector",
+        &set_Eigen_solver_iteration_max_for_eigen_vector,
+        "set Eigen solver iteration max for eigen vector");
 }
