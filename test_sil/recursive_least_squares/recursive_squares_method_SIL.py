@@ -46,7 +46,9 @@ for i in range(n_samples):
     rls.update(x, y_true)
 
     weights_predicted = copy.deepcopy(rls.get_weights())
-    weights_predicted_cpp = rls.get_weights()
+
+    RecursiveLeastSquaresSIL.update(x, y_true)
+    weights_predicted_cpp = RecursiveLeastSquaresSIL.get_weights()
 
     tester.expect_near(weights_predicted_cpp, weights_predicted, NEAR_LIMIT,
                        "Recursive Least Squares SIL, check weights.")
