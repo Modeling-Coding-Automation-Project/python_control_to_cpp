@@ -1,4 +1,4 @@
-name: Run test features
+name: Run test VS
 
 on:
   push:
