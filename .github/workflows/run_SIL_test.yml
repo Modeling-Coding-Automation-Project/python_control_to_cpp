@@ -2,7 +2,7 @@ name: Run SIL test
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop, create_SIL ]
 
 jobs:
 
@@ -50,3 +50,5 @@ jobs:
         /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/linear_kalman_filter_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/extended_kalman_filter_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/unscented_kalman_filter_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/least_squares/least_squares_method_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/recursive_least_squares/recursive_squares_method_SIL.py
