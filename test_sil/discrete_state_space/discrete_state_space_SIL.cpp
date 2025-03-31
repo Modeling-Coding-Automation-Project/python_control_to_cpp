@@ -6,6 +6,8 @@
 
 namespace py = pybind11;
 
+using FLOAT = typename discrete_state_space_SIL_wrapper::type::Value_Type;
+
 constexpr std::size_t INPUT_SIZE = discrete_state_space_SIL_wrapper::INPUT_SIZE;
 constexpr std::size_t STATE_SIZE = discrete_state_space_SIL_wrapper::STATE_SIZE;
 constexpr std::size_t OUTPUT_SIZE =
@@ -15,7 +17,7 @@ discrete_state_space_SIL_wrapper::type sys;
 
 void initialize(void) { sys = discrete_state_space_SIL_wrapper::make(); }
 
-void update(py::array_t<double> U_in) {
+void update(py::array_t<FLOAT> U_in) {
 
   py::buffer_info U_info = U_in.request();
 
@@ -26,8 +28,8 @@ void update(py::array_t<double> U_in) {
   }
 
   /* substitute */
-  double *U_data_ptr = static_cast<double *>(U_info.ptr);
-  PythonControl::StateSpaceInput_Type<double, INPUT_SIZE> U;
+  FLOAT *U_data_ptr = static_cast<FLOAT *>(U_info.ptr);
+  PythonControl::StateSpaceInput_Type<FLOAT, INPUT_SIZE> U;
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
     U.access(i, 0) = U_data_ptr[i];
   }
@@ -35,9 +37,9 @@ void update(py::array_t<double> U_in) {
   sys.update(U);
 }
 
-py::array_t<double> get_X(void) {
+py::array_t<FLOAT> get_X(void) {
   auto X = sys.get_X();
-  py::array_t<double> result;
+  py::array_t<FLOAT> result;
   result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
@@ -47,9 +49,9 @@ py::array_t<double> get_X(void) {
   return result;
 }
 
-py::array_t<double> get_Y(void) {
+py::array_t<FLOAT> get_Y(void) {
   auto Y = sys.get_Y();
-  py::array_t<double> result;
+  py::array_t<FLOAT> result;
   result.resize({static_cast<int>(OUTPUT_SIZE), 1});
 
   for (std::size_t i = 0; i < OUTPUT_SIZE; ++i) {

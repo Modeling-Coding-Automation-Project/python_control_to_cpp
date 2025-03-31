@@ -236,6 +236,8 @@ private:
   static constexpr std::size_t _Output_Size = C_Type::COLS;
 
 public:
+  using Value_Type = _T;
+
   using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
   using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
   using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
@@ -363,18 +365,18 @@ public:
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
-  inline auto output_function(const Original_X_Type &X_in,
-                              const Original_U_Type &U) const
-      -> Original_Y_Type {
+  inline auto
+  output_function(const Original_X_Type &X_in,
+                  const Original_U_Type &U) const -> Original_Y_Type {
 
     Original_Y_Type Y_out = this->C * X_in + this->D * U;
 
     return Y_out;
   }
 
-  inline auto state_function(const Original_X_Type &X_in,
-                             const Original_U_Type &U) const
-      -> Original_X_Type {
+  inline auto
+  state_function(const Original_X_Type &X_in,
+                 const Original_U_Type &U) const -> Original_X_Type {
 
     Original_X_Type X_out = this->A * X_in + this->B * U;
 
