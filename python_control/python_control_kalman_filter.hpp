@@ -62,6 +62,8 @@ private:
 
 public:
   /* Type  */
+  using Value_Type = _T;
+
   using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
 
   using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
@@ -292,9 +294,9 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
 
-  using _State_Type = PythonControl::StateSpaceStateType<_T, _STATE_SIZE>;
+  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
-      PythonControl::StateSpaceOutputType<_T, _OUTPUT_SIZE>;
+      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
   using _MeasurementStored_Type =
       PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
 
@@ -315,6 +317,8 @@ private:
 
 public:
   /* Type  */
+  using Value_Type = _T;
+
   using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
 
   using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
@@ -785,8 +789,8 @@ public:
     this->sigma_point_weight = sigma_point_weight_in;
   }
 
-  inline auto calculate(const State_Type &X_in, const P_Type &P_in)
-      -> Kai_Type {
+  inline auto calculate(const State_Type &X_in,
+                        const P_Type &P_in) -> Kai_Type {
 
     _P_cholesky_solver = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
     Kai_Type Kai;
@@ -825,9 +829,9 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
 
-  using _State_Type = PythonControl::StateSpaceStateType<_T, _STATE_SIZE>;
+  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
-      PythonControl::StateSpaceOutputType<_T, _OUTPUT_SIZE>;
+      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
   using _MeasurementStored_Type =
       PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
 
@@ -855,6 +859,8 @@ private:
 
 public:
   /* Type  */
+  using Value_Type = _T;
+
   using P_Type = _P_Type;
   using P_xy_Type =
       PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
@@ -1084,9 +1090,9 @@ public:
         this->X_d * PythonNumpy::A_mul_BTranspose(this->W, this->X_d) + this->Q;
   }
 
-  inline auto calc_y_dif(const _Measurement_Type &Y,
-                         const _Measurement_Type &Y_hat_m)
-      -> _Measurement_Type {
+  inline auto
+  calc_y_dif(const _Measurement_Type &Y,
+             const _Measurement_Type &Y_hat_m) -> _Measurement_Type {
 
     this->Y_store.push(Y_hat_m);
 

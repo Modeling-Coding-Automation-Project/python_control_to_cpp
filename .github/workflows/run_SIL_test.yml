@@ -1,0 +1,54 @@
+name: Run SIL test
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+
+  test_SIL:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        define:
+          - ""
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential
+        sudo apt install -y cmake
+        sudo apt install -y pybind11-dev
+        sudo apt install -y python3.12
+        sudo apt install -y python3.12-dev
+        sudo apt install -y python3.12-venv
+
+    - name: Set up Python environment
+      run: |
+        python3 -m venv /opt/venv_py_MCAP
+        /opt/venv_py_MCAP/bin/pip install --upgrade pip
+        /opt/venv_py_MCAP/bin/pip install --upgrade setuptools
+        /opt/venv_py_MCAP/bin/pip install numpy control pandas jupyter openpyxl sympy astor pybind11 networkx
+
+    - name: Run SIL tests
+      run: |
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_2_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_2_4_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_3_4_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_4_4_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/lqr/discrete_state_space_lqr_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/lqi/discrete_state_space_lqi_easy_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/linear_kalman_filter_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/extended_kalman_filter_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/unscented_kalman_filter_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/least_squares/least_squares_method_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/recursive_least_squares/recursive_squares_method_SIL.py

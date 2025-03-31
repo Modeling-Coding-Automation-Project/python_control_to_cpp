@@ -463,7 +463,7 @@ private:
       typename ForDiscreteTransferFunction::DiscreteStateSpace_D_Type<
           _T, _IS_STRICTLY_PROPER>::type;
 
-  using _U_Type = PythonControl::StateSpaceInputType<_T, 1>;
+  using _U_Type = PythonControl::StateSpaceInput_Type<_T, 1>;
 
   using _State_Space_Type = PythonControl::DiscreteStateSpace<
       _DiscreteStateSpace_A_type, _DiscreteStateSpace_B_type,
@@ -477,6 +477,10 @@ private:
   /* Check Numerator and Denominator length */
   static_assert(Numerator_Type::COLS <= Denominator_Type::COLS,
                 "Transfer function must be proper.");
+
+public:
+  /* Type */
+  using Value_Type = _T;
 
 public:
   /* Constructor */
@@ -594,6 +598,8 @@ public:
 public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
+  static constexpr std::size_t STATE_SIZE =
+      _State_Space_Type::Original_X_Type::COLS;
 
 private:
   /* Variable */

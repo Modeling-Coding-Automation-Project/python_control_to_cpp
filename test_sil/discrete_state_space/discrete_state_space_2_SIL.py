@@ -7,30 +7,8 @@ import control
 import matplotlib.pyplot as plt
 
 from python_control.state_space_deploy import StateSpaceDeploy
-
-
-def plot_y_response(T, y):
-    y_0 = y[0][0]
-    y_1 = y[1][0]
-
-    plt.figure()
-
-    plt.subplot(2, 1, 1)
-    plt.plot(T, y_0)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Response 0')
-    plt.title('Step Response 0')
-    plt.grid(True)
-
-    plt.subplot(2, 1, 2)
-    plt.plot(T, y_1)
-    plt.xlabel('Time (s)')
-    plt.ylabel('Response 1')
-    plt.title('Step Response 1')
-    plt.grid(True)
-
-    plt.tight_layout()
-
+from test_sil.SIL_operator import SIL_CodeGenerator
+from test_sil.MCAP_tester import MCAPTester
 
 # define continuous state-space model
 A = np.array([
@@ -56,9 +34,6 @@ D = np.array([
 ])
 
 sys = control.StateSpace(A, B, C, D)
-T, yout = control.step_response(sys)
-
-plot_y_response(T, yout)
 
 # convert to discrete state-space model
 dt = 0.01
@@ -68,22 +43,31 @@ T_d, yout_d = control.step_response(sys_d)
 # You can create cpp header which can easily define state space as C++ code
 deployed_file_names = StateSpaceDeploy.generate_state_space_cpp_code(
     sys_d, number_of_delay=0)
-print(deployed_file_names)
 
-plot_y_response(T_d, yout_d)
+current_dir = os.path.dirname(__file__)
+generator = SIL_CodeGenerator(deployed_file_names, current_dir)
+generator.build_SIL_code()
 
-# show A, B, C, D
-print("\nA:\n", sys_d.A)
-print("\nB:\n", sys_d.B)
-print("\nC:\n", sys_d.C)
-print("\nD:\n", sys_d.D)
+from test_sil.discrete_state_space import DiscreteStateSpaceSIL
+DiscreteStateSpaceSIL.initialize()
 
-# show yout_d
-y_0 = yout_d[0][0]
-y_1 = yout_d[1][0]
-print("\nyout:\n")
-for i in range(100):
-    print(y_0[i], ", ", y_1[i], ",")
+# simulation
+tester = MCAPTester()
+NEAR_LIMIT = 1e-5
 
-# show results
-plt.show()
+u = 1.0  # input
+
+for i, t in enumerate(T_d):
+
+    U = np.zeros((1, 1))
+    U[0, 0] = u
+    DiscreteStateSpaceSIL.update(np.array(U))
+
+    Y = DiscreteStateSpaceSIL.get_Y()
+
+    tester.expect_near(Y[0, 0], yout_d[0, 0, i], NEAR_LIMIT,
+                       "Discrete state space 2 SIL, check Y_0.")
+    tester.expect_near(Y[1, 0], yout_d[1, 0, i], NEAR_LIMIT,
+                       "Discrete state space 2 SIL, check Y_1.")
+
+tester.throw_error_if_test_failed()

@@ -109,6 +109,8 @@ private:
 
 public:
   /* Type */
+  using Value_Type = _T;
+
   using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size, _State_Size>;
 
   /* Check Compatibility */
@@ -308,6 +310,8 @@ private:
 
 public:
   /* Type */
+  using Value_Type = _T;
+
   using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size,
                                                (_State_Size + _Output_Size)>;
 
@@ -487,9 +491,9 @@ private:
 /* Make LQI */
 template <typename A_Type, typename B_Type, typename C_Type, typename Q_Type,
           typename R_Type>
-inline auto make_LQI(const A_Type &A, const B_Type &B, const C_Type &C,
-                     const Q_Type &Q, const R_Type &R)
-    -> LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> {
+inline auto
+make_LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
+         const R_Type &R) -> LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> {
 
   return LQI<A_Type, B_Type, C_Type, Q_Type, R_Type>(A, B, C, Q, R);
 }
