@@ -6,7 +6,8 @@ import numpy as np
 
 from python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
-from python_control.simulation_plotter import SimulationPlotter
+from test_sil.SIL_operator import SIL_CodeGenerator
+from test_sil.MCAP_tester import MCAPTester
 
 
 def generate_m_sequence(length, taps):
@@ -46,10 +47,15 @@ if __name__ == "__main__":
     # Define Kalman filter
     lkf = LinearKalmanFilter(A, B, C, Q, R, Number_of_Delay)
 
-    # You can create cpp header which can easily define LKF as C++ code
     deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(
         lkf, number_of_delay=Number_of_Delay)
-    print(deployed_file_names)
+
+    current_dir = os.path.dirname(__file__)
+    generator = SIL_CodeGenerator(deployed_file_names, current_dir)
+    generator.build_SIL_code()
+
+    from test_sil.kalman_filter import KalmanFilterSIL
+    KalmanFilterSIL.initialize()
 
     # Initial state
     lkf.x_hat = np.array([[0],
@@ -73,8 +79,6 @@ if __name__ == "__main__":
     # Generate data
     np.random.seed(0)
 
-    plotter = SimulationPlotter()
-
     x_true = np.array([[0.0], [0.0], [0.0], [0.1]])
     x_estimate = lkf.get_x_hat()
     y_measured = np.zeros((C.shape[0], 1))
@@ -83,11 +87,11 @@ if __name__ == "__main__":
     y_store = [np.zeros((C.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
 
-    plotter.append(x_true)
-    plotter.append(x_estimate)
-    plotter.append(y_measured)
-    u = np.array(u_data_T.reshape(50, 2))
-    plotter.append_sequence(u)
+    x_cpp = np.array([[0.0], [0.0], [0.0], [0.0]])
+    KalmanFilterSIL.set_x_hat(x_cpp)
+
+    tester = MCAPTester()
+    NEAR_LIMIT = 1e-5
 
     for k in range(1, num_steps):
         u = u_data[:, k - 1].reshape(-1, 1)
@@ -110,30 +114,10 @@ if __name__ == "__main__":
         lkf.predict_and_update(u, y_measured)
         x_estimate = lkf.get_x_hat()
 
-        plotter.append(x_true)
-        plotter.append(x_estimate)
-        plotter.append(y_measured)
+        KalmanFilterSIL.predict_and_update(u, y_measured)
+        x_estimate_cpp = KalmanFilterSIL.get_x_hat()
 
-    # Kalman Gain
-    print("Kalman Gain:\n", lkf.G)
+        tester.expect_near(x_estimate_cpp, x_estimate, NEAR_LIMIT,
+                           "Linear Kalman Filter SIL, check x_hat.")
 
-    # Plot
-    plotter.assign("x_true", column=0, row=0, position=(0, 0))
-    plotter.assign("x_estimate", column=0, row=0, position=(0, 0))
-    plotter.assign("y_measured", column=0, row=0, position=(0, 0))
-
-    plotter.assign("x_true", column=2, row=0, position=(1, 0))
-    plotter.assign("x_estimate", column=2, row=0, position=(1, 0))
-    plotter.assign("y_measured", column=1, row=0, position=(1, 0))
-
-    plotter.assign("u", column=0, row=0, position=(0, 1))
-
-    plotter.assign("u", column=1, row=0, position=(1, 1))
-
-    plotter.assign("x_true", column=1, row=0, position=(2, 0))
-    plotter.assign("x_estimate", column=1, row=0, position=(2, 0))
-
-    plotter.assign("x_true", column=3, row=0, position=(2, 1))
-    plotter.assign("x_estimate", column=3, row=0, position=(2, 1))
-
-    plotter.plot("True state and observation")
+tester.throw_error_if_test_failed()

@@ -52,13 +52,16 @@ class SIL_CodeGenerator:
 
         self.folder_name = os.path.basename(os.path.normpath(self.SIL_folder))
 
-    def move_deployed_files(self):
-        for file_name in self.deployed_file_names:
-            src = os.path.join(os.getcwd(), file_name)
-            dst = os.path.join(self.SIL_folder, file_name)
-            if os.path.exists(dst):
-                os.remove(dst)
-            os.rename(src, dst)
+    def move_deployed_files(self, file_names):
+        for file_name in file_names:
+            if isinstance(file_name, list):
+                self.move_deployed_files(file_name)
+            else:
+                src = os.path.join(os.getcwd(), file_name)
+                dst = os.path.join(self.SIL_folder, file_name)
+                if os.path.exists(dst):
+                    os.remove(dst)
+                os.rename(src, dst)
 
     def generate_wrapper_code(self):
 
@@ -94,6 +97,6 @@ class SIL_CodeGenerator:
         cmake_generator = CmakeGenerator(self.SIL_folder)
         cmake_generator.generate_cmake_lists_txt()
 
-        self.move_deployed_files()
+        self.move_deployed_files(self.deployed_file_names)
         self.generate_wrapper_code()
         self.build_pybind11_code()
