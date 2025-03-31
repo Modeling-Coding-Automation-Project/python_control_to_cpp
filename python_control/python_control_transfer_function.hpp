@@ -479,6 +479,10 @@ private:
                 "Transfer function must be proper.");
 
 public:
+  /* Type */
+  using Value_Type = _T;
+
+public:
   /* Constructor */
   DiscreteTransferFunction() {}
 
@@ -594,6 +598,8 @@ public:
 public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
+  static constexpr std::size_t STATE_SIZE =
+      _State_Space_Type::Original_X_Type::COLS;
 
 private:
   /* Variable */
