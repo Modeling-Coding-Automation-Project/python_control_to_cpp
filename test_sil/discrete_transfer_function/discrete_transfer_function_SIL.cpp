@@ -59,8 +59,8 @@ FLOAT solve_steady_state_and_input(FLOAT y_steady_state) {
 }
 
 PYBIND11_MODULE(DiscreteTransferFunctionSIL, m) {
-  m.def("initialize", &initialize, "initialize discrete state space");
-  m.def("update", &update, "update discrete state space");
+  m.def("initialize", &initialize, "initialize discrete transfer function");
+  m.def("update", &update, "update discrete transfer function");
   m.def("get_X", &get_X, "get state vector X");
   m.def("get_y", &get_y, "get output vector Y");
   m.def("solve_steady_state_and_input", &solve_steady_state_and_input,

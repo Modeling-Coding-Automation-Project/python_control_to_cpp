@@ -46,7 +46,7 @@ py::array_t<FLOAT> get_K(void) {
 }
 
 PYBIND11_MODULE(LqrSIL, m) {
-  m.def("initialize", &initialize, "initialize discrete state space");
+  m.def("initialize", &initialize, "initialize lqr");
   m.def("solve", &solve, "solve discrete state space LQR");
   m.def("get_K", &get_K, "get K matrix");
 }

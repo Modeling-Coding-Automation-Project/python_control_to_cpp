@@ -83,7 +83,7 @@ py::array_t<FLOAT> get_x_hat(void) {
 }
 
 PYBIND11_MODULE(KalmanFilterSIL, m) {
-  m.def("initialize", &initialize, "initialize discrete state space");
+  m.def("initialize", &initialize, "initialize kalman filter");
   m.def("predict_and_update", &predict_and_update,
         "predict and update kalman filter with input and output");
   m.def("set_x_hat", &set_x_hat, "set x_hat");

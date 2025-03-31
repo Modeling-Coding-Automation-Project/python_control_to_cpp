@@ -57,7 +57,7 @@ void set_Eigen_solver_iteration_max_for_eigen_vector(const int max_iteration) {
 }
 
 PYBIND11_MODULE(LqiSIL, m) {
-  m.def("initialize", &initialize, "initialize discrete state space");
+  m.def("initialize", &initialize, "initialize lqi");
   m.def("solve", &solve, "solve discrete state space lqi");
   m.def("get_K", &get_K, "get K matrix");
   m.def("set_Eigen_solver_iteration_max", &set_Eigen_solver_iteration_max,
