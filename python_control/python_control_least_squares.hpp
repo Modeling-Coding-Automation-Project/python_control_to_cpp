@@ -80,6 +80,10 @@ public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DATA = X_Type::COLS;
 
+public:
+  /* Type */
+  using Value_Type = _T;
+
   using Y_Type = StateSpaceOutput_Type<_T, NUMBER_OF_DATA>;
 
 public:
@@ -174,6 +178,10 @@ private:
 public:
   /* Constant */
   static constexpr std::size_t RLS_SIZE = X_Type::COLS + 1;
+
+public:
+  /* Type */
+  using Value_Type = _T;
 
 public:
   /* Constructor */
