@@ -9,6 +9,9 @@ namespace PythonControl {
 
 namespace LQR_Operation {
 
+constexpr std::size_t HAMILTONIAN_COLUMN_SIZE = 2;
+constexpr std::size_t HAMILTONIAN_ROW_SIZE = 2;
+
 template <typename T, std::size_t State_Size>
 using V1_V2_Type = PythonNumpy::DenseMatrix_Type<PythonNumpy::Complex<T>,
                                                  State_Size, State_Size>;
@@ -23,9 +26,9 @@ struct Hamiltonian {
   using B_R_INV_BT_Type = PythonNumpy::A_mul_BTranspose_Type<
       PythonNumpy::A_Multiply_B_Type<B_Type, R_Type>, B_Type>;
 
-  using Type =
-      PythonNumpy::ConcatenateBlock_Type<A_Type, B_R_INV_BT_Type, Q_Type,
-                                         PythonNumpy::Transpose_Type<A_Type>>;
+  using Type = PythonNumpy::ConcatenateBlock_Type<
+      HAMILTONIAN_COLUMN_SIZE, HAMILTONIAN_ROW_SIZE, A_Type, B_R_INV_BT_Type,
+      Q_Type, PythonNumpy::Transpose_Type<A_Type>>;
 };
 
 } // namespace LQR_Operation
@@ -48,8 +51,10 @@ inline void lqr_solve_with_arimoto_potter(
   R_inv_solver.inv(R);
   auto R_inv = R_inv_solver.get_answer();
 
-  auto Hamiltonian = PythonNumpy::concatenate_block(
-      A, PythonNumpy::A_mul_BTranspose(-B * R_inv, B), -Q, -A.transpose());
+  auto Hamiltonian =
+      PythonNumpy::concatenate_block<LQR_Operation::HAMILTONIAN_COLUMN_SIZE,
+                                     LQR_Operation::HAMILTONIAN_ROW_SIZE>(
+          A, PythonNumpy::A_mul_BTranspose(-B * R_inv, B), -Q, -A.transpose());
 
   eig_solver.solve_eigen_values(Hamiltonian);
 
@@ -491,9 +496,9 @@ private:
 /* Make LQI */
 template <typename A_Type, typename B_Type, typename C_Type, typename Q_Type,
           typename R_Type>
-inline auto
-make_LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
-         const R_Type &R) -> LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> {
+inline auto make_LQI(const A_Type &A, const B_Type &B, const C_Type &C,
+                     const Q_Type &Q, const R_Type &R)
+    -> LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> {
 
   return LQI<A_Type, B_Type, C_Type, Q_Type, R_Type>(A, B, C, Q, R);
 }
