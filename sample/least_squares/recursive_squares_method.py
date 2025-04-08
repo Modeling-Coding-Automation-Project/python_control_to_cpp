@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from python_control.least_squares import RecursiveLeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
-from python_control.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # Create data
 np.random.seed(42)

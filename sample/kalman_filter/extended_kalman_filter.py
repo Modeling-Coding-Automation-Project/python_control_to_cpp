@@ -16,7 +16,7 @@ from sympy import symbols
 
 from python_control.kalman_filter import ExtendedKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
-from python_control.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # %% bicycle model example
 # state X: [x, y, theta]

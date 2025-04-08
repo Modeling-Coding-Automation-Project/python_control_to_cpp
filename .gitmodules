@@ -10,3 +10,6 @@
 [submodule "external_libraries/python_numpy_to_cpp"]
 	path = external_libraries/python_numpy_to_cpp
 	url = https://github.com/Modeling-Coding-Automation-Project/python_numpy_to_cpp.git
+[submodule "sample/simulation_manager"]
+	path = sample/simulation_manager
+	url = https://github.com/Modeling-Coding-Automation-Project/simulation_manager.git
