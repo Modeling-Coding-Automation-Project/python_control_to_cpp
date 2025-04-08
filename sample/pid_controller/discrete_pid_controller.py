@@ -6,7 +6,7 @@ import control
 import numpy as np
 import matplotlib.pyplot as plt
 
-from python_control.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # parameter
 dt = 0.2

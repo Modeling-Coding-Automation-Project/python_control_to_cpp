@@ -15,7 +15,7 @@ import control
 import numpy as np
 import scipy.linalg as la
 
-from python_control.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 simulation_time = 10.0
 dt = 0.1
