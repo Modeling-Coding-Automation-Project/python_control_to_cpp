@@ -7,7 +7,7 @@ import control
 import matplotlib.pyplot as plt
 
 from python_control.state_space_deploy import StateSpaceDeploy
-from python_control.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # define state-space model
 A = np.array([[0.7, 0.2],
