@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from python_control.transfer_function_deploy import TransferFunctionDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 # Define continuous transfer function
 sys = control.TransferFunction([1.0, 1.0], [1.0, 2.0, 3.0, 2.0, 1.0])

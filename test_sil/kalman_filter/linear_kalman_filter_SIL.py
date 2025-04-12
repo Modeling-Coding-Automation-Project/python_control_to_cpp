@@ -7,7 +7,7 @@ import numpy as np
 from python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 
 def generate_m_sequence(length, taps):

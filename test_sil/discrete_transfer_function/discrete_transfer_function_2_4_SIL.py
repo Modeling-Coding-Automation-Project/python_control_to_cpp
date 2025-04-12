@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from python_control.transfer_function_deploy import TransferFunctionDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 # Define discrete transfer function
 sys_d = control.TransferFunction([0.5, 0.3, 0.1], [

@@ -15,7 +15,7 @@ import scipy.linalg as la
 
 from python_control.lqr_deploy import LQR_Deploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 simulation_time = 10.0
 dt = 0.1
