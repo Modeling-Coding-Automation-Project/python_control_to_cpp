@@ -38,6 +38,10 @@ private:
                 "Value data type must be float or double.");
 
 public:
+  /* Type */
+  using Value_Type = _T;
+
+public:
   /* Constructor */
   DiscretePID_Controller()
       : delta_time(static_cast<_T>(0)), Kp(static_cast<_T>(0)),
@@ -190,11 +194,10 @@ private:
 
 /* make Discrete PID Controller */
 template <typename T>
-inline auto make_DiscretePID_Controller(const T &delta_time, const T &Kp,
-                                        const T &Ki, const T &Kd, const T &N,
-                                        const T &Kb, const T &minimum_output,
-                                        const T &maximum_output)
-    -> DiscretePID_Controller<T> {
+inline auto make_DiscretePID_Controller(
+    const T &delta_time, const T &Kp, const T &Ki, const T &Kd, const T &N,
+    const T &Kb, const T &minimum_output,
+    const T &maximum_output) -> DiscretePID_Controller<T> {
   return DiscretePID_Controller<T>(delta_time, Kp, Ki, Kd, N, Kb,
                                    minimum_output, maximum_output);
 }
