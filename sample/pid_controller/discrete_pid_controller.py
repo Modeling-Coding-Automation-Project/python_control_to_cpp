@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from python_control.pid_controller import DiscretePID_Controller
+from python_control.pid_controller_deploy import DiscretePID_ControllerDeploy
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # parameter
@@ -74,8 +75,13 @@ Discrete PID controller each step simulation
 plant_model_d_ss = control.ss(plant_model_d)
 x_plant = np.zeros((plant_model_d_ss.A.shape[0], 1))
 
-PID_discrete = DiscretePID_Controller(delta_time=dt, Kp=Kp, Ki=Ki, Kd=Kd, N=(
+pid = DiscretePID_Controller(delta_time=dt, Kp=Kp, Ki=Ki, Kd=Kd, N=(
     1.0 / dt), Kb=Ki, minimum_output=-0.2, maximum_output=0.2)
+
+# You can create cpp header which can easily define pid controller as C++ code
+deployed_file_names = DiscretePID_ControllerDeploy.generate_PID_cpp_code(
+    pid)
+print(deployed_file_names)
 
 plotter = SimulationPlotter()
 
@@ -85,7 +91,7 @@ for i in range(len(time_series)):
     e = r - y
 
     # controller
-    u = PID_discrete.update(e)
+    u = pid.update(e)
 
     # plant
     y = plant_model_d_ss.C @ x_plant + plant_model_d_ss.D * u

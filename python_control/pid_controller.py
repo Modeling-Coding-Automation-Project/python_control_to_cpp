@@ -28,6 +28,14 @@ class DiscretePID_Controller:
         self._PID_output = 0.0
         self._saturated_PID_output = 0.0
 
+        if isinstance(self.Kp, float) and \
+                isinstance(self.Ki, float) and \
+                isinstance(self.Kd, float):
+
+            self.data_type = np.float64.__name__
+        else:
+            raise TypeError("controller gains must be a float")
+
     def update(self, error):
         self._PID_output = (self._calculate_P_term(error) +
                             self._calculate_I_term(error) +
