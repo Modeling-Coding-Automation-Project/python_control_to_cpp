@@ -199,6 +199,10 @@ inline auto make_DiscretePID_Controller(const T &delta_time, const T &Kp,
                                    minimum_output, maximum_output);
 }
 
+/* Discrete PID Controller Type */
+template <typename T>
+using DiscretePID_Controller_Type = DiscretePID_Controller<T>;
+
 } // namespace PythonControl
 
 #endif // __PYTHON_CONTROL_PID_CONTROLLER__

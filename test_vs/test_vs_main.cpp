@@ -598,8 +598,8 @@ void check_python_control_pid_controller(void) {
     pid_controller.minimum_output = static_cast<T>(-1e6);
     pid_controller.maximum_output = static_cast<T>(1e6);
 
-    DiscretePID_Controller<T> pid_controller_copy = pid_controller;
-    DiscretePID_Controller<T> pid_controller_move = std::move(pid_controller_copy);
+    DiscretePID_Controller_Type<T> pid_controller_copy = pid_controller;
+    DiscretePID_Controller_Type<T> pid_controller_move = std::move(pid_controller_copy);
     pid_controller = pid_controller_move;
 
     /* シミュレーション */
