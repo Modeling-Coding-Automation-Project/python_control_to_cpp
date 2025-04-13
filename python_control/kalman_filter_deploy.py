@@ -11,7 +11,6 @@ import control
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
 from python_control.control_deploy import ControlDeploy
-from python_control.state_space_deploy import StateSpaceDeploy
 
 
 class IntegerPowerReplacer(ast.NodeTransformer):
