@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from python_control.state_space_deploy import StateSpaceDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 # define continuous state-space model
 A = np.array([

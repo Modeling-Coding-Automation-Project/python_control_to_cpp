@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from python_control.least_squares import LeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 # Create data
 np.random.seed(42)

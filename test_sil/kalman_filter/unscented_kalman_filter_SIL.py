@@ -17,7 +17,7 @@ from sympy import symbols
 from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
-from test_sil.MCAP_tester import MCAPTester
+from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
 # %% bicycle model example
 # state X: [x, y, theta]

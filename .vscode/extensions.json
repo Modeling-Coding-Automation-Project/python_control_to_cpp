@@ -4,6 +4,7 @@
         "ms-vscode-remote.vscode-remote-extensionpack",
         "ms-python.autopep8",
         "ms-vscode.cpptools-extension-pack",
-        "mhutchie.git-graph"
+        "mhutchie.git-graph",
+        "xaver.clang-format"
     ]
 }

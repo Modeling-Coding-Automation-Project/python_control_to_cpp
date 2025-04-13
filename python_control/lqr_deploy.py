@@ -9,7 +9,6 @@ import inspect
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
-from python_control.state_space_deploy import StateSpaceDeploy
 
 
 class LQR_Deploy:
