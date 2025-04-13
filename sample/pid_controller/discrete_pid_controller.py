@@ -6,6 +6,7 @@ import control
 import numpy as np
 import matplotlib.pyplot as plt
 
+from python_control.pid_controller import DiscretePID_Controller
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 # parameter
@@ -73,8 +74,8 @@ Discrete PID controller each step simulation
 plant_model_d_ss = control.ss(plant_model_d)
 x_plant = np.zeros((plant_model_d_ss.A.shape[0], 1))
 
-PID_discrete_ss = control.ss(pid_controller_d)
-x_PID_discrete = np.zeros((PID_discrete_ss.A.shape[0], 1))
+PID_discrete = DiscretePID_Controller(delta_time=dt, Kp=Kp, Ki=Ki, Kd=Kd, N=(
+    1.0 / dt), Kb=Ki, minimum_output=-0.2, maximum_output=0.2)
 
 plotter = SimulationPlotter()
 
@@ -84,8 +85,7 @@ for i in range(len(time_series)):
     e = r - y
 
     # controller
-    u = PID_discrete_ss.C @ x_PID_discrete + PID_discrete_ss.D * e
-    x_PID_discrete = PID_discrete_ss.A @ x_PID_discrete + PID_discrete_ss.B * e
+    u = PID_discrete.update(e)
 
     # plant
     y = plant_model_d_ss.C @ x_plant + plant_model_d_ss.D * u
