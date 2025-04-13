@@ -41,6 +41,21 @@ class DiscretePID_ControllerDeploy:
         else:
             caller_file_name_without_ext = file_name
 
+        delta_time = pid.delta_time
+        Kp = pid.Kp
+        Ki = pid.Ki
+        Kd = pid.Kd
+        N = pid.N
+        Kb = pid.Kb
+
+        minimum_output = pid.minimum_output
+        if np.isinf(minimum_output):
+            minimum_output = -1.0e10
+
+        maximum_output = pid.maximum_output
+        if np.isinf(maximum_output):
+            maximum_output = 1.0e10
+
         # %% code generation
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
@@ -61,11 +76,29 @@ class DiscretePID_ControllerDeploy:
 
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += f"constexpr {type_name} DELTA_TIME = {delta_time};\n"
+        code_text += f"constexpr {type_name} Kp = {Kp};\n"
+        code_text += f"constexpr {type_name} Ki = {Ki};\n"
+        code_text += f"constexpr {type_name} Kd = {Kd};\n"
+        code_text += f"constexpr {type_name} N = {N};\n"
+        code_text += f"constexpr {type_name} Kb = {Kb};\n"
+        code_text += f"constexpr {type_name} MINIMUM_OUTPUT = {minimum_output};\n"
+        code_text += f"constexpr {type_name} MAXIMUM_OUTPUT = {maximum_output};\n\n"
+
         code_text += f"using type = DiscretePID_Controller_Type<{type_name}>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
-        code_text += f"  return make_DiscretePID_Controller<{type_name}>();\n\n"
+        code_text += f"  return make_DiscretePID_Controller<{type_name}>(\n" + \
+            "    DELTA_TIME,\n" + \
+            "    Kp,\n" + \
+            "    Ki,\n" + \
+            "    Kd,\n" + \
+            "    N,\n" + \
+            "    Kb,\n" + \
+            "    MINIMUM_OUTPUT,\n" + \
+            "    MAXIMUM_OUTPUT\n" + \
+            "    );\n\n"
 
         code_text += "}\n\n"
 
