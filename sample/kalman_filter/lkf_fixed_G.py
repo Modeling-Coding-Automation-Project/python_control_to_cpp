@@ -16,7 +16,7 @@ def main():
     B = np.array([[0.1],
                   [0.2]])
     C = np.array([[1.0, 0.0]])
-    D = np.array([[0.0]])
+    # D = np.array([[0.0]])
 
     dt = 0.01
 
@@ -33,6 +33,7 @@ def main():
 
     # Simulation steps
     num_steps = 100
+    time = np.arange(0, num_steps * dt, dt)
 
     # System noise and observation noise real
     Q_real = np.diag([1.0, 1.0]) * 0.0
@@ -48,10 +49,10 @@ def main():
     y_measured = np.zeros((C.shape[0], 1))
     u = np.ones((B.shape[1], 1))
 
-    plotter.append(x_true)
-    plotter.append(x_estimate)
-    plotter.append(y_measured)
-    plotter.append_sequence(u)
+    plotter.append_name(u, "u")
+    plotter.append_name(x_true, "x_true")
+    plotter.append_name(x_estimate, "x_estimate")
+    plotter.append_name(y_measured, "y_measured")
 
     for k in range(1, num_steps):
 
@@ -75,14 +76,17 @@ def main():
     print("Kalman Gain:\n", lkf.G)
 
     # Plot
-    plotter.assign("x_true", column=0, row=0, position=(0, 0))
-    plotter.assign("x_estimate", column=0, row=0, position=(0, 0))
-    plotter.assign("x_true", column=1, row=0, position=(1, 0))
-    plotter.assign("x_estimate", column=1, row=0, position=(1, 0))
+    plotter.assign("x_true", column=0, row=0, position=(0, 0), x_sequence=time)
+    plotter.assign("x_estimate", column=0, row=0,
+                   position=(0, 0), x_sequence=time)
+    plotter.assign("x_true", column=1, row=0, position=(1, 0), x_sequence=time)
+    plotter.assign("x_estimate", column=1, row=0,
+                   position=(1, 0), x_sequence=time)
 
-    plotter.assign("y_measured", column=0, row=0, position=(0, 1))
+    plotter.assign("y_measured", column=0, row=0,
+                   position=(0, 1), x_sequence=time)
 
-    plotter.assign("u", column=0, row=0, position=(1, 1))
+    plotter.assign("u", column=0, row=0, position=(1, 1), x_sequence=time)
 
     plotter.plot("True state and observation")
 
