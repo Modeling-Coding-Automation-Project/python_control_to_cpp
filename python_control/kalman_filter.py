@@ -1,6 +1,9 @@
 import math
 import numpy as np
 
+KALMAN_FILTER_DIVISION_MIN = 1e-10
+LKF_G_CONVERGE_REPEAT_MAX = 1000
+
 
 class DelayedVectorObject:
     def __init__(self, size, Number_of_Delay):
@@ -80,6 +83,31 @@ class LinearKalmanFilter(KalmanFilterCommon):
     def predict_and_update_with_fixed_G(self, u, y):
         self.predict_with_fixed_G(u)
         self.update_with_fixed_G(y)
+
+    def update_P_one_step(self):
+        self.P = self.A @ self.P @ self.A.T + self.Q
+
+        P_CT_matrix = self.P @ self.C.T
+        S_matrix = self.C @ P_CT_matrix + self.R
+        self.G = P_CT_matrix @ np.linalg.inv(S_matrix)
+
+        self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
+
+    def converge_G(self):
+
+        for i in range(LKF_G_CONVERGE_REPEAT_MAX):
+            previous_G = self.G
+            self.update_P_one_step()
+            G_diff = self.G - previous_G
+
+            converged_flag = True
+            for i in range(self.G.shape[0]):
+                for j in range(self.G.shape[1]):
+                    if abs(G_diff[i, j]) > KALMAN_FILTER_DIVISION_MIN:
+                        converged_flag = False
+
+            if converged_flag:
+                break
 
 
 class ExtendedKalmanFilter(KalmanFilterCommon):
