@@ -22,7 +22,7 @@ def generate_m_sequence(length, taps):
     return np.array(m_sequence)
 
 
-if __name__ == "__main__":
+def main():
     # Create model
     A = np.array([[1.0, 0.1, 0.0, 0.0],
                   [0.0, 1.0, 0.1, 0.0],
@@ -137,3 +137,7 @@ if __name__ == "__main__":
     plotter.assign("x_estimate", column=3, row=0, position=(2, 1))
 
     plotter.plot("True state and observation")
+
+
+if __name__ == "__main__":
+    main()
