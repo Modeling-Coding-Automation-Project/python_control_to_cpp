@@ -37,7 +37,7 @@ def main():
     generator = SIL_CodeGenerator(deployed_file_names, current_dir)
     generator.build_SIL_code()
 
-    from test_sil.kalman_filter import KalmanFilterFixSIL
+    from test_sil.kalman_filter_fix import KalmanFilterFixSIL
     KalmanFilterFixSIL.initialize()
 
     # Initial state
