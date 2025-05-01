@@ -27,6 +27,9 @@ def main():
     # Define Kalman filter
     lkf = LinearKalmanFilter(A, B, C, Q, R)
 
+    # You can get converged G if you use LKF.
+    lkf.converge_G()
+
     # Initial state
     lkf.x_hat = np.array([[0],
                          [0]])
@@ -64,7 +67,8 @@ def main():
         y_measured = C @ x_true + v.reshape(-1, 1)
 
         # Kalman filter
-        lkf.predict_and_update(u, y_measured)
+        # Using fixed G is more efficient
+        lkf.predict_and_update_with_fixed_G(u, y_measured)
         x_estimate = lkf.get_x_hat()
 
         plotter.append_name(u, "u")

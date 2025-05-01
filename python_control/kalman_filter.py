@@ -95,7 +95,10 @@ class LinearKalmanFilter(KalmanFilterCommon):
 
     def converge_G(self):
 
-        for i in range(LKF_G_CONVERGE_REPEAT_MAX):
+        for k in range(LKF_G_CONVERGE_REPEAT_MAX):
+            if self.G is None:
+                self.update_P_one_step()
+
             previous_G = self.G
             self.update_P_one_step()
             G_diff = self.G - previous_G
@@ -103,7 +106,9 @@ class LinearKalmanFilter(KalmanFilterCommon):
             converged_flag = True
             for i in range(self.G.shape[0]):
                 for j in range(self.G.shape[1]):
-                    if abs(G_diff[i, j]) > KALMAN_FILTER_DIVISION_MIN:
+
+                    if (abs(self.G[i, j]) > KALMAN_FILTER_DIVISION_MIN) and \
+                            (abs(G_diff[i, j] / self.G[i, j]) > KALMAN_FILTER_DIVISION_MIN):
                         converged_flag = False
 
             if converged_flag:
