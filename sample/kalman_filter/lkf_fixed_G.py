@@ -29,6 +29,7 @@ def main():
 
     # You can get converged G if you use LKF.
     lkf.converge_G()
+    print("Kalman Gain:\n", lkf.G)
 
     # Initial state
     lkf.x_hat = np.array([[0],
@@ -75,9 +76,6 @@ def main():
         plotter.append_name(x_true, "x_true")
         plotter.append_name(x_estimate, "x_estimate")
         plotter.append_name(y_measured, "y_measured")
-
-    # Kalman Gain
-    print("Kalman Gain:\n", lkf.G)
 
     # Plot
     plotter.assign("x_true", column=0, row=0, position=(0, 0), x_sequence=time)

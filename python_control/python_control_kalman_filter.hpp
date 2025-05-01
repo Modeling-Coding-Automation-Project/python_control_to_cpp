@@ -11,6 +11,7 @@
 namespace PythonControl {
 
 constexpr double KALMAN_FILTER_DIVISION_MIN = 1.0e-10;
+constexpr std::size_t LKF_G_CONVERGE_REPEAT_MAX = 1000;
 
 /* Kalman Filter Weight Type */
 template <typename T, std::size_t Vector_Size>
@@ -209,6 +210,52 @@ public:
 
     this->predict_with_fixed_G(U);
     this->update_with_fixed_G(Y);
+  }
+
+  inline void update_P_one_step(void) {
+    this->P = this->state_space.A *
+                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
+              this->Q;
+
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
+
+    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
+    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+
+    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->state_space.C) *
+              this->P;
+  }
+
+  inline void converge_G(void) {
+    this->update_P_one_step();
+
+    for (std::size_t k = 0; k < PythonControl::LKF_G_CONVERGE_REPEAT_MAX; k++) {
+
+      auto previous_G = this->G;
+      this->update_P_one_step();
+      auto G_diff = this->G - previous_G;
+
+      bool is_converged = true;
+      for (std::size_t i = 0; i < _STATE_SIZE; i++) {
+        for (std::size_t j = 0; j < _OUTPUT_SIZE; j++) {
+
+          if (PythonMath::abs(this->G.access(i, j)) >
+              PythonControl::KALMAN_FILTER_DIVISION_MIN) {
+            if (PythonMath::abs(G_diff.access(i, j) / this->G.access(i, j)) >
+                PythonControl::KALMAN_FILTER_DIVISION_MIN) {
+              is_converged = false;
+            }
+          }
+        }
+      }
+
+      if (is_converged) {
+        break;
+      }
+    }
   }
 
   /* Get */
@@ -789,8 +836,8 @@ public:
     this->sigma_point_weight = sigma_point_weight_in;
   }
 
-  inline auto calculate(const State_Type &X_in,
-                        const P_Type &P_in) -> Kai_Type {
+  inline auto calculate(const State_Type &X_in, const P_Type &P_in)
+      -> Kai_Type {
 
     _P_cholesky_solver = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
     Kai_Type Kai;
@@ -1090,9 +1137,9 @@ public:
         this->X_d * PythonNumpy::A_mul_BTranspose(this->W, this->X_d) + this->Q;
   }
 
-  inline auto
-  calc_y_dif(const _Measurement_Type &Y,
-             const _Measurement_Type &Y_hat_m) -> _Measurement_Type {
+  inline auto calc_y_dif(const _Measurement_Type &Y,
+                         const _Measurement_Type &Y_hat_m)
+      -> _Measurement_Type {
 
     this->Y_store.push(Y_hat_m);
 

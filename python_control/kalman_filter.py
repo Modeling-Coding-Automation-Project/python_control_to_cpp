@@ -103,15 +103,15 @@ class LinearKalmanFilter(KalmanFilterCommon):
             self.update_P_one_step()
             G_diff = self.G - previous_G
 
-            converged_flag = True
+            is_converged = True
             for i in range(self.G.shape[0]):
                 for j in range(self.G.shape[1]):
 
                     if (abs(self.G[i, j]) > KALMAN_FILTER_DIVISION_MIN) and \
                             (abs(G_diff[i, j] / self.G[i, j]) > KALMAN_FILTER_DIVISION_MIN):
-                        converged_flag = False
+                        is_converged = False
 
-            if converged_flag:
+            if is_converged:
                 break
 
 

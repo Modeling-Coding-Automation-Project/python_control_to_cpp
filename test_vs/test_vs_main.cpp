@@ -926,7 +926,7 @@ void check_python_control_linear_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     constexpr T NEAR_LIMIT_SOFT = 1.0e-3F;
 
 
@@ -1114,8 +1114,49 @@ void check_python_control_linear_kalman_filter(void) {
         static_cast<T>(0.09763228)
     );
 
-    tester.expect_near(x_hat_fixed.matrix.data, x_hat_fixed_answer.matrix.data, NEAR_LIMIT_SOFT,
+    tester.expect_near(x_hat_fixed.matrix.data, x_hat_fixed_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LinearKalmanFilter with fixed G x estimate.");
+
+    /* カルマンゲイン事前導出 */
+    constexpr std::size_t STATE_SIZE_SS_1 = 2;
+    constexpr std::size_t INPUT_SIZE_SS_1 = 1;
+    constexpr std::size_t OUTPUT_SIZE_SS_1 = 1;
+
+    auto A_ss_1 = make_DenseMatrix<STATE_SIZE_SS_1, STATE_SIZE_SS_1>(
+        static_cast<T>(0.7), 
+        static_cast<T>(0.2), 
+        static_cast<T>(-0.3),
+        static_cast<T>(0.8));
+
+    auto B_ss_1 = make_DenseMatrix<STATE_SIZE_SS_1, INPUT_SIZE_SS_1>(
+        static_cast<T>(0.1),
+        static_cast<T>(0.2));
+
+    using SparseAvailable_C_ss_1 = SparseAvailable<
+        ColumnAvailable<true, false>>;
+
+    auto C_ss_1 = make_SparseMatrix<SparseAvailable_C_ss_1>(
+        static_cast<T>(1.0));
+
+    auto D_ss_1 = make_SparseMatrixEmpty<T, OUTPUT_SIZE_SS_1, INPUT_SIZE_SS_1>();
+
+    auto sys_ss_1 = make_DiscreteStateSpace(A_ss_1, B_ss_1, C_ss_1, D_ss_1, dt);
+
+    auto Q_ss_1 = make_KalmanFilter_Q<STATE_SIZE_SS_1>(
+        static_cast<T>(1.0), static_cast<T>(1.0));
+    auto R_ss_1 = make_KalmanFilter_R<OUTPUT_SIZE_SS_1>(
+        static_cast<T>(1.0));
+
+    auto lkf_ss_1 = make_LinearKalmanFilter(sys_ss_1, Q_ss_1, R_ss_1);
+    lkf_ss_1.converge_G();
+    auto G_ss_1 = lkf_ss_1.G;
+
+    auto G_ss_1_answer = make_DenseMatrix<STATE_SIZE_SS_1, OUTPUT_SIZE_SS_1>(
+        static_cast<T>(0.5890584427270706),
+        static_cast<T>(0.1491720712877476));
+
+    tester.expect_near(G_ss_1.matrix.data, G_ss_1_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check LinearKalmanFilter with pre-calculated G.");
 
 
     tester.throw_error_if_test_failed();
