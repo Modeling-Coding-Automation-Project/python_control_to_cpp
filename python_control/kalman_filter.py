@@ -8,7 +8,7 @@ class DelayedVectorObject:
         self.delay_index = 0
         self.Number_of_Delay = Number_of_Delay
 
-    def push(self, vector):
+    def push(self, vector: np.ndarray):
         self.store[:, self.delay_index] = vector.flatten()
 
         self.delay_index += 1
@@ -32,7 +32,9 @@ class KalmanFilterCommon:
 
 
 class LinearKalmanFilter(KalmanFilterCommon):
-    def __init__(self, A, B, C, Q, R, Number_of_Delay=0):
+    def __init__(self, A: np.ndarray, B: np.ndarray,
+                 C: np.ndarray, Q: np.ndarray, R: np.ndarray,
+                 Number_of_Delay=0):
         super().__init__(Number_of_Delay)
         self.A = A
         self.B = B
@@ -50,10 +52,10 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, y):
-        P_CT = self.P @ self.C.T
+        P_CT_matrix = self.P @ self.C.T
 
-        S = self.C @ P_CT + self.R
-        self.G = P_CT @ np.linalg.inv(S)
+        S_matrix = self.C @ P_CT_matrix + self.R
+        self.G = P_CT_matrix @ np.linalg.inv(S_matrix)
         self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
 
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
@@ -83,7 +85,7 @@ class LinearKalmanFilter(KalmanFilterCommon):
 class ExtendedKalmanFilter(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
                  state_function_jacobian, measurement_function_jacobian,
-                 Q, R, Parameters=None, Number_of_Delay=0):
+                 Q: np.ndarray, R: np.ndarray, Parameters=None, Number_of_Delay=0):
         super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
@@ -111,10 +113,10 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
         self.C = self.measurement_function_jacobian(
             self.x_hat, self.Parameters)
 
-        P_CT = self.P @ self.C.T
+        P_CT_matrix = self.P @ self.C.T
 
-        S = self.C @ P_CT + self.R
-        self.G = P_CT @ np.linalg.inv(S)
+        S_matrix = self.C @ P_CT_matrix + self.R
+        self.G = P_CT_matrix @ np.linalg.inv(S_matrix)
         self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
 
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
@@ -133,7 +135,8 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 
 class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
     def __init__(self, state_function, measurement_function,
-                 Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0):
+                 Q: np.ndarray, R: np.ndarray, Parameters=None,
+                 Number_of_Delay=0, kappa=0.0):
         super().__init__(Number_of_Delay)
         self.state_function = state_function
         self.measurement_function = measurement_function
@@ -171,17 +174,17 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
 
         self.sigma_point_weight = math.sqrt(self.STATE_SIZE + lambda_weight)
 
-    def calc_sigma_points(self, x, P):
-        SP = np.linalg.cholesky(P, upper=True)
+    def calc_sigma_points(self, x: np.ndarray, P: np.ndarray):
+        sqrtP = np.linalg.cholesky(P, upper=True)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
         Kai[:, 0] = x.flatten()
         for i in range(self.STATE_SIZE):
             Kai[:, i + 1] = (x + self.sigma_point_weight *
-                             (SP[:, i]).reshape(-1, 1)).flatten()
+                             (sqrtP[:, i]).reshape(-1, 1)).flatten()
             Kai[:, i + self.STATE_SIZE + 1] = \
                 (x - self.sigma_point_weight *
-                 (SP[:, i]).reshape(-1, 1)).flatten()
+                 (sqrtP[:, i]).reshape(-1, 1)).flatten()
 
         return Kai
 
@@ -237,7 +240,8 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
 
 class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
     def __init__(self, state_function, measurement_function,
-                 Q, R, Parameters=None, Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
+                 Q: np.ndarray, R: np.ndarray, Parameters=None,
+                 Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
 
         self.kappa = 0.0
         if kappa == 0.0:
