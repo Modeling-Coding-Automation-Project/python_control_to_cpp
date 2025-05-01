@@ -486,6 +486,11 @@ class KalmanFilterDeploy:
 
         ss_file_name_no_extension = ss_file_name.split(".")[0]
 
+        # generate P, G initialization code
+        P_G_initialization_flag = False
+        if lkf.G is not None:
+            P_G_initialization_flag = True
+
         # create cpp code
         code_text = ""
 
@@ -539,8 +544,35 @@ class KalmanFilterDeploy:
 
         code_text += "auto make() -> type {\n\n"
 
-        code_text += "    return make_LinearKalmanFilter(\n" + \
+        code_text += "    auto lkf = make_LinearKalmanFilter(\n" + \
             "    lkf_state_space, Q, R);\n\n"
+
+        if P_G_initialization_flag:
+            code_text += "    lkf.P = make_DenseMatrix<STATE_SIZE, STATE_SIZE>(\n"
+            for i in range(lkf.P.shape[0]):
+                for j in range(lkf.P.shape[1]):
+                    code_text += "        static_cast<" + \
+                        type_name + ">(" + str(lkf.P[i, j]) + ")"
+                    if i == lkf.P.shape[0] - 1 and j == lkf.P.shape[1] - 1:
+                        code_text += "\n"
+                        break
+                    else:
+                        code_text += ",\n"
+            code_text += "    );\n\n"
+
+            code_text += "    lkf.G = make_DenseMatrix<STATE_SIZE, OUTPUT_SIZE>(\n"
+            for i in range(lkf.G.shape[0]):
+                for j in range(lkf.G.shape[1]):
+                    code_text += "        static_cast<" + \
+                        type_name + ">(" + str(lkf.G[i, j]) + ")"
+                    if i == lkf.G.shape[0] - 1 and j == lkf.G.shape[1] - 1:
+                        code_text += "\n"
+                        break
+                    else:
+                        code_text += ",\n"
+            code_text += "    );\n\n"
+
+        code_text += "    return lkf;\n\n"
 
         code_text += "}\n\n"
 

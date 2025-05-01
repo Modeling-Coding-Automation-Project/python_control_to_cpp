@@ -31,6 +31,10 @@ def main():
     lkf.converge_G()
     print("Kalman Gain:\n", lkf.G)
 
+    # You can create cpp header which can easily define LKF as C++ code
+    deployed_file_names = KalmanFilterDeploy.generate_LKF_cpp_code(lkf)
+    print(deployed_file_names)
+
     # Initial state
     lkf.x_hat = np.array([[0],
                          [0]])
