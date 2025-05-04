@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import copy
 
 KALMAN_FILTER_DIVISION_MIN = 1e-10
 LKF_G_CONVERGE_REPEAT_MAX = 1000
@@ -20,6 +21,12 @@ class DelayedVectorObject:
 
     def get(self):
         return self.store[:, self.delay_index].reshape(-1, 1)
+
+    def get_by_index(self, index):
+        if index > self.Number_of_Delay:
+            index = self.Number_of_Delay
+
+        return self.store[:, index].reshape(-1, 1)
 
 
 class KalmanFilterCommon:
@@ -48,10 +55,12 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.P = np.eye(A.shape[0])
         self.G = None
 
-        self.y_store = DelayedVectorObject(C.shape[0], Number_of_Delay)
+        self.u_store = DelayedVectorObject(B.shape[1], Number_of_Delay)
 
     def predict(self, u):
-        self.x_hat = self.A @ self.x_hat + self.B @ u
+        self.u_store.push(u)
+
+        self.x_hat = self.A @ self.x_hat + self.B @ self.u_store.get()
         self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, y):
@@ -59,19 +68,27 @@ class LinearKalmanFilter(KalmanFilterCommon):
 
         S_matrix = self.C @ P_CT_matrix + self.R
         self.G = P_CT_matrix @ np.linalg.inv(S_matrix)
-        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
+        self.x_hat = self.x_hat + self.G @ (y - self.C @ self.x_hat)
 
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
-    def calc_y_dif(self, y):
-        self.y_store.push(self.C @ self.x_hat)
+    def get_x_hat_without_delay(self):
+        if self.Number_of_Delay == 0:
+            return self.x_hat
+        else:
+            x_hat = copy.deepcopy(self.x_hat)
+            delay_index = self.u_store.delay_index
+            for i in range(self.Number_of_Delay):
 
-        y_dif = y - self.y_store.get()
+                if delay_index == self.Number_of_Delay:
+                    delay_index = 0
 
-        # When there is no delay, you can use below.
-        # y_dif = y - self.C @ self.x_hat
+                x_hat = self.A @ x_hat + \
+                    self.B @ self.u_store.get_by_index(delay_index)
 
-        return y_dif
+                delay_index += 1
+
+            return x_hat
 
     # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u):

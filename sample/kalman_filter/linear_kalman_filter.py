@@ -108,7 +108,8 @@ def main():
 
         # Kalman filter
         lkf.predict_and_update(u, y_measured)
-        x_estimate = lkf.get_x_hat()
+        # x_estimate = lkf.get_x_hat()
+        x_estimate = lkf.get_x_hat_without_delay()
 
         plotter.append(x_true)
         plotter.append(x_estimate)
