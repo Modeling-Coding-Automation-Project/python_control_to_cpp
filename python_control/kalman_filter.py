@@ -102,7 +102,7 @@ class LinearKalmanFilter(KalmanFilterCommon):
             self.x_hat = self.A @ self.x_hat + self.B @ u
 
     def update_with_fixed_G(self, y: np.ndarray):
-        self.x_hat = self.x_hat + self.G @ self.calc_y_dif(y)
+        self.x_hat = self.x_hat + self.G @ (y - self.C @ self.x_hat)
 
     def predict_and_update_with_fixed_G(self, u: np.ndarray, y: np.ndarray):
         self.predict_with_fixed_G(u)
