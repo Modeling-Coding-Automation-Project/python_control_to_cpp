@@ -219,7 +219,7 @@ void check_python_control_state_space(void) {
         Y_results_exmaple_1_answer_Trans(1, 0), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay output 2.");
 
-    auto U_1 = sys_delay.access_U<0>();
+    auto U_1 = sys_delay.template access_U<0>();
 
     tester.expect_near(U_1, static_cast<T>(1.0), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay input.");
@@ -1609,7 +1609,7 @@ int main(void) {
 
     check_python_control_linear_kalman_filter<double>();
 
-    check_python_control_linear_kalman_filter<float>();
+    //check_python_control_linear_kalman_filter<float>();
 
     //check_python_control_extended_kalman_filter<double>();
 

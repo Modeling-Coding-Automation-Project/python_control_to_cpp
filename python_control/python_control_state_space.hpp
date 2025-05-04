@@ -312,7 +312,7 @@ public:
   DiscreteStateSpace(
       const DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &input)
       : A(input.A), B(input.B), C(input.C), D(input.D),
-        delta_time(input.delta_time), X(input.X), U(input.U),
+        delta_time(input.delta_time), U(input.U), X(input.X),
         X_initial(input.X_initial), Y(input.Y) {}
 
   DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &
