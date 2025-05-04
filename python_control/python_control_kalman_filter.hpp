@@ -42,10 +42,88 @@ inline auto make_KalmanFilter_R(T value_1, Args... args)
   return input;
 }
 
-/* Get x_hat without delay */
-namespace XHatOperation {
+namespace PredictOperation {
 
-template <std::size_t NumberOfDelay> struct GetWithoutDelay {
+/* predict for Linear Kalman Filter */
+template <std::size_t NumberOfDelay> struct Linear {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
+            typename U_Store_Type>
+  static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
+                      const Q_Type &Q, const U_Store_Type &U_store,
+                      std::size_t &_input_count) {
+
+    if (_input_count < NumberOfDelay) {
+      _input_count++;
+    } else {
+      state_space.X =
+          state_space.A * state_space.X + state_space.B * U_store.get();
+      P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+    }
+  }
+};
+
+template <> struct Linear<0> {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
+            typename U_Store_Type>
+  static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
+                      const Q_Type &Q, const U_Store_Type &U_store,
+                      std::size_t &_input_count) {
+    static_cast<void>(_input_count);
+
+    state_space.X =
+        state_space.A * state_space.X + state_space.B * U_store.get();
+    P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+  }
+};
+
+/* predict for Extended Kalman Filter */
+template <std::size_t NumberOfDelay> struct Extended {
+  template <typename StateFunction_Object,
+            typename StateFunction_Jacobian_Object, typename A_Type,
+            typename P_Type, typename Q_Type, typename U_Store_Type,
+            typename X_Type, typename Parameter_Type>
+  static void
+  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
+          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+          const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
+          const Parameter_Type parameters, std::size_t &input_count) {
+
+    if (input_count < NumberOfDelay) {
+      input_count++;
+    } else {
+      A = state_function_jacobian(X_hat, U_store.get(), parameters);
+
+      X_hat = state_function(X_hat, U_store.get(), parameters);
+      P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
+    }
+  }
+};
+
+template <> struct Extended<0> {
+  template <typename StateFunction_Object,
+            typename StateFunction_Jacobian_Object, typename A_Type,
+            typename P_Type, typename Q_Type, typename U_Store_Type,
+            typename X_Type, typename Parameter_Type>
+  static void
+  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
+          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+          const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
+          const Parameter_Type parameters, std::size_t &input_count) {
+    static_cast<void>(input_count);
+
+    A = state_function_jacobian(X_hat, U_store.get(), parameters);
+
+    X_hat = state_function(X_hat, U_store.get(), parameters);
+    P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
+  }
+};
+
+} // namespace PredictOperation
+
+namespace GetXHatWithoutDelayOperation {
+
+/* Get x_hat without delay for Linear Kalman Filter */
+template <std::size_t NumberOfDelay> struct Linear {
   template <typename DiscreteStateSpace_Type>
   static auto compute(const DiscreteStateSpace_Type &state_space,
                       const std::size_t &input_count) ->
@@ -67,7 +145,7 @@ template <std::size_t NumberOfDelay> struct GetWithoutDelay {
   }
 };
 
-template <> struct GetWithoutDelay<0> {
+template <> struct Linear<0> {
   template <typename DiscreteStateSpace_Type>
   static auto compute(const DiscreteStateSpace_Type &state_space) ->
       typename DiscreteStateSpace_Type::Original_X_Type {
@@ -75,44 +153,46 @@ template <> struct GetWithoutDelay<0> {
   }
 };
 
-} // namespace XHatOperation
+/* Get x_hat without delay for Extended Kalman Filter */
+template <std::size_t NumberOfDelay> struct Extended {
+  template <typename StateFunction_Object, typename X_Type,
+            typename U_Store_Type, typename Parameter_Type>
+  static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
+                      const U_Store_Type &U_store,
+                      const Parameter_Type &parameters,
+                      const std::size_t &input_count) -> X_Type {
+    auto x_hat = X_hat;
+    std::size_t delay_index = U_store.get_delay_ring_buffer_index();
 
-namespace PredictOperation {
+    for (std::size_t i = 0; i < input_count; i++) {
+      delay_index++;
+      if (delay_index > NumberOfDelay) {
+        delay_index = 0;
+      }
 
-template <std::size_t NumberOfDelay> struct Linear {
-  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type>
-  static void
-  execute(DiscreteStateSpace_Type &state_space, P_Type &P, const Q_Type &Q,
-          const typename DiscreteStateSpace_Type::Original_U_Type &U,
-          std::size_t &_input_count) {
-    state_space.U.push(U);
-
-    if (_input_count < NumberOfDelay) {
-      _input_count++;
-    } else {
-      state_space.X =
-          state_space.A * state_space.X + state_space.B * state_space.U.get();
-      P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+      X_hat =
+          state_function(X_hat, U_store.get_by_index(delay_index), parameters);
     }
+
+    return x_hat;
   }
 };
 
-template <> struct Linear<0> {
-  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type>
-  static void
-  execute(DiscreteStateSpace_Type &state_space, P_Type &P, const Q_Type &Q,
-          const typename DiscreteStateSpace_Type::Original_U_Type &U,
-          std::size_t &_input_count) {
-    static_cast<void>(_input_count);
+template <> struct Extended<0> {
+  template <typename StateFunction_Object, typename X_Type,
+            typename U_Store_Type, typename Parameter_Type>
+  static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
+                      const U_Store_Type &U_store,
+                      const Parameter_Type &parameters) -> X_Type {
+    static_cast<void>(state_function);
+    static_cast<void>(U_store);
+    static_cast<void>(parameters);
 
-    state_space.U.push(U);
-    state_space.X =
-        state_space.A * state_space.X + state_space.B * state_space.U.get();
-    P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+    return X_hat;
   }
 };
 
-} // namespace PredictOperation
+} // namespace GetXHatWithoutDelayOperation
 
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 class LinearKalmanFilter {
@@ -221,8 +301,11 @@ public:
   inline void
   predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
+    this->state_space.U.push(U);
+
     PredictOperation::Linear<NUMBER_OF_DELAY>::execute(
-        this->state_space, this->P, this->Q, U, this->_input_count);
+        this->state_space, this->P, this->Q, this->state_space.U,
+        this->_input_count);
   }
 
   inline void
@@ -337,7 +420,7 @@ public:
   inline auto get_x_hat_without_delay(void) const ->
       typename DiscreteStateSpace_Type::Original_X_Type {
 
-    return XHatOperation::GetWithoutDelay<NUMBER_OF_DELAY>::compute(
+    return GetXHatWithoutDelayOperation::Linear<NUMBER_OF_DELAY>::compute(
         this->state_space, this->_input_count);
   }
 
@@ -424,11 +507,13 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
 
+  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
   using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
       PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
-  using _MeasurementStored_Type =
-      PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
+
+  using _InputStored_Type =
+      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
 
   using _StateFunction_Object =
       PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
@@ -469,7 +554,12 @@ public:
 
 public:
   /* Constructor */
-  ExtendedKalmanFilter(){};
+  ExtendedKalmanFilter()
+      : A(), C(), Q(), R(),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
+        G(), X_hat(), U_store(), parameters(), _C_P_CT_R_inv_solver(),
+        _input_count(static_cast<std::size_t>(0)) {}
 
   ExtendedKalmanFilter(
       const Q_Type &Q, const R_Type &R, _StateFunction_Object &state_function,
@@ -480,24 +570,26 @@ public:
       : A(), C(), Q(Q), R(R),
         P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
               .create_dense()),
-        G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        G(), X_hat(), U_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
         _state_function(state_function),
         _state_function_jacobian(state_function_jacobian),
         _measurement_function(measurement_function),
-        _measurement_function_jacobian(measurement_function_jacobian) {}
+        _measurement_function_jacobian(measurement_function_jacobian),
+        _input_count(static_cast<std::size_t>(0)) {}
 
   /* Copy Constructor */
   ExtendedKalmanFilter(
       const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
                                  Parameter_Type, Number_Of_Delay> &input)
       : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
-        X_hat(input.X_hat), Y_store(input.Y_store),
+        X_hat(input.X_hat), U_store(input.U_store),
         parameters(input.parameters),
         _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian) {}
+        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _input_count(input._input_count) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
@@ -512,7 +604,7 @@ public:
       this->P = input.P;
       this->G = input.G;
       this->X_hat = input.X_hat;
-      this->Y_store = input.Y_store;
+      this->U_store = input.U_store;
       this->parameters = input.parameters;
       this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
       this->_state_function = input._state_function;
@@ -520,6 +612,7 @@ public:
       this->_measurement_function = input._measurement_function;
       this->_measurement_function_jacobian =
           input._measurement_function_jacobian;
+      this->_input_count = input._input_count;
     }
     return *this;
   }
@@ -530,13 +623,14 @@ public:
                            Parameter_Type, Number_Of_Delay> &&input) noexcept
       : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
+        X_hat(std::move(input.X_hat)), U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
         _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian) {}
+        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _input_count(std::move(input._input_count)) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        Number_Of_Delay> &
@@ -551,7 +645,7 @@ public:
       this->P = std::move(input.P);
       this->G = std::move(input.G);
       this->X_hat = std::move(input.X_hat);
-      this->Y_store = std::move(input.Y_store);
+      this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
       this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
       this->_state_function = std::move(input._state_function);
@@ -560,6 +654,7 @@ public:
       this->_measurement_function = std::move(input._measurement_function);
       this->_measurement_function_jacobian =
           std::move(input._measurement_function_jacobian);
+      this->_input_count = std::move(input._input_count);
     }
     return *this;
   }
@@ -568,23 +663,11 @@ public:
   /* Function */
   inline void predict(const U_Type &U) {
 
-    this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
+    U_store.push(U);
 
-    this->X_hat = this->_state_function(this->X_hat, U, parameters);
-    this->P =
-        this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
-  }
-
-  inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
-
-    this->Y_store.push(this->_measurement_function(this->X_hat, parameters));
-
-    _Measurement_Type Y_dif = Y - this->Y_store.get();
-
-    // When there is no delay, you can use below.
-    // Y_dif = Y - this->_measurement_function(this->X_hat, parameters);
-
-    return Y_dif;
+    PredictOperation::Extended<NUMBER_OF_DELAY>::execute(
+        this->_state_function_jacobian, this->_state_function, this->A, this->P,
+        this->Q, U_store, this->X_hat, this->parameters, this->_input_count);
   }
 
   inline void update(const _Measurement_Type &Y) {
@@ -598,7 +681,9 @@ public:
 
     this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
 
-    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
+    this->X_hat =
+        this->X_hat +
+        this->G * (Y - this->_measurement_function(this->X_hat, parameters));
 
     this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
                this->G * this->C) *
@@ -613,6 +698,12 @@ public:
 
   /* Get */
   inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+
+  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+
+    return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
+        this->state_space, this->_input_count);
+  }
 
   /* Set */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
@@ -640,7 +731,7 @@ public:
   G_Type G;
 
   _State_Type X_hat;
-  _MeasurementStored_Type Y_store;
+  _InputStored_Type U_store;
 
   Parameter_Type parameters;
 
@@ -651,6 +742,7 @@ private:
   _StateFunctionJacobian_Object _state_function_jacobian;
   _MeasurementFunction_Object _measurement_function;
   _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
+  std::size_t _input_count;
 };
 
 /* Extended Kalman Filter Type */
