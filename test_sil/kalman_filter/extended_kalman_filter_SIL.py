@@ -66,7 +66,7 @@ KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 
 # %% design EKF
 
-landmarks = np.array([[0.0, 10.0], [0.0, 10.0]])
+landmarks = np.array([[-1.0, 10.0], [-1.0, 10.0]])
 
 
 class Parameters:
@@ -88,7 +88,7 @@ Parameters_ekf = Parameters(
 Number_of_Delay = 5
 
 Q_ekf = np.diag([1.0, 1.0, 1.0])
-R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 100.0
+R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 10.0
 
 import fxu
 import fxu_jacobian
@@ -197,7 +197,19 @@ def run_simulation():
         tester.expect_near(x_estimate_cpp, x_estimated, NEAR_LIMIT,
                            "Extended Kalman Filter SIL, check x_hat.")
 
+        x_estimate_without_delay = ekf.get_x_hat_without_delay()
+        x_estimate_cpp_without_delay = KalmanFilterSIL.get_x_hat_without_delay()
 
-run_simulation()
+        tester.expect_near(
+            x_estimate_cpp_without_delay, x_estimate_without_delay, NEAR_LIMIT,
+            "Extended Kalman Filter SIL, check x_hat_without_delay.")
 
-tester.throw_error_if_test_failed()
+
+def main():
+    run_simulation()
+
+    tester.throw_error_if_test_failed()
+
+
+if __name__ == "__main__":
+    main()

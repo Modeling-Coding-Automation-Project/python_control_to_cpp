@@ -42,542 +42,6 @@ inline auto make_KalmanFilter_R(T value_1, Args... args)
   return input;
 }
 
-template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
-class LinearKalmanFilter {
-private:
-  /* Type */
-  using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
-                "Matrix value data type must be float or double.");
-
-  static constexpr std::size_t _STATE_SIZE =
-      DiscreteStateSpace_Type::Original_X_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE =
-      DiscreteStateSpace_Type::Original_U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE =
-      DiscreteStateSpace_Type::Original_Y_Type::COLS;
-
-  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
-
-public:
-  /* Type  */
-  using Value_Type = _T;
-
-  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
-
-  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
-
-  /* Check Compatibility */
-  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
-  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
-                "R matrix must be diagonal matrix.");
-
-  /* Check Data Type */
-  static_assert(
-      std::is_same<typename Q_Type::Value_Type, _T>::value,
-      "Data type of Q matrix must be same type as DiscreteStateSpace.");
-
-  static_assert(
-      std::is_same<typename R_Type::Value_Type, _T>::value,
-      "Data type of R matrix must be same type as DiscreteStateSpace.");
-
-public:
-  /* Constructor */
-  LinearKalmanFilter(){};
-
-  LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
-                     const Q_Type &Q, const R_Type &R)
-      : state_space(DiscreteStateSpace), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
-              .create_dense()),
-        G(), _C_P_CT_R_inv_solver() {}
-
-  /* Copy Constructor */
-  LinearKalmanFilter(
-      const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
-      : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
-        G(input.G), _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver) {}
-
-  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
-  operator=(const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
-                &input) {
-    if (this != &input) {
-      this->state_space = input.state_space;
-      this->Q = input.Q;
-      this->R = input.R;
-      this->P = input.P;
-      this->G = input.G;
-      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
-    }
-    return *this;
-  }
-
-  /* Move Constructor */
-  LinearKalmanFilter(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
-                         &&input) noexcept
-      : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
-        R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)) {}
-
-  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
-  operator=(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
-                &&input) noexcept {
-    if (this != &input) {
-      this->state_space = std::move(input.state_space);
-      this->Q = std::move(input.Q);
-      this->R = std::move(input.R);
-      this->P = std::move(input.P);
-      this->G = std::move(input.G);
-      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
-    }
-    return *this;
-  }
-
-public:
-  /* Function */
-  inline void
-  predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
-
-    this->state_space.X =
-        this->state_space.A * this->state_space.X + this->state_space.B * U;
-    this->P = this->state_space.A *
-                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
-              this->Q;
-  }
-
-  inline auto
-  calc_y_dif(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) ->
-      typename DiscreteStateSpace_Type::Original_Y_Type {
-
-    this->state_space.Y.push(this->state_space.C * this->state_space.X);
-
-    typename DiscreteStateSpace_Type::Original_Y_Type Y_dif =
-        Y - this->state_space.Y.get();
-
-    // When there is no delay, you can use below.
-    // typename DiscreteStateSpace_Type::Original_Y_Type Y_dif =
-    // Y - this->C * this->state_space.X;
-
-    return Y_dif;
-  }
-
-  inline void
-  update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
-
-    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
-
-    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
-
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
-
-    this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
-
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-               this->G * this->state_space.C) *
-              this->P;
-  }
-
-  inline void predict_and_update(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U,
-      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
-
-    this->predict(U);
-    this->update(Y);
-  }
-
-  // If G is known, you can use below "_fixed_G" functions.
-  inline void predict_with_fixed_G(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U) {
-
-    this->state_space.X =
-        this->state_space.A * this->state_space.X + this->state_space.B * U;
-  }
-
-  inline void update_with_fixed_G(
-      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
-
-    this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
-  }
-
-  inline void predict_and_update_with_fixed_G(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U,
-      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
-
-    this->predict_with_fixed_G(U);
-    this->update_with_fixed_G(Y);
-  }
-
-  inline void update_P_one_step(void) {
-    this->P = this->state_space.A *
-                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
-              this->Q;
-
-    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
-
-    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
-
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
-
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-               this->G * this->state_space.C) *
-              this->P;
-  }
-
-  inline void converge_G(void) {
-    this->update_P_one_step();
-
-    for (std::size_t k = 0; k < PythonControl::LKF_G_CONVERGE_REPEAT_MAX; k++) {
-
-      auto previous_G = this->G;
-      this->update_P_one_step();
-      auto G_diff = this->G - previous_G;
-
-      bool is_converged = true;
-      for (std::size_t i = 0; i < _STATE_SIZE; i++) {
-        for (std::size_t j = 0; j < _OUTPUT_SIZE; j++) {
-
-          if (PythonMath::abs(this->G.access(i, j)) >
-              PythonControl::KALMAN_FILTER_DIVISION_MIN) {
-            if (PythonMath::abs(G_diff.access(i, j) / this->G.access(i, j)) >
-                PythonControl::KALMAN_FILTER_DIVISION_MIN) {
-              is_converged = false;
-            }
-          }
-        }
-      }
-
-      if (is_converged) {
-        break;
-      }
-    }
-  }
-
-  /* Get */
-  inline auto get_x_hat(void) const ->
-      typename DiscreteStateSpace_Type::Original_X_Type {
-    return this->state_space.get_X();
-  }
-
-  /* Set */
-  inline void
-  set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
-    this->state_space.X = x_hat;
-  }
-
-  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
-    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
-  }
-
-  inline void
-  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
-    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
-  }
-
-public:
-  /* Variable */
-  DiscreteStateSpace_Type state_space;
-  Q_Type Q;
-  R_Type R;
-  P_Type P;
-  G_Type G;
-
-private:
-  /* Variable */
-  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
-};
-
-/* make Linear Kalman Filter */
-template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
-inline auto make_LinearKalmanFilter(DiscreteStateSpace_Type DiscreteStateSpace,
-                                    Q_Type Q, R_Type R)
-    -> LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> {
-
-  return LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>(
-      DiscreteStateSpace, Q, R);
-}
-
-/* Linear Kalman Filter Type */
-template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
-using LinearKalmanFilter_Type =
-    LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>;
-
-/* state and measurement function alias */
-template <typename State_Type, typename Input_Type, typename Parameter_Type>
-using StateFunction_Object = std::function<State_Type(
-    const State_Type &, const Input_Type &, const Parameter_Type &)>;
-
-template <typename A_Type, typename State_Type, typename Input_Type,
-          typename Parameter_Type>
-using StateFunctionJacobian_Object = std::function<A_Type(
-    const State_Type &, const Input_Type &, const Parameter_Type &)>;
-
-template <typename Output_Type, typename State_Type, typename Parameter_Type>
-using MeasurementFunction_Object =
-    std::function<Output_Type(const State_Type &, const Parameter_Type &)>;
-
-template <typename C_Type, typename State_Type, typename Parameter_Type>
-using MeasurementFunctionJacobian_Object =
-    std::function<C_Type(const State_Type &, const Parameter_Type &)>;
-
-/* Extended Kalman Filter */
-template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
-          typename R_Type, typename Parameter_Type,
-          std::size_t Number_Of_Delay = 0>
-class ExtendedKalmanFilter {
-private:
-  /* Type */
-  using _T = typename A_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
-                "Matrix value data type must be float or double.");
-
-  static constexpr std::size_t _STATE_SIZE = A_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
-
-  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
-  using _Measurement_Type =
-      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
-  using _MeasurementStored_Type =
-      PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
-
-  using _StateFunction_Object =
-      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
-  using _StateFunctionJacobian_Object =
-      PythonControl::StateFunctionJacobian_Object<A_Type, _State_Type, U_Type,
-                                                  Parameter_Type>;
-  using _MeasurementFunction_Object =
-      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
-                                                Parameter_Type>;
-  using _MeasurementFunctionJacobian_Object =
-      PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
-                                                        Parameter_Type>;
-
-  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
-
-public:
-  /* Type  */
-  using Value_Type = _T;
-
-  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
-
-  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
-
-  /* Check Compatibility */
-  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
-                "Q matrix must be diagonal matrix.");
-
-  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
-                "R matrix must be diagonal matrix.");
-
-  /* Check Data Type */
-  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
-                "Data type of Q matrix must be same type as A.");
-
-  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
-                "Data type of R matrix must be same type as A.");
-
-public:
-  /* Constructor */
-  ExtendedKalmanFilter(){};
-
-  ExtendedKalmanFilter(
-      const Q_Type &Q, const R_Type &R, _StateFunction_Object &state_function,
-      _StateFunctionJacobian_Object &state_function_jacobian,
-      _MeasurementFunction_Object &measurement_function,
-      _MeasurementFunctionJacobian_Object &measurement_function_jacobian,
-      const Parameter_Type &parameters)
-      : A(), C(), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
-              .create_dense()),
-        G(), X_hat(), Y_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
-        _state_function(state_function),
-        _state_function_jacobian(state_function_jacobian),
-        _measurement_function(measurement_function),
-        _measurement_function_jacobian(measurement_function_jacobian) {}
-
-  /* Copy Constructor */
-  ExtendedKalmanFilter(
-      const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                                 Parameter_Type, Number_Of_Delay> &input)
-      : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
-        X_hat(input.X_hat), Y_store(input.Y_store),
-        parameters(input.parameters),
-        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
-        _state_function(input._state_function),
-        _state_function_jacobian(input._state_function_jacobian),
-        _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian) {}
-
-  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
-                       Number_Of_Delay> &
-  operator=(
-      const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                                 Parameter_Type, Number_Of_Delay> &input) {
-    if (this != &input) {
-      this->A = input.A;
-      this->C = input.C;
-      this->Q = input.Q;
-      this->R = input.R;
-      this->P = input.P;
-      this->G = input.G;
-      this->X_hat = input.X_hat;
-      this->Y_store = input.Y_store;
-      this->parameters = input.parameters;
-      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
-      this->_state_function = input._state_function;
-      this->_state_function_jacobian = input._state_function_jacobian;
-      this->_measurement_function = input._measurement_function;
-      this->_measurement_function_jacobian =
-          input._measurement_function_jacobian;
-    }
-    return *this;
-  }
-
-  /* Move Constructor */
-  ExtendedKalmanFilter(
-      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                           Parameter_Type, Number_Of_Delay> &&input) noexcept
-      : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
-        R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        X_hat(std::move(input.X_hat)), Y_store(std::move(input.Y_store)),
-        parameters(std::move(input.parameters)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
-        _state_function(input._state_function),
-        _state_function_jacobian(input._state_function_jacobian),
-        _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian) {}
-
-  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
-                       Number_Of_Delay> &
-  operator=(
-      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
-                           Parameter_Type, Number_Of_Delay> &&input) noexcept {
-    if (this != &input) {
-      this->A = std::move(input.A);
-      this->C = std::move(input.C);
-      this->Q = std::move(input.Q);
-      this->R = std::move(input.R);
-      this->P = std::move(input.P);
-      this->G = std::move(input.G);
-      this->X_hat = std::move(input.X_hat);
-      this->Y_store = std::move(input.Y_store);
-      this->parameters = std::move(input.parameters);
-      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
-      this->_state_function = std::move(input._state_function);
-      this->_state_function_jacobian =
-          std::move(input._state_function_jacobian);
-      this->_measurement_function = std::move(input._measurement_function);
-      this->_measurement_function_jacobian =
-          std::move(input._measurement_function_jacobian);
-    }
-    return *this;
-  }
-
-public:
-  /* Function */
-  inline void predict(const U_Type &U) {
-
-    this->A = this->_state_function_jacobian(this->X_hat, U, parameters);
-
-    this->X_hat = this->_state_function(this->X_hat, U, parameters);
-    this->P =
-        this->A * PythonNumpy::A_mul_BTranspose(this->P, this->A) + this->Q;
-  }
-
-  inline auto calc_y_dif(const _Measurement_Type &Y) -> _Measurement_Type {
-
-    this->Y_store.push(this->_measurement_function(this->X_hat, parameters));
-
-    _Measurement_Type Y_dif = Y - this->Y_store.get();
-
-    // When there is no delay, you can use below.
-    // Y_dif = Y - this->_measurement_function(this->X_hat, parameters);
-
-    return Y_dif;
-  }
-
-  inline void update(const _Measurement_Type &Y) {
-
-    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
-
-    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
-
-    auto C_P_CT_R = this->C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
-
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
-
-    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y);
-
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
-               this->G * this->C) *
-              this->P;
-  }
-
-  inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
-
-    this->predict(U);
-    this->update(Y);
-  }
-
-  /* Get */
-  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
-
-  /* Set */
-  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
-
-  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
-    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
-  }
-
-  inline void
-  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
-    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
-  }
-
-public:
-  /* Constant */
-  static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
-
-public:
-  /* Variable */
-  A_Type A;
-  C_Type C;
-  Q_Type Q;
-  R_Type R;
-  P_Type P;
-  G_Type G;
-
-  _State_Type X_hat;
-  _MeasurementStored_Type Y_store;
-
-  Parameter_Type parameters;
-
-private:
-  /* Variable */
-  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
-  _StateFunction_Object _state_function;
-  _StateFunctionJacobian_Object _state_function_jacobian;
-  _MeasurementFunction_Object _measurement_function;
-  _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
-};
-
-/* Extended Kalman Filter Type */
-template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
-          typename R_Type, typename Parameter_Type,
-          std::size_t Number_Of_Delay = 0>
-using ExtendedKalmanFilter_Type =
-    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
-                         Number_Of_Delay>;
-
 /* Unscented Kalman Filter Operation */
 namespace UKF_Operation {
 
@@ -778,6 +242,789 @@ using MeasurementFunctionEachSigmaPoints =
 
 } // namespace UKF_Operation
 
+namespace PredictOperation {
+
+/* predict for Linear Kalman Filter */
+template <std::size_t NumberOfDelay> struct Linear {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
+            typename U_Store_Type>
+  static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
+                      const Q_Type &Q, const U_Store_Type &U_store,
+                      std::size_t &_input_count) {
+
+    if (_input_count < NumberOfDelay) {
+      _input_count++;
+    } else {
+      state_space.X =
+          state_space.A * state_space.X + state_space.B * U_store.get();
+      P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+    }
+  }
+};
+
+template <> struct Linear<0> {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
+            typename U_Store_Type>
+  static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
+                      const Q_Type &Q, const U_Store_Type &U_store,
+                      std::size_t &_input_count) {
+    static_cast<void>(_input_count);
+
+    state_space.X =
+        state_space.A * state_space.X + state_space.B * U_store.get();
+    P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+  }
+};
+
+/* predict for Extended Kalman Filter */
+template <std::size_t NumberOfDelay> struct Extended {
+  template <typename StateFunction_Object,
+            typename StateFunction_Jacobian_Object, typename A_Type,
+            typename P_Type, typename Q_Type, typename U_Store_Type,
+            typename X_Type, typename Parameter_Type>
+  static void
+  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
+          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+          const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
+          const Parameter_Type parameters, std::size_t &input_count) {
+
+    if (input_count < NumberOfDelay) {
+      input_count++;
+    } else {
+      A = state_function_jacobian(X_hat, U_store.get(), parameters);
+
+      X_hat = state_function(X_hat, U_store.get(), parameters);
+      P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
+    }
+  }
+};
+
+template <> struct Extended<0> {
+  template <typename StateFunction_Object,
+            typename StateFunction_Jacobian_Object, typename A_Type,
+            typename P_Type, typename Q_Type, typename U_Store_Type,
+            typename X_Type, typename Parameter_Type>
+  static void
+  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
+          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+          const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
+          const Parameter_Type parameters, std::size_t &input_count) {
+    static_cast<void>(input_count);
+
+    A = state_function_jacobian(X_hat, U_store.get(), parameters);
+
+    X_hat = state_function(X_hat, U_store.get(), parameters);
+    P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
+  }
+};
+
+/* predict for Unscented Kalman Filter */
+template <std::size_t NumberOfDelay> struct Unscented {
+  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+            typename X_Type, typename U_Store_Type, typename P_Type, typename T,
+            typename W_Type, typename Q_Type, typename Kai_Type,
+            typename Parameter_Type>
+  static void execute(StateFunction_Object &state_function,
+                      SigmaPointsCalculator_Type &sigma_points_calculator,
+                      X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
+                      const T &w_m, const W_Type &W, const Q_Type &Q,
+                      Kai_Type &X_d, const Parameter_Type &parameters,
+                      std::size_t &input_count) {
+    if (input_count < NumberOfDelay) {
+      input_count++;
+    } else {
+      auto Kai = sigma_points_calculator.calculate(X_hat, P);
+
+      UKF_Operation::StateFunctionEachSigmaPoints<
+          Kai_Type, StateFunction_Object,
+          typename U_Store_Type::Original_Vector_Type,
+          Parameter_Type>::compute(Kai, state_function, U_store.get(),
+                                   parameters);
+
+      X_hat = w_m * PythonNumpy::get_row<0>(Kai);
+      UKF_Operation::AverageSigmaPoints<X_Type, W_Type, Kai_Type>::compute(
+          X_hat, W, Kai);
+
+      UKF_Operation::SigmaPointsCovariance<Kai_Type, X_Type>::compute(X_d, Kai,
+                                                                      X_hat);
+
+      P = X_d * PythonNumpy::A_mul_BTranspose(W, X_d) + Q;
+    }
+  }
+};
+
+template <> struct Unscented<0> {
+  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+            typename X_Type, typename U_Store_Type, typename P_Type, typename T,
+            typename W_Type, typename Q_Type, typename Kai_Type,
+            typename Parameter_Type>
+  static void execute(StateFunction_Object &state_function,
+                      SigmaPointsCalculator_Type &sigma_points_calculator,
+                      X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
+                      const T &w_m, const W_Type &W, const Q_Type &Q,
+                      Kai_Type &X_d, const Parameter_Type &parameters,
+                      std::size_t &input_count) {
+
+    static_cast<void>(input_count);
+
+    auto Kai = sigma_points_calculator.calculate(X_hat, P);
+
+    UKF_Operation::StateFunctionEachSigmaPoints<
+        Kai_Type, StateFunction_Object,
+        typename U_Store_Type::Original_Vector_Type,
+        Parameter_Type>::compute(Kai, state_function, U_store.get(),
+                                 parameters);
+
+    X_hat = w_m * PythonNumpy::get_row<0>(Kai);
+    UKF_Operation::AverageSigmaPoints<X_Type, W_Type, Kai_Type>::compute(
+        X_hat, W, Kai);
+
+    UKF_Operation::SigmaPointsCovariance<Kai_Type, X_Type>::compute(X_d, Kai,
+                                                                    X_hat);
+
+    P = X_d * PythonNumpy::A_mul_BTranspose(W, X_d) + Q;
+  }
+};
+
+} // namespace PredictOperation
+
+namespace GetXHatWithoutDelayOperation {
+
+/* Get x_hat without delay for Linear Kalman Filter */
+template <std::size_t NumberOfDelay> struct Linear {
+  template <typename DiscreteStateSpace_Type>
+  static auto compute(const DiscreteStateSpace_Type &state_space,
+                      const std::size_t &input_count) ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    auto x_hat = state_space.get_X();
+    std::size_t delay_index = state_space.U.get_delay_ring_buffer_index() +
+                              NumberOfDelay - input_count;
+
+    for (std::size_t i = 0; i < input_count; i++) {
+      delay_index++;
+      if (delay_index > NumberOfDelay) {
+        delay_index = delay_index - NumberOfDelay - 1;
+      }
+
+      x_hat = state_space.A * x_hat +
+              state_space.B * state_space.U.get_by_index(delay_index);
+    }
+
+    return x_hat;
+  }
+};
+
+template <> struct Linear<0> {
+  template <typename DiscreteStateSpace_Type>
+  static auto compute(const DiscreteStateSpace_Type &state_space) ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    return state_space.get_X();
+  }
+};
+
+/* Get x_hat without delay for Extended Kalman Filter */
+template <std::size_t NumberOfDelay> struct Extended {
+  template <typename StateFunction_Object, typename X_Type,
+            typename U_Store_Type, typename Parameter_Type>
+  static auto compute(StateFunction_Object &state_function,
+                      const X_Type &X_hat_in, const U_Store_Type &U_store,
+                      const Parameter_Type &parameters,
+                      const std::size_t &input_count) -> X_Type {
+    auto X_hat = X_hat_in;
+    std::size_t delay_index =
+        U_store.get_delay_ring_buffer_index() + NumberOfDelay - input_count;
+
+    for (std::size_t i = 0; i < input_count; i++) {
+      delay_index++;
+      if (delay_index > NumberOfDelay) {
+        delay_index = delay_index - NumberOfDelay - 1;
+      }
+
+      X_hat =
+          state_function(X_hat, U_store.get_by_index(delay_index), parameters);
+    }
+
+    return X_hat;
+  }
+};
+
+template <> struct Extended<0> {
+  template <typename StateFunction_Object, typename X_Type,
+            typename U_Store_Type, typename Parameter_Type>
+  static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
+                      const U_Store_Type &U_store,
+                      const Parameter_Type &parameters) -> X_Type {
+    static_cast<void>(state_function);
+    static_cast<void>(U_store);
+    static_cast<void>(parameters);
+
+    return X_hat;
+  }
+};
+
+} // namespace GetXHatWithoutDelayOperation
+
+template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
+class LinearKalmanFilter {
+private:
+  /* Type */
+  using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Matrix value data type must be float or double.");
+
+  static constexpr std::size_t _STATE_SIZE =
+      DiscreteStateSpace_Type::Original_X_Type::COLS;
+  static constexpr std::size_t _INPUT_SIZE =
+      DiscreteStateSpace_Type::Original_U_Type::COLS;
+  static constexpr std::size_t _OUTPUT_SIZE =
+      DiscreteStateSpace_Type::Original_Y_Type::COLS;
+
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+
+public:
+  /* Type  */
+  using Value_Type = _T;
+
+  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+
+  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+
+  /* Check Compatibility */
+  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
+                "Q matrix must be diagonal matrix.");
+
+  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
+                "R matrix must be diagonal matrix.");
+
+  /* Check Data Type */
+  static_assert(
+      std::is_same<typename Q_Type::Value_Type, _T>::value,
+      "Data type of Q matrix must be same type as DiscreteStateSpace.");
+
+  static_assert(
+      std::is_same<typename R_Type::Value_Type, _T>::value,
+      "Data type of R matrix must be same type as DiscreteStateSpace.");
+
+public:
+  /* Constructor */
+  LinearKalmanFilter()
+      : state_space(), Q(), R(), P(), G(), _C_P_CT_R_inv_solver(),
+        _input_count(static_cast<std::size_t>(0)) {}
+
+  LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
+                     const Q_Type &Q, const R_Type &R)
+      : state_space(DiscreteStateSpace), Q(Q), R(R),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
+        G(), _C_P_CT_R_inv_solver(), _input_count(static_cast<std::size_t>(0)) {
+  }
+
+  /* Copy Constructor */
+  LinearKalmanFilter(
+      const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
+      : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
+        G(input.G), _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        _input_count(input._input_count) {}
+
+  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
+  operator=(const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                &input) {
+    if (this != &input) {
+      this->state_space = input.state_space;
+      this->Q = input.Q;
+      this->R = input.R;
+      this->P = input.P;
+      this->G = input.G;
+      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->_input_count = input._input_count;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  LinearKalmanFilter(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                         &&input) noexcept
+      : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
+        R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
+        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        _input_count(input._input_count) {}
+
+  LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
+  operator=(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
+                &&input) noexcept {
+    if (this != &input) {
+      this->state_space = std::move(input.state_space);
+      this->Q = std::move(input.Q);
+      this->R = std::move(input.R);
+      this->P = std::move(input.P);
+      this->G = std::move(input.G);
+      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->_input_count = input._input_count;
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void
+  predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
+
+    this->state_space.U.push(U);
+
+    PredictOperation::Linear<NUMBER_OF_DELAY>::execute(
+        this->state_space, this->P, this->Q, this->state_space.U,
+        this->_input_count);
+  }
+
+  inline void
+  update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
+
+    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
+    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+
+    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+
+    this->state_space.X =
+        this->state_space.X +
+        this->G * (Y - this->state_space.C * this->state_space.X);
+
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->state_space.C) *
+              this->P;
+  }
+
+  inline void predict_and_update(
+      const typename DiscreteStateSpace_Type::Original_U_Type &U,
+      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+
+    this->predict(U);
+    this->update(Y);
+  }
+
+  // If G is known, you can use below "_fixed_G" functions.
+  inline void predict_with_fixed_G(
+      const typename DiscreteStateSpace_Type::Original_U_Type &U) {
+
+    this->state_space.U.push(U);
+
+    if (this->_input_count < NUMBER_OF_DELAY) {
+      this->_input_count++;
+    } else {
+      this->state_space.X = this->state_space.A * this->state_space.X +
+                            this->state_space.B * this->state_space.U.get();
+    }
+  }
+
+  inline void update_with_fixed_G(
+      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+
+    this->state_space.X =
+        this->state_space.X +
+        this->G * (Y - this->state_space.C * this->state_space.X);
+  }
+
+  inline void predict_and_update_with_fixed_G(
+      const typename DiscreteStateSpace_Type::Original_U_Type &U,
+      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+
+    this->predict_with_fixed_G(U);
+    this->update_with_fixed_G(Y);
+  }
+
+  inline void update_P_one_step(void) {
+    this->P = this->state_space.A *
+                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
+              this->Q;
+
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
+
+    auto C_P_CT_R = this->state_space.C * P_CT + this->R;
+    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+
+    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->state_space.C) *
+              this->P;
+  }
+
+  inline void converge_G(void) {
+    this->update_P_one_step();
+
+    for (std::size_t k = 0; k < PythonControl::LKF_G_CONVERGE_REPEAT_MAX; k++) {
+
+      auto previous_G = this->G;
+      this->update_P_one_step();
+      auto G_diff = this->G - previous_G;
+
+      bool is_converged = true;
+      for (std::size_t i = 0; i < _STATE_SIZE; i++) {
+        for (std::size_t j = 0; j < _OUTPUT_SIZE; j++) {
+
+          if (PythonMath::abs(this->G.access(i, j)) >
+              PythonControl::KALMAN_FILTER_DIVISION_MIN) {
+            if (PythonMath::abs(G_diff.access(i, j) / this->G.access(i, j)) >
+                PythonControl::KALMAN_FILTER_DIVISION_MIN) {
+              is_converged = false;
+            }
+          }
+        }
+      }
+
+      if (is_converged) {
+        break;
+      }
+    }
+  }
+
+  /* Get */
+  inline auto get_x_hat(void) const ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    return this->state_space.get_X();
+  }
+
+  inline auto get_x_hat_without_delay(void) const ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+
+    return GetXHatWithoutDelayOperation::Linear<NUMBER_OF_DELAY>::compute(
+        this->state_space, this->_input_count);
+  }
+
+  /* Set */
+  inline void
+  set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
+    this->state_space.X = x_hat;
+  }
+
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
+    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void
+  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
+    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  }
+
+public:
+  /* Constant */
+  static constexpr std::size_t NUMBER_OF_DELAY =
+      DiscreteStateSpace_Type::NUMBER_OF_DELAY;
+
+public:
+  /* Variable */
+  DiscreteStateSpace_Type state_space;
+  Q_Type Q;
+  R_Type R;
+  P_Type P;
+  G_Type G;
+
+private:
+  /* Variable */
+  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  std::size_t _input_count;
+};
+
+/* make Linear Kalman Filter */
+template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
+inline auto make_LinearKalmanFilter(DiscreteStateSpace_Type DiscreteStateSpace,
+                                    Q_Type Q, R_Type R)
+    -> LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> {
+
+  return LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>(
+      DiscreteStateSpace, Q, R);
+}
+
+/* Linear Kalman Filter Type */
+template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
+using LinearKalmanFilter_Type =
+    LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>;
+
+/* state and measurement function alias */
+template <typename State_Type, typename Input_Type, typename Parameter_Type>
+using StateFunction_Object = std::function<State_Type(
+    const State_Type &, const Input_Type &, const Parameter_Type &)>;
+
+template <typename A_Type, typename State_Type, typename Input_Type,
+          typename Parameter_Type>
+using StateFunctionJacobian_Object = std::function<A_Type(
+    const State_Type &, const Input_Type &, const Parameter_Type &)>;
+
+template <typename Output_Type, typename State_Type, typename Parameter_Type>
+using MeasurementFunction_Object =
+    std::function<Output_Type(const State_Type &, const Parameter_Type &)>;
+
+template <typename C_Type, typename State_Type, typename Parameter_Type>
+using MeasurementFunctionJacobian_Object =
+    std::function<C_Type(const State_Type &, const Parameter_Type &)>;
+
+/* Extended Kalman Filter */
+template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
+          typename R_Type, typename Parameter_Type,
+          std::size_t Number_Of_Delay = 0>
+class ExtendedKalmanFilter {
+private:
+  /* Type */
+  using _T = typename A_Type::Value_Type;
+  static_assert(std::is_same<_T, double>::value ||
+                    std::is_same<_T, float>::value,
+                "Matrix value data type must be float or double.");
+
+  static constexpr std::size_t _STATE_SIZE = A_Type::COLS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
+  static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
+
+  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
+  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
+  using _Measurement_Type =
+      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
+
+  using _InputStored_Type =
+      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
+
+  using _StateFunction_Object =
+      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
+  using _StateFunctionJacobian_Object =
+      PythonControl::StateFunctionJacobian_Object<A_Type, _State_Type, U_Type,
+                                                  Parameter_Type>;
+  using _MeasurementFunction_Object =
+      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
+                                                Parameter_Type>;
+  using _MeasurementFunctionJacobian_Object =
+      PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
+                                                        Parameter_Type>;
+
+  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+
+public:
+  /* Type  */
+  using Value_Type = _T;
+
+  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+
+  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+
+  /* Check Compatibility */
+  static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
+                "Q matrix must be diagonal matrix.");
+
+  static_assert(PythonNumpy::Is_Diag_Matrix<R_Type>::value,
+                "R matrix must be diagonal matrix.");
+
+  /* Check Data Type */
+  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+                "Data type of Q matrix must be same type as A.");
+
+  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+                "Data type of R matrix must be same type as A.");
+
+public:
+  /* Constructor */
+  ExtendedKalmanFilter()
+      : A(), C(), Q(), R(),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
+        G(), X_hat(), U_store(), parameters(), _C_P_CT_R_inv_solver(),
+        _input_count(static_cast<std::size_t>(0)) {}
+
+  ExtendedKalmanFilter(
+      const Q_Type &Q, const R_Type &R, _StateFunction_Object &state_function,
+      _StateFunctionJacobian_Object &state_function_jacobian,
+      _MeasurementFunction_Object &measurement_function,
+      _MeasurementFunctionJacobian_Object &measurement_function_jacobian,
+      const Parameter_Type &parameters)
+      : A(), C(), Q(Q), R(R),
+        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+              .create_dense()),
+        G(), X_hat(), U_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        _state_function(state_function),
+        _state_function_jacobian(state_function_jacobian),
+        _measurement_function(measurement_function),
+        _measurement_function_jacobian(measurement_function_jacobian),
+        _input_count(static_cast<std::size_t>(0)) {}
+
+  /* Copy Constructor */
+  ExtendedKalmanFilter(
+      const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                                 Parameter_Type, Number_Of_Delay> &input)
+      : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
+        X_hat(input.X_hat), U_store(input.U_store),
+        parameters(input.parameters),
+        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        _state_function(input._state_function),
+        _state_function_jacobian(input._state_function_jacobian),
+        _measurement_function(input._measurement_function),
+        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _input_count(input._input_count) {}
+
+  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
+                       Number_Of_Delay> &
+  operator=(
+      const ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                                 Parameter_Type, Number_Of_Delay> &input) {
+    if (this != &input) {
+      this->A = input.A;
+      this->C = input.C;
+      this->Q = input.Q;
+      this->R = input.R;
+      this->P = input.P;
+      this->G = input.G;
+      this->X_hat = input.X_hat;
+      this->U_store = input.U_store;
+      this->parameters = input.parameters;
+      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->_state_function = input._state_function;
+      this->_state_function_jacobian = input._state_function_jacobian;
+      this->_measurement_function = input._measurement_function;
+      this->_measurement_function_jacobian =
+          input._measurement_function_jacobian;
+      this->_input_count = input._input_count;
+    }
+    return *this;
+  }
+
+  /* Move Constructor */
+  ExtendedKalmanFilter(
+      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept
+      : A(std::move(input.A)), C(std::move(input.C)), Q(std::move(input.Q)),
+        R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
+        X_hat(std::move(input.X_hat)), U_store(std::move(input.U_store)),
+        parameters(std::move(input.parameters)),
+        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        _state_function(input._state_function),
+        _state_function_jacobian(input._state_function_jacobian),
+        _measurement_function(input._measurement_function),
+        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _input_count(std::move(input._input_count)) {}
+
+  ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
+                       Number_Of_Delay> &
+  operator=(
+      ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type,
+                           Parameter_Type, Number_Of_Delay> &&input) noexcept {
+    if (this != &input) {
+      this->A = std::move(input.A);
+      this->C = std::move(input.C);
+      this->Q = std::move(input.Q);
+      this->R = std::move(input.R);
+      this->P = std::move(input.P);
+      this->G = std::move(input.G);
+      this->X_hat = std::move(input.X_hat);
+      this->U_store = std::move(input.U_store);
+      this->parameters = std::move(input.parameters);
+      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->_state_function = std::move(input._state_function);
+      this->_state_function_jacobian =
+          std::move(input._state_function_jacobian);
+      this->_measurement_function = std::move(input._measurement_function);
+      this->_measurement_function_jacobian =
+          std::move(input._measurement_function_jacobian);
+      this->_input_count = std::move(input._input_count);
+    }
+    return *this;
+  }
+
+public:
+  /* Function */
+  inline void predict(const U_Type &U) {
+
+    U_store.push(U);
+
+    PredictOperation::Extended<NUMBER_OF_DELAY>::execute(
+        this->_state_function_jacobian, this->_state_function, this->A, this->P,
+        this->Q, this->U_store, this->X_hat, this->parameters,
+        this->_input_count);
+  }
+
+  inline void update(const _Measurement_Type &Y) {
+
+    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
+
+    auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
+
+    auto C_P_CT_R = this->C * P_CT + this->R;
+    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+
+    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+
+    this->X_hat =
+        this->X_hat +
+        this->G * (Y - this->_measurement_function(this->X_hat, parameters));
+
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+               this->G * this->C) *
+              this->P;
+  }
+
+  inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
+
+    this->predict(U);
+    this->update(Y);
+  }
+
+  /* Get */
+  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+
+  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+
+    return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
+        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_input_count);
+  }
+
+  /* Set */
+  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
+
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
+    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  }
+
+  inline void
+  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
+    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  }
+
+public:
+  /* Constant */
+  static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
+
+public:
+  /* Variable */
+  A_Type A;
+  C_Type C;
+  Q_Type Q;
+  R_Type R;
+  P_Type P;
+  G_Type G;
+
+  _State_Type X_hat;
+  _InputStored_Type U_store;
+
+  Parameter_Type parameters;
+
+private:
+  /* Variable */
+  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  _StateFunction_Object _state_function;
+  _StateFunctionJacobian_Object _state_function_jacobian;
+  _MeasurementFunction_Object _measurement_function;
+  _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
+  std::size_t _input_count;
+};
+
+/* Extended Kalman Filter Type */
+template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
+          typename R_Type, typename Parameter_Type,
+          std::size_t Number_Of_Delay = 0>
+using ExtendedKalmanFilter_Type =
+    ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
+                         Number_Of_Delay>;
+
 /* Sigma Points Calculator */
 template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
 private:
@@ -876,11 +1123,13 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
 
+  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
   using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
       PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
-  using _MeasurementStored_Type =
-      PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
+
+  using _InputStored_Type =
+      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
 
   using _StateFunction_Object =
       PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
@@ -932,7 +1181,15 @@ public:
 
 public:
   /* Constructor */
-  UnscentedKalmanFilter(){};
+  UnscentedKalmanFilter()
+      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                        .create_dense()),
+        G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
+        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
+        U_store(), parameters(), _P_YY_R_inv_solver(), _state_function(),
+        _measurement_function(), _predict_sigma_points_calculator(),
+        _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {}
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
                         _StateFunction_Object &state_function,
@@ -942,10 +1199,11 @@ public:
                           .create_dense()),
         G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
         beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -958,10 +1216,11 @@ public:
                           .create_dense()),
         G(), kappa(kappa_in), alpha(static_cast<_T>(0.5)),
         beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -974,11 +1233,12 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<_T>(2)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -991,11 +1251,12 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -1006,15 +1267,15 @@ public:
                                   Number_Of_Delay> &input)
       : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
         alpha(input.alpha), beta(input.beta), w_m(input.w_m), W(input.W),
-        X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
+        X_hat(input.X_hat), X_d(input.X_d), U_store(input.U_store),
         parameters(input.parameters),
         _P_YY_R_inv_solver(input._P_YY_R_inv_solver),
         _state_function(input._state_function),
         _measurement_function(input._measurement_function),
         _predict_sigma_points_calculator(
             input._predict_sigma_points_calculator),
-        _update_sigma_points_calculator(input._update_sigma_points_calculator) {
-  }
+        _update_sigma_points_calculator(input._update_sigma_points_calculator),
+        _input_count(input._input_count) {}
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
@@ -1032,7 +1293,7 @@ public:
       this->W = input.W;
       this->X_hat = input.X_hat;
       this->X_d = input.X_d;
-      this->Y_store = input.Y_store;
+      this->U_store = input.U_store;
       this->parameters = input.parameters;
       this->_P_YY_R_inv_solver = input._P_YY_R_inv_solver;
       this->_state_function = input._state_function;
@@ -1041,6 +1302,7 @@ public:
           input._predict_sigma_points_calculator;
       this->_update_sigma_points_calculator =
           input._update_sigma_points_calculator;
+      this->_input_count = input._input_count;
     }
     return *this;
   }
@@ -1054,7 +1316,7 @@ public:
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
         w_m(std::move(input.w_m)), W(std::move(input.W)),
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
-        Y_store(std::move(input.Y_store)),
+        U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
         _P_YY_R_inv_solver(std::move(input._P_YY_R_inv_solver)),
         _state_function(std::move(input._state_function)),
@@ -1062,7 +1324,8 @@ public:
         _predict_sigma_points_calculator(
             std::move(input._predict_sigma_points_calculator)),
         _update_sigma_points_calculator(
-            std::move(input._update_sigma_points_calculator)) {}
+            std::move(input._update_sigma_points_calculator)),
+        _input_count(std::move(input._input_count)) {}
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
@@ -1080,7 +1343,7 @@ public:
       this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
       this->X_d = std::move(input.X_d);
-      this->Y_store = std::move(input.Y_store);
+      this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
       this->_P_YY_R_inv_solver = std::move(input._P_YY_R_inv_solver);
       this->_state_function = std::move(input._state_function);
@@ -1089,6 +1352,7 @@ public:
           std::move(input._predict_sigma_points_calculator);
       this->_update_sigma_points_calculator =
           std::move(input._update_sigma_points_calculator);
+      this->_input_count = std::move(input._input_count);
     }
     return *this;
   }
@@ -1119,36 +1383,12 @@ public:
 
   inline void predict(const U_Type &U) {
 
-    auto Kai =
-        this->_predict_sigma_points_calculator.calculate(this->X_hat, this->P);
+    U_store.push(U);
 
-    UKF_Operation::StateFunctionEachSigmaPoints<
-        _Kai_Type, _StateFunction_Object, U_Type,
-        Parameter_Type>::compute(Kai, this->_state_function, U, parameters);
-
-    this->X_hat = this->w_m * PythonNumpy::get_row<0>(Kai);
-    UKF_Operation::AverageSigmaPoints<_State_Type, _W_Type, _Kai_Type>::compute(
-        this->X_hat, this->W, Kai);
-
-    UKF_Operation::SigmaPointsCovariance<_Kai_Type, _State_Type>::compute(
-        this->X_d, Kai, this->X_hat);
-
-    this->P =
-        this->X_d * PythonNumpy::A_mul_BTranspose(this->W, this->X_d) + this->Q;
-  }
-
-  inline auto calc_y_dif(const _Measurement_Type &Y,
-                         const _Measurement_Type &Y_hat_m)
-      -> _Measurement_Type {
-
-    this->Y_store.push(Y_hat_m);
-
-    _Measurement_Type Y_dif = Y - this->Y_store.get();
-
-    // When there is no delay, you can use below.
-    // Y_dif = Y - Y_hat_m;
-
-    return Y_dif;
+    PredictOperation::Unscented<NUMBER_OF_DELAY>::execute(
+        this->_state_function, this->_predict_sigma_points_calculator,
+        this->X_hat, this->U_store, this->P, this->w_m, this->W, this->Q,
+        this->X_d, this->parameters, this->_input_count);
   }
 
   inline void update(const _Measurement_Type &Y) {
@@ -1181,7 +1421,7 @@ public:
 
     this->G = P_xy * this->_P_YY_R_inv_solver.get_answer();
 
-    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y, Y_hat_m);
+    this->X_hat = this->X_hat + this->G * (Y - Y_hat_m);
     this->P = this->P - PythonNumpy::A_mul_BTranspose(this->G, P_xy);
   }
 
@@ -1193,6 +1433,13 @@ public:
 
   /* Get */
   inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+
+  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+
+    return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
+        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_input_count);
+  }
 
   /* Set */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
@@ -1225,7 +1472,7 @@ public:
 
   _State_Type X_hat;
   _Kai_Type X_d;
-  _MeasurementStored_Type Y_store;
+  _InputStored_Type U_store;
 
   Parameter_Type parameters;
 
@@ -1237,6 +1484,7 @@ private:
 
   _SigmaPointsCalculator_Type _predict_sigma_points_calculator;
   _SigmaPointsCalculator_Type _update_sigma_points_calculator;
+  std::size_t _input_count;
 };
 
 /* Unscented Kalman Filter Type */

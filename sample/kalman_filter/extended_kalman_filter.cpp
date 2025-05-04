@@ -84,14 +84,14 @@ int main(void) {
 
   using Q_Type = decltype(Q);
 
-  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(100.0, 100.0, 100.0, 100.0);
+  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(10.0, 10.0, 10.0, 10.0);
 
   using R_Type = decltype(R);
 
   /* Parameters */
   using Parameter_Type = BicycleModelParameter<double>;
 
-  Parameter_Type parameters(0.1, 0.5, 0.0, 0.0, 10.0, 10.0);
+  Parameter_Type parameters(0.1, 0.5, -1.0, -1.0, 10.0, 10.0);
 
   /* state and measurement functions */
   StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
@@ -147,7 +147,8 @@ int main(void) {
     ekf.update(y_store[delay_index]);
 
     for (std::size_t j = 0; j < STATE_SIZE; j++) {
-      std::cout << "X_hat[" << j << "]: " << ekf.X_hat(j, 0) << ", ";
+      std::cout << "X_hat[" << j << "]: " << ekf.get_x_hat_without_delay()(j, 0)
+                << ", ";
     }
     std::cout << std::endl;
   }

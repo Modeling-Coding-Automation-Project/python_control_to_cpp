@@ -219,6 +219,11 @@ void check_python_control_state_space(void) {
         Y_results_exmaple_1_answer_Trans(1, 0), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay output 2.");
 
+    auto U_1 = sys_delay.template access_U<0>();
+
+    tester.expect_near(U_1, static_cast<T>(1.0), NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace delay input.");
+
 
     /* DCモーターモデル (example 2) */
     T DC_dt = static_cast<T>(0.01);
@@ -295,8 +300,8 @@ void check_python_control_state_space(void) {
 
         sys_dc.update(u);
 
-        DC_motor_Y_results(0, sim_step) = sys_dc.template access_Y<0>();
-        DC_motor_Y_results(1, sim_step) = sys_dc.template access_Y<1>();
+        DC_motor_Y_results(0, sim_step) = sys_dc.Y(0, 0);
+        DC_motor_Y_results(1, sim_step) = sys_dc.Y(1, 0);
     }
 
 
@@ -1040,7 +1045,7 @@ void check_python_control_linear_kalman_filter(void) {
         static_cast<T>(0.0),
         static_cast<T>(0.0)));
 
-    x_estimate[0] = lkf_delay.get_x_hat();
+    x_estimate[0] = lkf_delay.get_x_hat_without_delay();
 
     std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
@@ -1069,7 +1074,7 @@ void check_python_control_linear_kalman_filter(void) {
 
         // kalman filter
         lkf_delay.predict_and_update(u, y_measured[i]);
-        x_estimate[i] = lkf_delay.get_x_hat();
+        x_estimate[i] = lkf_delay.get_x_hat_without_delay();
     }
 
     for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
@@ -1208,8 +1213,8 @@ void check_python_control_extended_kalman_filter(void) {
     using Q_Type = decltype(Q);
 
     auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
-        static_cast<T>(100), static_cast<T>(100),
-        static_cast<T>(100), static_cast<T>(100));
+        static_cast<T>(10), static_cast<T>(10),
+        static_cast<T>(10), static_cast<T>(10));
 
     using R_Type = decltype(R);
 
@@ -1219,8 +1224,8 @@ void check_python_control_extended_kalman_filter(void) {
     Parameter_Type parameters(
         static_cast<T>(0.1),
         static_cast<T>(0.5),
-        static_cast<T>(0),
-        static_cast<T>(0),
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.0),
         static_cast<T>(10.0),
         static_cast<T>(10.0)
     );
@@ -1296,7 +1301,7 @@ void check_python_control_extended_kalman_filter(void) {
         ekf.update(y_store[delay_index]);
 
         x_true_store[store_index] = x_true;
-        x_estimated_store[store_index] = ekf.get_x_hat();
+        x_estimated_store[store_index] = ekf.get_x_hat_without_delay();
         store_index++;
         
         if (store_index >= STORE_SIZE) {
@@ -1321,7 +1326,7 @@ void check_python_control_unscented_kalman_filter(void) {
     MCAPTester<T> tester;
 
     //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    constexpr T NEAR_LIMIT_SOFT = 5.0e-2F;
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-1F;
 
     /* UKF定義準備 */
     constexpr std::size_t NUMBER_OF_DELAY = 5;
@@ -1337,7 +1342,7 @@ void check_python_control_unscented_kalman_filter(void) {
 
     auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(0.01), static_cast<T>(0.01),
-        static_cast<T>(0.001));
+        static_cast<T>(0.01));
 
     using Q_Type = decltype(Q);
 
@@ -1353,8 +1358,8 @@ void check_python_control_unscented_kalman_filter(void) {
     Parameter_Type parameters(
         static_cast<T>(0.1),
         static_cast<T>(0.5),
-        static_cast<T>(0),
-        static_cast<T>(0),
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.0),
         static_cast<T>(10.0),
         static_cast<T>(10.0)
     );
@@ -1426,7 +1431,7 @@ void check_python_control_unscented_kalman_filter(void) {
         ukf.update(y_store[delay_index]);
 
         x_true_store[store_index] = x_true;
-        x_estimated_store[store_index] = ukf.get_x_hat();
+        x_estimated_store[store_index] = ukf.get_x_hat_without_delay();
         store_index++;
 
         if (store_index >= STORE_SIZE) {

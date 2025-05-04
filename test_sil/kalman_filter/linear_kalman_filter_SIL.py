@@ -23,7 +23,7 @@ def generate_m_sequence(length, taps):
     return np.array(m_sequence)
 
 
-if __name__ == "__main__":
+def main():
     # Create model
     A = np.array([[1.0, 0.1, 0.0, 0.0],
                   [0.0, 1.0, 0.1, 0.0],
@@ -120,4 +120,15 @@ if __name__ == "__main__":
         tester.expect_near(x_estimate_cpp, x_estimate, NEAR_LIMIT,
                            "Linear Kalman Filter SIL, check x_hat.")
 
-tester.throw_error_if_test_failed()
+        x_estimate_without_delay = lkf.get_x_hat_without_delay()
+        x_estimate_cpp_without_delay = KalmanFilterSIL.get_x_hat_without_delay()
+
+        tester.expect_near(
+            x_estimate_cpp_without_delay, x_estimate_without_delay, NEAR_LIMIT,
+            "Linear Kalman Filter SIL, check x_hat_without_delay.")
+
+    tester.throw_error_if_test_failed()
+
+
+if __name__ == "__main__":
+    main()
