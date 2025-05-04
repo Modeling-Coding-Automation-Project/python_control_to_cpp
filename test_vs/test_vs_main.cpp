@@ -1045,7 +1045,7 @@ void check_python_control_linear_kalman_filter(void) {
         static_cast<T>(0.0),
         static_cast<T>(0.0)));
 
-    x_estimate[0] = lkf_delay.get_x_hat();
+    x_estimate[0] = lkf_delay.get_x_hat_without_delay();
 
     std::array<StateSpaceOutput_Type<T, OUTPUT_SIZE>, (NUMBER_OF_DELAY + 1)> y_store;
 
@@ -1074,7 +1074,7 @@ void check_python_control_linear_kalman_filter(void) {
 
         // kalman filter
         lkf_delay.predict_and_update(u, y_measured[i]);
-        x_estimate[i] = lkf_delay.get_x_hat();
+        x_estimate[i] = lkf_delay.get_x_hat_without_delay();
     }
 
     for (std::size_t i = TestData::LKF_SIM_STEP_MAX - 10; i < TestData::LKF_SIM_STEP_MAX; i++) {
@@ -1595,21 +1595,21 @@ int main(void) {
 
     check_python_control_state_space<float>();
 
-    //check_python_control_transfer_function<double>();
+    check_python_control_transfer_function<double>();
 
-    //check_python_control_transfer_function<float>();
+    check_python_control_transfer_function<float>();
 
-    //check_python_control_pid_controller<double>();
+    check_python_control_pid_controller<double>();
 
-    //check_python_control_pid_controller<float>();
+    check_python_control_pid_controller<float>();
 
-    //check_python_control_lqr<double>();
+    check_python_control_lqr<double>();
 
-    //check_python_control_lqr<float>();
+    check_python_control_lqr<float>();
 
-    //check_python_control_linear_kalman_filter<double>();
+    check_python_control_linear_kalman_filter<double>();
 
-    //check_python_control_linear_kalman_filter<float>();
+    check_python_control_linear_kalman_filter<float>();
 
     //check_python_control_extended_kalman_filter<double>();
 
@@ -1619,9 +1619,9 @@ int main(void) {
 
     //check_python_control_unscented_kalman_filter<float>();
 
-    //check_python_control_least_squares<double>();
+    check_python_control_least_squares<double>();
 
-    //check_python_control_least_squares<float>();
+    check_python_control_least_squares<float>();
 
 
     return 0;

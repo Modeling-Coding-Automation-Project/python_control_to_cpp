@@ -126,6 +126,17 @@ public:
     return this->_store[this->_delay_ring_buffer_index];
   }
 
+  inline auto get_by_index(std::size_t index) const -> Vector_Type {
+
+    static_assert(Number_Of_Delay > 0,
+                  "Number of delay must be greater than 0.");
+    if (index > Number_Of_Delay) {
+      index = Number_Of_Delay;
+    }
+
+    return this->_store[index];
+  }
+
   template <std::size_t Index> inline auto access(void) -> _T & {
     static_assert(Index < Vector_Type::COLS,
                   "Index must be less than vector size.");

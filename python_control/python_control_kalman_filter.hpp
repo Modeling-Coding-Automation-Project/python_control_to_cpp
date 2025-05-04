@@ -142,27 +142,13 @@ public:
   inline void
   predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
-    this->state_space.X =
-        this->state_space.A * this->state_space.X + this->state_space.B * U;
+    this->state_space.U.push(U);
+
+    this->state_space.X = this->state_space.A * this->state_space.X +
+                          this->state_space.B * this->state_space.U.get();
     this->P = this->state_space.A *
                   PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
               this->Q;
-  }
-
-  inline auto
-  calc_y_dif(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) ->
-      typename DiscreteStateSpace_Type::Original_Y_Type {
-
-    this->state_space.Y.push(this->state_space.C * this->state_space.X);
-
-    typename DiscreteStateSpace_Type::Original_Y_Type Y_dif =
-        Y - this->state_space.Y.get();
-
-    // When there is no delay, you can use below.
-    // typename DiscreteStateSpace_Type::Original_Y_Type Y_dif =
-    // Y - this->C * this->state_space.X;
-
-    return Y_dif;
   }
 
   inline void
@@ -196,14 +182,18 @@ public:
   inline void predict_with_fixed_G(
       const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
-    this->state_space.X =
-        this->state_space.A * this->state_space.X + this->state_space.B * U;
+    this->state_space.U.push(U);
+
+    this->state_space.X = this->state_space.A * this->state_space.X +
+                          this->state_space.B * this->state_space.U.get();
   }
 
   inline void update_with_fixed_G(
       const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
 
-    this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
+    this->state_space.X =
+        this->state_space.X +
+        this->G * (Y - this->state_space.C * this->state_space.X);
   }
 
   inline void predict_and_update_with_fixed_G(
@@ -266,6 +256,30 @@ public:
     return this->state_space.get_X();
   }
 
+  inline auto get_x_hat_without_delay(void) const ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+
+    if (0 == NUMBER_OF_DELAY) {
+      return this->state_space.get_X();
+    } else {
+      auto x_hat = this->state_space.get_X();
+      std::size_t delay_index = this->state_space.get_delay_ring_buffer_index();
+
+      for (std::size_t i = 0; i < NUMBER_OF_DELAY; i++) {
+        delay_index++;
+        if (delay_index > NUMBER_OF_DELAY) {
+          delay_index = 0;
+        }
+
+        x_hat =
+            this->state_space.A * x_hat +
+            this->state_space.B * this->state_space.U.get_by_index(delay_index);
+      }
+
+      return x_hat;
+    }
+  }
+
   /* Set */
   inline void
   set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
@@ -280,6 +294,11 @@ public:
   set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
     this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
   }
+
+public:
+  /* Constant */
+  static constexpr std::size_t NUMBER_OF_DELAY =
+      DiscreteStateSpace_Type::NUMBER_OF_DELAY;
 
 public:
   /* Variable */
