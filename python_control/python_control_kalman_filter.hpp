@@ -42,6 +42,68 @@ inline auto make_KalmanFilter_R(T value_1, Args... args)
   return input;
 }
 
+/* Get x_hat without delay */
+namespace XHatOperation {
+
+template <std::size_t Index, std::size_t NumberOfDelay> struct DelayLoop {
+  template <typename DiscreteStateSpace_Type>
+  static void compute(typename DiscreteStateSpace_Type::Original_X_Type &x_hat,
+                      const DiscreteStateSpace_Type &state_space,
+                      std::size_t &delay_index) {
+
+    delay_index++;
+    if (delay_index > NumberOfDelay) {
+      delay_index = 0;
+    }
+
+    x_hat = state_space.A * x_hat +
+            state_space.B * state_space.U.get_by_index(delay_index);
+
+    DelayLoop<Index + 1, NumberOfDelay>::compute(x_hat, state_space,
+                                                 delay_index);
+  }
+};
+
+template <std::size_t NumberOfDelay>
+struct DelayLoop<NumberOfDelay, NumberOfDelay> {
+  template <typename DiscreteStateSpace_Type>
+  static void compute(typename DiscreteStateSpace_Type::Original_X_Type &x_hat,
+                      const DiscreteStateSpace_Type &state_space,
+                      std::size_t &delay_index) {
+
+    delay_index++;
+    if (delay_index > NumberOfDelay) {
+      delay_index = 0;
+    }
+
+    x_hat = state_space.A * x_hat +
+            state_space.B * state_space.U.get_by_index(delay_index);
+  }
+};
+
+template <std::size_t NumberOfDelay> struct GetWithoutDelay {
+  template <typename DiscreteStateSpace_Type>
+  static auto compute(const DiscreteStateSpace_Type &state_space) ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    auto x_hat = state_space.get_X();
+    std::size_t delay_index = state_space.get_delay_ring_buffer_index();
+
+    DelayLoop<1, NumberOfDelay>::compute(x_hat, state_space, delay_index);
+
+    return x_hat;
+  }
+};
+
+template <> struct GetWithoutDelay<0> {
+  template <typename DiscreteStateSpace_Type>
+  static auto compute(const DiscreteStateSpace_Type &state_space) ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    return state_space.get_X();
+  }
+};
+
+} // namespace XHatOperation
+
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 class LinearKalmanFilter {
 private:
@@ -256,38 +318,11 @@ public:
     return this->state_space.get_X();
   }
 
-  template <std::size_t NumberOfDelay> struct GetXHatWithoutDelay {
-    template <typename DiscreteStateSpace_Type>
-    static auto compute(const DiscreteStateSpace_Type &state_space) ->
-        typename DiscreteStateSpace_Type::Original_X_Type {
-      auto x_hat = state_space.get_X();
-      std::size_t delay_index = state_space.get_delay_ring_buffer_index();
-
-      for (std::size_t i = 0; i < NumberOfDelay; i++) {
-        delay_index++;
-        if (delay_index > NumberOfDelay) {
-          delay_index = 0;
-        }
-
-        x_hat = state_space.A * x_hat +
-                state_space.B * state_space.U.get_by_index(delay_index);
-      }
-
-      return x_hat;
-    }
-  };
-
-  template <> struct GetXHatWithoutDelay<0> {
-    template <typename DiscreteStateSpace_Type>
-    static auto compute(const DiscreteStateSpace_Type &state_space) ->
-        typename DiscreteStateSpace_Type::Original_X_Type {
-      return state_space.get_X();
-    }
-  };
-
   inline auto get_x_hat_without_delay(void) const ->
       typename DiscreteStateSpace_Type::Original_X_Type {
-    return GetXHatWithoutDelay<NUMBER_OF_DELAY>::compute(this->state_space);
+
+    return XHatOperation::GetWithoutDelay<NUMBER_OF_DELAY>::compute(
+        this->state_space);
   }
 
   /* Set */
