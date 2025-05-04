@@ -1609,7 +1609,7 @@ int main(void) {
 
     check_python_control_linear_kalman_filter<double>();
 
-    //check_python_control_linear_kalman_filter<float>();
+    check_python_control_linear_kalman_filter<float>();
 
     //check_python_control_extended_kalman_filter<double>();
 
