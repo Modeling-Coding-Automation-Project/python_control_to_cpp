@@ -77,6 +77,43 @@ template <> struct GetWithoutDelay<0> {
 
 } // namespace XHatOperation
 
+namespace PredictOperation {
+
+template <std::size_t NumberOfDelay> struct Linear {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type>
+  static void
+  execute(DiscreteStateSpace_Type &state_space, P_Type &P, const Q_Type &Q,
+          const typename DiscreteStateSpace_Type::Original_U_Type &U,
+          std::size_t &_input_count) {
+    state_space.U.push(U);
+
+    if (_input_count < NumberOfDelay) {
+      _input_count++;
+    } else {
+      state_space.X =
+          state_space.A * state_space.X + state_space.B * state_space.U.get();
+      P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+    }
+  }
+};
+
+template <> struct Linear<0> {
+  template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type>
+  static void
+  execute(DiscreteStateSpace_Type &state_space, P_Type &P, const Q_Type &Q,
+          const typename DiscreteStateSpace_Type::Original_U_Type &U,
+          std::size_t &_input_count) {
+    static_cast<void>(_input_count);
+
+    state_space.U.push(U);
+    state_space.X =
+        state_space.A * state_space.X + state_space.B * state_space.U.get();
+    P = state_space.A * PythonNumpy::A_mul_BTranspose(P, state_space.A) + Q;
+  }
+};
+
+} // namespace PredictOperation
+
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 class LinearKalmanFilter {
 private:
@@ -184,17 +221,8 @@ public:
   inline void
   predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
-    this->state_space.U.push(U);
-
-    if (this->_input_count < NUMBER_OF_DELAY) {
-      this->_input_count++;
-    } else {
-      this->state_space.X = this->state_space.A * this->state_space.X +
-                            this->state_space.B * this->state_space.U.get();
-      this->P = this->state_space.A * PythonNumpy::A_mul_BTranspose(
-                                          this->P, this->state_space.A) +
-                this->Q;
-    }
+    PredictOperation::Linear<NUMBER_OF_DELAY>::execute(
+        this->state_space, this->P, this->Q, U, this->_input_count);
   }
 
   inline void
