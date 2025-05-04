@@ -42,6 +42,206 @@ inline auto make_KalmanFilter_R(T value_1, Args... args)
   return input;
 }
 
+/* Unscented Kalman Filter Operation */
+namespace UKF_Operation {
+
+template <typename T, typename W_Type, std::size_t Index, std::size_t Rest>
+struct SetRestOfW_Loop {
+  static inline void set(W_Type &W, const T &weight_to_set) {
+    W.template set<Index, Index>(weight_to_set);
+    SetRestOfW_Loop<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
+  }
+};
+
+template <typename T, typename W_Type, std::size_t Index>
+struct SetRestOfW_Loop<T, W_Type, Index, 0> {
+  static inline void set(W_Type &W, const T &weight_to_set) {
+    W.template set<Index, Index>(weight_to_set);
+  }
+};
+
+template <typename T, typename W_Type, std::size_t Start_Index>
+using SetRestOfW =
+    SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
+
+/* update sigma point matrix */
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
+          std::size_t Index, std::size_t End_Index>
+struct UpdateSigmaPointMatrix_Loop {
+  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
+                         const T &sigma_point_weight) {
+
+    PythonNumpy::set_row<(Index + 1)>(
+        Kai, X + sigma_point_weight * PythonNumpy::get_row<Index>(SP));
+    PythonNumpy::set_row<(Index + X_Type::COLS + 1)>(
+        Kai, X - sigma_point_weight * PythonNumpy::get_row<Index>(SP));
+
+    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, (Index + 1),
+                                (End_Index - 1)>::set(Kai, X, SP,
+                                                      sigma_point_weight);
+  }
+};
+
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
+          std::size_t Index>
+struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
+  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
+                         const T &sigma_point_weight) {
+    // Do nothing.
+    static_cast<void>(Kai);
+    static_cast<void>(X);
+    static_cast<void>(SP);
+    static_cast<void>(sigma_point_weight);
+  }
+};
+
+template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
+using UpdateSigmaPointMatrix =
+    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
+
+/* calc state function with each sigma points */
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type, std::size_t Index>
+struct StateFunctionEachSigmaPoints_Loop {
+  static inline void compute(Kai_Type &Kai,
+                             const StateFunction_Object &state_function,
+                             const U_Type &U,
+                             const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<Index>(
+        Kai, state_function(PythonNumpy::get_row<Index>(Kai), U, parameters));
+
+    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                      Parameter_Type,
+                                      (Index - 1)>::compute(Kai, state_function,
+                                                            U, parameters);
+  }
+};
+
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type>
+struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                         Parameter_Type, 0> {
+  static inline void compute(Kai_Type &Kai,
+                             const StateFunction_Object &state_function,
+                             const U_Type &U,
+                             const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<0>(
+        Kai, state_function(PythonNumpy::get_row<0>(Kai), U, parameters));
+  }
+};
+
+template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+          typename Parameter_Type>
+using StateFunctionEachSigmaPoints =
+    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+                                      Parameter_Type, (Kai_Type::ROWS - 1)>;
+
+/* average sigma points */
+template <typename X_Type, typename W_Type, typename Kai_Type,
+          std::size_t Index>
+struct AverageSigmaPoints_Loop {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    X_hat = X_hat +
+            W.template get<Index, Index>() * PythonNumpy::get_row<Index>(Kai);
+
+    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Index - 1)>::compute(
+        X_hat, W, Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
+struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 1> {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    X_hat = X_hat + W.template get<1, 1>() * PythonNumpy::get_row<1>(Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
+struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
+  static inline void compute(X_Type &X_hat, const W_Type &W,
+                             const Kai_Type &Kai) {
+    // Do nothing.
+    static_cast<void>(X_hat);
+    static_cast<void>(W);
+    static_cast<void>(Kai);
+  }
+};
+
+template <typename X_Type, typename W_Type, typename Kai_Type>
+using AverageSigmaPoints =
+    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::ROWS - 1)>;
+
+/* calc covariance matrix */
+template <typename Kai_Type, typename X_Type, std::size_t Index>
+struct SigmaPointsCovariance_Loop {
+  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
+                             const X_Type &X_hat) {
+
+    PythonNumpy::set_row<Index>(X_d, PythonNumpy::get_row<Index>(Kai) - X_hat);
+
+    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Index - 1)>::compute(X_d, Kai,
+                                                                       X_hat);
+  }
+};
+
+template <typename Kai_Type, typename X_Type>
+struct SigmaPointsCovariance_Loop<Kai_Type, X_Type, 0> {
+  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
+                             const X_Type &X_hat) {
+    PythonNumpy::set_row<0>(X_d, PythonNumpy::get_row<0>(Kai) - X_hat);
+  }
+};
+
+template <typename Kai_Type, typename X_Type>
+using SigmaPointsCovariance =
+    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::ROWS - 1)>;
+
+/* calc measurement function with each sigma points */
+template <typename Nu_Type, typename Kai_Type,
+          typename MeasurementFunction_Object, typename Parameter_Type,
+          std::size_t Index>
+struct MeasurementFunctionEachSigmaPoints_Loop {
+  static inline void
+  compute(Nu_Type &Nu, Kai_Type &Kai,
+          const MeasurementFunction_Object &measurement_function,
+          const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<Index>(
+        Nu, measurement_function(PythonNumpy::get_row<Index>(Kai), parameters));
+
+    MeasurementFunctionEachSigmaPoints_Loop<
+        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
+        (Index - 1)>::compute(Nu, Kai, measurement_function, parameters);
+  }
+};
+
+template <typename Nu_Type, typename Kai_Type,
+          typename MeasurementFunction_Object, typename Parameter_Type>
+struct MeasurementFunctionEachSigmaPoints_Loop<
+    Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type, 0> {
+  static inline void
+  compute(Nu_Type &Nu, Kai_Type &Kai,
+          const MeasurementFunction_Object &measurement_function,
+          const Parameter_Type &parameters) {
+
+    PythonNumpy::set_row<0>(
+        Nu, measurement_function(PythonNumpy::get_row<0>(Kai), parameters));
+  }
+};
+
+template <typename Nu_Type, typename Kai_Type,
+          typename MeasurementFunction_Object, typename Parameter_Type>
+using MeasurementFunctionEachSigmaPoints =
+    MeasurementFunctionEachSigmaPoints_Loop<
+        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
+        (Kai_Type::ROWS - 1)>;
+
+} // namespace UKF_Operation
+
 namespace PredictOperation {
 
 /* predict for Linear Kalman Filter */
@@ -118,6 +318,74 @@ template <> struct Extended<0> {
   }
 };
 
+/* predict for Unscented Kalman Filter */
+template <std::size_t NumberOfDelay> struct Unscented {
+  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+            typename X_Type, typename U_Store_Type, typename P_Type, typename T,
+            typename W_Type, typename Q_Type, typename Kai_Type,
+            typename Parameter_Type>
+  static void execute(StateFunction_Object &state_function,
+                      SigmaPointsCalculator_Type &sigma_points_calculator,
+                      X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
+                      const T &w_m, const W_Type &W, const Q_Type &Q,
+                      Kai_Type &X_d, const Parameter_Type &parameters,
+                      std::size_t &input_count) {
+    if (input_count < NumberOfDelay) {
+      input_count++;
+    } else {
+      auto Kai = sigma_points_calculator.calculate(X_hat, P);
+
+      UKF_Operation::StateFunctionEachSigmaPoints<
+          Kai_Type, StateFunction_Object,
+          typename U_Store_Type::Original_Vector_Type,
+          Parameter_Type>::compute(Kai, state_function, U_store.get(),
+                                   parameters);
+
+      X_hat = w_m * PythonNumpy::get_row<0>(Kai);
+      UKF_Operation::AverageSigmaPoints<X_Type, W_Type, Kai_Type>::compute(
+          X_hat, W, Kai);
+
+      UKF_Operation::SigmaPointsCovariance<Kai_Type, X_Type>::compute(X_d, Kai,
+                                                                      X_hat);
+
+      P = X_d * PythonNumpy::A_mul_BTranspose(W, X_d) + Q;
+    }
+  }
+};
+
+template <> struct Unscented<0> {
+  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+            typename X_Type, typename U_Store_Type, typename P_Type, typename T,
+            typename W_Type, typename Q_Type, typename Kai_Type,
+            typename Parameter_Type>
+  static void execute(StateFunction_Object &state_function,
+                      SigmaPointsCalculator_Type &sigma_points_calculator,
+                      X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
+                      const T &w_m, const W_Type &W, const Q_Type &Q,
+                      Kai_Type &X_d, const Parameter_Type &parameters,
+                      std::size_t &input_count) {
+
+    static_cast<void>(input_count);
+
+    auto Kai = sigma_points_calculator.calculate(X_hat, P);
+
+    UKF_Operation::StateFunctionEachSigmaPoints<
+        Kai_Type, StateFunction_Object,
+        typename U_Store_Type::Original_Vector_Type,
+        Parameter_Type>::compute(Kai, state_function, U_store.get(),
+                                 parameters);
+
+    X_hat = w_m * PythonNumpy::get_row<0>(Kai);
+    UKF_Operation::AverageSigmaPoints<X_Type, W_Type, Kai_Type>::compute(
+        X_hat, W, Kai);
+
+    UKF_Operation::SigmaPointsCovariance<Kai_Type, X_Type>::compute(X_d, Kai,
+                                                                    X_hat);
+
+    P = X_d * PythonNumpy::A_mul_BTranspose(W, X_d) + Q;
+  }
+};
+
 } // namespace PredictOperation
 
 namespace GetXHatWithoutDelayOperation {
@@ -129,12 +397,13 @@ template <std::size_t NumberOfDelay> struct Linear {
                       const std::size_t &input_count) ->
       typename DiscreteStateSpace_Type::Original_X_Type {
     auto x_hat = state_space.get_X();
-    std::size_t delay_index = state_space.get_delay_ring_buffer_index();
+    std::size_t delay_index = state_space.U.get_delay_ring_buffer_index() +
+                              NumberOfDelay - input_count;
 
     for (std::size_t i = 0; i < input_count; i++) {
       delay_index++;
       if (delay_index > NumberOfDelay) {
-        delay_index = 0;
+        delay_index = delay_index - NumberOfDelay - 1;
       }
 
       x_hat = state_space.A * x_hat +
@@ -162,12 +431,13 @@ template <std::size_t NumberOfDelay> struct Extended {
                       const Parameter_Type &parameters,
                       const std::size_t &input_count) -> X_Type {
     auto X_hat = X_hat_in;
-    std::size_t delay_index = U_store.get_delay_ring_buffer_index();
+    std::size_t delay_index =
+        U_store.get_delay_ring_buffer_index() + NumberOfDelay - input_count;
 
     for (std::size_t i = 0; i < input_count; i++) {
       delay_index++;
       if (delay_index > NumberOfDelay) {
-        delay_index = 0;
+        delay_index = delay_index - NumberOfDelay - 1;
       }
 
       X_hat =
@@ -667,7 +937,8 @@ public:
 
     PredictOperation::Extended<NUMBER_OF_DELAY>::execute(
         this->_state_function_jacobian, this->_state_function, this->A, this->P,
-        this->Q, U_store, this->X_hat, this->parameters, this->_input_count);
+        this->Q, this->U_store, this->X_hat, this->parameters,
+        this->_input_count);
   }
 
   inline void update(const _Measurement_Type &Y) {
@@ -753,206 +1024,6 @@ template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
 using ExtendedKalmanFilter_Type =
     ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                          Number_Of_Delay>;
-
-/* Unscented Kalman Filter Operation */
-namespace UKF_Operation {
-
-template <typename T, typename W_Type, std::size_t Index, std::size_t Rest>
-struct SetRestOfW_Loop {
-  static inline void set(W_Type &W, const T &weight_to_set) {
-    W.template set<Index, Index>(weight_to_set);
-    SetRestOfW_Loop<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
-  }
-};
-
-template <typename T, typename W_Type, std::size_t Index>
-struct SetRestOfW_Loop<T, W_Type, Index, 0> {
-  static inline void set(W_Type &W, const T &weight_to_set) {
-    W.template set<Index, Index>(weight_to_set);
-  }
-};
-
-template <typename T, typename W_Type, std::size_t Start_Index>
-using SetRestOfW =
-    SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
-
-/* update sigma point matrix */
-template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
-          std::size_t Index, std::size_t End_Index>
-struct UpdateSigmaPointMatrix_Loop {
-  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
-                         const T &sigma_point_weight) {
-
-    PythonNumpy::set_row<(Index + 1)>(
-        Kai, X + sigma_point_weight * PythonNumpy::get_row<Index>(SP));
-    PythonNumpy::set_row<(Index + X_Type::COLS + 1)>(
-        Kai, X - sigma_point_weight * PythonNumpy::get_row<Index>(SP));
-
-    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, (Index + 1),
-                                (End_Index - 1)>::set(Kai, X, SP,
-                                                      sigma_point_weight);
-  }
-};
-
-template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
-          std::size_t Index>
-struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
-  static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
-                         const T &sigma_point_weight) {
-    // Do nothing.
-    static_cast<void>(Kai);
-    static_cast<void>(X);
-    static_cast<void>(SP);
-    static_cast<void>(sigma_point_weight);
-  }
-};
-
-template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
-using UpdateSigmaPointMatrix =
-    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
-
-/* calc state function with each sigma points */
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
-          typename Parameter_Type, std::size_t Index>
-struct StateFunctionEachSigmaPoints_Loop {
-  static inline void compute(Kai_Type &Kai,
-                             const StateFunction_Object &state_function,
-                             const U_Type &U,
-                             const Parameter_Type &parameters) {
-
-    PythonNumpy::set_row<Index>(
-        Kai, state_function(PythonNumpy::get_row<Index>(Kai), U, parameters));
-
-    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
-                                      Parameter_Type,
-                                      (Index - 1)>::compute(Kai, state_function,
-                                                            U, parameters);
-  }
-};
-
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
-          typename Parameter_Type>
-struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
-                                         Parameter_Type, 0> {
-  static inline void compute(Kai_Type &Kai,
-                             const StateFunction_Object &state_function,
-                             const U_Type &U,
-                             const Parameter_Type &parameters) {
-
-    PythonNumpy::set_row<0>(
-        Kai, state_function(PythonNumpy::get_row<0>(Kai), U, parameters));
-  }
-};
-
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
-          typename Parameter_Type>
-using StateFunctionEachSigmaPoints =
-    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
-                                      Parameter_Type, (Kai_Type::ROWS - 1)>;
-
-/* average sigma points */
-template <typename X_Type, typename W_Type, typename Kai_Type,
-          std::size_t Index>
-struct AverageSigmaPoints_Loop {
-  static inline void compute(X_Type &X_hat, const W_Type &W,
-                             const Kai_Type &Kai) {
-    X_hat = X_hat +
-            W.template get<Index, Index>() * PythonNumpy::get_row<Index>(Kai);
-
-    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Index - 1)>::compute(
-        X_hat, W, Kai);
-  }
-};
-
-template <typename X_Type, typename W_Type, typename Kai_Type>
-struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 1> {
-  static inline void compute(X_Type &X_hat, const W_Type &W,
-                             const Kai_Type &Kai) {
-    X_hat = X_hat + W.template get<1, 1>() * PythonNumpy::get_row<1>(Kai);
-  }
-};
-
-template <typename X_Type, typename W_Type, typename Kai_Type>
-struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
-  static inline void compute(X_Type &X_hat, const W_Type &W,
-                             const Kai_Type &Kai) {
-    // Do nothing.
-    static_cast<void>(X_hat);
-    static_cast<void>(W);
-    static_cast<void>(Kai);
-  }
-};
-
-template <typename X_Type, typename W_Type, typename Kai_Type>
-using AverageSigmaPoints =
-    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::ROWS - 1)>;
-
-/* calc covariance matrix */
-template <typename Kai_Type, typename X_Type, std::size_t Index>
-struct SigmaPointsCovariance_Loop {
-  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
-                             const X_Type &X_hat) {
-
-    PythonNumpy::set_row<Index>(X_d, PythonNumpy::get_row<Index>(Kai) - X_hat);
-
-    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Index - 1)>::compute(X_d, Kai,
-                                                                       X_hat);
-  }
-};
-
-template <typename Kai_Type, typename X_Type>
-struct SigmaPointsCovariance_Loop<Kai_Type, X_Type, 0> {
-  static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
-                             const X_Type &X_hat) {
-    PythonNumpy::set_row<0>(X_d, PythonNumpy::get_row<0>(Kai) - X_hat);
-  }
-};
-
-template <typename Kai_Type, typename X_Type>
-using SigmaPointsCovariance =
-    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::ROWS - 1)>;
-
-/* calc measurement function with each sigma points */
-template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type,
-          std::size_t Index>
-struct MeasurementFunctionEachSigmaPoints_Loop {
-  static inline void
-  compute(Nu_Type &Nu, Kai_Type &Kai,
-          const MeasurementFunction_Object &measurement_function,
-          const Parameter_Type &parameters) {
-
-    PythonNumpy::set_row<Index>(
-        Nu, measurement_function(PythonNumpy::get_row<Index>(Kai), parameters));
-
-    MeasurementFunctionEachSigmaPoints_Loop<
-        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
-        (Index - 1)>::compute(Nu, Kai, measurement_function, parameters);
-  }
-};
-
-template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type>
-struct MeasurementFunctionEachSigmaPoints_Loop<
-    Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type, 0> {
-  static inline void
-  compute(Nu_Type &Nu, Kai_Type &Kai,
-          const MeasurementFunction_Object &measurement_function,
-          const Parameter_Type &parameters) {
-
-    PythonNumpy::set_row<0>(
-        Nu, measurement_function(PythonNumpy::get_row<0>(Kai), parameters));
-  }
-};
-
-template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type>
-using MeasurementFunctionEachSigmaPoints =
-    MeasurementFunctionEachSigmaPoints_Loop<
-        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
-        (Kai_Type::ROWS - 1)>;
-
-} // namespace UKF_Operation
 
 /* Sigma Points Calculator */
 template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
@@ -1052,11 +1123,13 @@ private:
   static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
   static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
 
+  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
   using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
   using _Measurement_Type =
       PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
-  using _MeasurementStored_Type =
-      PythonControl::DelayedVectorObject<_Measurement_Type, Number_Of_Delay>;
+
+  using _InputStored_Type =
+      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
 
   using _StateFunction_Object =
       PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
@@ -1108,7 +1181,15 @@ public:
 
 public:
   /* Constructor */
-  UnscentedKalmanFilter(){};
+  UnscentedKalmanFilter()
+      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                        .create_dense()),
+        G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
+        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
+        U_store(), parameters(), _P_YY_R_inv_solver(), _state_function(),
+        _measurement_function(), _predict_sigma_points_calculator(),
+        _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {}
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
                         _StateFunction_Object &state_function,
@@ -1118,10 +1199,11 @@ public:
                           .create_dense()),
         G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
         beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -1134,10 +1216,11 @@ public:
                           .create_dense()),
         G(), kappa(kappa_in), alpha(static_cast<_T>(0.5)),
         beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        Y_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -1150,11 +1233,12 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<_T>(2)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -1167,11 +1251,12 @@ public:
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), Y_store(),
+        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), _P_YY_R_inv_solver(),
         _state_function(state_function),
         _measurement_function(measurement_function),
-        _predict_sigma_points_calculator(), _update_sigma_points_calculator() {
+        _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
+        _input_count(static_cast<std::size_t>(0)) {
 
     this->calculate_weights();
   }
@@ -1182,15 +1267,15 @@ public:
                                   Number_Of_Delay> &input)
       : Q(input.Q), R(input.R), P(input.P), G(input.G), kappa(input.kappa),
         alpha(input.alpha), beta(input.beta), w_m(input.w_m), W(input.W),
-        X_hat(input.X_hat), X_d(input.X_d), Y_store(input.Y_store),
+        X_hat(input.X_hat), X_d(input.X_d), U_store(input.U_store),
         parameters(input.parameters),
         _P_YY_R_inv_solver(input._P_YY_R_inv_solver),
         _state_function(input._state_function),
         _measurement_function(input._measurement_function),
         _predict_sigma_points_calculator(
             input._predict_sigma_points_calculator),
-        _update_sigma_points_calculator(input._update_sigma_points_calculator) {
-  }
+        _update_sigma_points_calculator(input._update_sigma_points_calculator),
+        _input_count(input._input_count) {}
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
@@ -1208,7 +1293,7 @@ public:
       this->W = input.W;
       this->X_hat = input.X_hat;
       this->X_d = input.X_d;
-      this->Y_store = input.Y_store;
+      this->U_store = input.U_store;
       this->parameters = input.parameters;
       this->_P_YY_R_inv_solver = input._P_YY_R_inv_solver;
       this->_state_function = input._state_function;
@@ -1217,6 +1302,7 @@ public:
           input._predict_sigma_points_calculator;
       this->_update_sigma_points_calculator =
           input._update_sigma_points_calculator;
+      this->_input_count = input._input_count;
     }
     return *this;
   }
@@ -1230,7 +1316,7 @@ public:
         alpha(std::move(input.alpha)), beta(std::move(input.beta)),
         w_m(std::move(input.w_m)), W(std::move(input.W)),
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
-        Y_store(std::move(input.Y_store)),
+        U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
         _P_YY_R_inv_solver(std::move(input._P_YY_R_inv_solver)),
         _state_function(std::move(input._state_function)),
@@ -1238,7 +1324,8 @@ public:
         _predict_sigma_points_calculator(
             std::move(input._predict_sigma_points_calculator)),
         _update_sigma_points_calculator(
-            std::move(input._update_sigma_points_calculator)) {}
+            std::move(input._update_sigma_points_calculator)),
+        _input_count(std::move(input._input_count)) {}
 
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
                         Number_Of_Delay> &
@@ -1256,7 +1343,7 @@ public:
       this->W = std::move(input.W);
       this->X_hat = std::move(input.X_hat);
       this->X_d = std::move(input.X_d);
-      this->Y_store = std::move(input.Y_store);
+      this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
       this->_P_YY_R_inv_solver = std::move(input._P_YY_R_inv_solver);
       this->_state_function = std::move(input._state_function);
@@ -1265,6 +1352,7 @@ public:
           std::move(input._predict_sigma_points_calculator);
       this->_update_sigma_points_calculator =
           std::move(input._update_sigma_points_calculator);
+      this->_input_count = std::move(input._input_count);
     }
     return *this;
   }
@@ -1295,36 +1383,12 @@ public:
 
   inline void predict(const U_Type &U) {
 
-    auto Kai =
-        this->_predict_sigma_points_calculator.calculate(this->X_hat, this->P);
+    U_store.push(U);
 
-    UKF_Operation::StateFunctionEachSigmaPoints<
-        _Kai_Type, _StateFunction_Object, U_Type,
-        Parameter_Type>::compute(Kai, this->_state_function, U, parameters);
-
-    this->X_hat = this->w_m * PythonNumpy::get_row<0>(Kai);
-    UKF_Operation::AverageSigmaPoints<_State_Type, _W_Type, _Kai_Type>::compute(
-        this->X_hat, this->W, Kai);
-
-    UKF_Operation::SigmaPointsCovariance<_Kai_Type, _State_Type>::compute(
-        this->X_d, Kai, this->X_hat);
-
-    this->P =
-        this->X_d * PythonNumpy::A_mul_BTranspose(this->W, this->X_d) + this->Q;
-  }
-
-  inline auto calc_y_dif(const _Measurement_Type &Y,
-                         const _Measurement_Type &Y_hat_m)
-      -> _Measurement_Type {
-
-    this->Y_store.push(Y_hat_m);
-
-    _Measurement_Type Y_dif = Y - this->Y_store.get();
-
-    // When there is no delay, you can use below.
-    // Y_dif = Y - Y_hat_m;
-
-    return Y_dif;
+    PredictOperation::Unscented<NUMBER_OF_DELAY>::execute(
+        this->_state_function, this->_predict_sigma_points_calculator,
+        this->X_hat, this->U_store, this->P, this->w_m, this->W, this->Q,
+        this->X_d, this->parameters, this->_input_count);
   }
 
   inline void update(const _Measurement_Type &Y) {
@@ -1357,7 +1421,7 @@ public:
 
     this->G = P_xy * this->_P_YY_R_inv_solver.get_answer();
 
-    this->X_hat = this->X_hat + this->G * this->calc_y_dif(Y, Y_hat_m);
+    this->X_hat = this->X_hat + this->G * (Y - Y_hat_m);
     this->P = this->P - PythonNumpy::A_mul_BTranspose(this->G, P_xy);
   }
 
@@ -1369,6 +1433,13 @@ public:
 
   /* Get */
   inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+
+  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+
+    return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
+        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_input_count);
+  }
 
   /* Set */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
@@ -1401,7 +1472,7 @@ public:
 
   _State_Type X_hat;
   _Kai_Type X_d;
-  _MeasurementStored_Type Y_store;
+  _InputStored_Type U_store;
 
   Parameter_Type parameters;
 
@@ -1413,6 +1484,7 @@ private:
 
   _SigmaPointsCalculator_Type _predict_sigma_points_calculator;
   _SigmaPointsCalculator_Type _update_sigma_points_calculator;
+  std::size_t _input_count;
 };
 
 /* Unscented Kalman Filter Type */

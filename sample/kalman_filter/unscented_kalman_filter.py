@@ -83,7 +83,7 @@ def main():
 
     Number_of_Delay = 5
 
-    Q_ukf = np.diag([0.1, 0.1, 0.1])
+    Q_ukf = np.diag([0.01, 0.01, 0.01])
     R_ukf = np.diag([1.0, 1.0, 1.0, 1.0])
 
     import fxu

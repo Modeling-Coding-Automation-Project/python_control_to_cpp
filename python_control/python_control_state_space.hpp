@@ -74,6 +74,19 @@ private:
                  (1 + Number_Of_Delay)>;
 
 public:
+  /* Type */
+  using Value_Type = _T;
+  using Original_Vector_Type = Vector_Type;
+
+  /* Check Data Type */
+  static_assert(std::is_same<typename Vector_Type::Value_Type, _T>::value,
+                "Data type of vector must be same type as T.");
+  /* Check Vector Size */
+  static_assert(Vector_Type::ROWS == 1,
+                "Vector size must be 1 x N or N x 1 matrix.");
+  static_assert(Vector_Type::COLS > 0, "Vector size must be greater than 0.");
+
+public:
   /* Constructor */
   DelayedVectorObject() : _store(), _delay_ring_buffer_index(0) {}
 

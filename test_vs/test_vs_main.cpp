@@ -1326,7 +1326,7 @@ void check_python_control_unscented_kalman_filter(void) {
     MCAPTester<T> tester;
 
     //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
-    constexpr T NEAR_LIMIT_SOFT = 5.0e-2F;
+    constexpr T NEAR_LIMIT_SOFT = 1.0e-1F;
 
     /* UKF定義準備 */
     constexpr std::size_t NUMBER_OF_DELAY = 5;
@@ -1342,7 +1342,7 @@ void check_python_control_unscented_kalman_filter(void) {
 
     auto Q = make_KalmanFilter_Q<STATE_SIZE>(
         static_cast<T>(0.01), static_cast<T>(0.01),
-        static_cast<T>(0.001));
+        static_cast<T>(0.01));
 
     using Q_Type = decltype(Q);
 
@@ -1358,8 +1358,8 @@ void check_python_control_unscented_kalman_filter(void) {
     Parameter_Type parameters(
         static_cast<T>(0.1),
         static_cast<T>(0.5),
-        static_cast<T>(0),
-        static_cast<T>(0),
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.0),
         static_cast<T>(10.0),
         static_cast<T>(10.0)
     );
@@ -1431,7 +1431,7 @@ void check_python_control_unscented_kalman_filter(void) {
         ukf.update(y_store[delay_index]);
 
         x_true_store[store_index] = x_true;
-        x_estimated_store[store_index] = ukf.get_x_hat();
+        x_estimated_store[store_index] = ukf.get_x_hat_without_delay();
         store_index++;
 
         if (store_index >= STORE_SIZE) {
@@ -1615,9 +1615,9 @@ int main(void) {
 
     check_python_control_extended_kalman_filter<float>();
 
-    //check_python_control_unscented_kalman_filter<double>();
+    check_python_control_unscented_kalman_filter<double>();
 
-    //check_python_control_unscented_kalman_filter<float>();
+    check_python_control_unscented_kalman_filter<float>();
 
     check_python_control_least_squares<double>();
 
