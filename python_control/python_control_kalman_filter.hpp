@@ -149,20 +149,23 @@ public:
 
 public:
   /* Constructor */
-  LinearKalmanFilter(){};
+  LinearKalmanFilter()
+      : state_space(), Q(), R(), P(), G(), _C_P_CT_R_inv_solver(),
+        _input_count(0) {}
 
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
       : state_space(DiscreteStateSpace), Q(Q), R(R),
         P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
               .create_dense()),
-        G(), _C_P_CT_R_inv_solver() {}
+        G(), _C_P_CT_R_inv_solver(), _input_count(0) {}
 
   /* Copy Constructor */
   LinearKalmanFilter(
       const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
       : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
-        G(input.G), _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver) {}
+        G(input.G), _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
   operator=(const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
@@ -174,6 +177,7 @@ public:
       this->P = input.P;
       this->G = input.G;
       this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->_input_count = input._input_count;
     }
     return *this;
   }
@@ -183,7 +187,8 @@ public:
                          &&input) noexcept
       : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)) {}
+        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
   operator=(LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>
@@ -195,6 +200,7 @@ public:
       this->P = std::move(input.P);
       this->G = std::move(input.G);
       this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->_input_count = input._input_count;
     }
     return *this;
   }
@@ -206,11 +212,15 @@ public:
 
     this->state_space.U.push(U);
 
-    this->state_space.X = this->state_space.A * this->state_space.X +
-                          this->state_space.B * this->state_space.U.get();
-    this->P = this->state_space.A *
-                  PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
-              this->Q;
+    if (this->_input_count < NUMBER_OF_DELAY) {
+      this->_input_count++;
+    } else {
+      this->state_space.X = this->state_space.A * this->state_space.X +
+                            this->state_space.B * this->state_space.U.get();
+      this->P = this->state_space.A * PythonNumpy::A_mul_BTranspose(
+                                          this->P, this->state_space.A) +
+                this->Q;
+    }
   }
 
   inline void
@@ -356,6 +366,7 @@ public:
 private:
   /* Variable */
   _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  std::size_t _input_count;
 };
 
 /* make Linear Kalman Filter */
