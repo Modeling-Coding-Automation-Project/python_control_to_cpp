@@ -82,10 +82,25 @@ py::array_t<FLOAT> get_x_hat(void) {
   return result;
 }
 
+py::array_t<FLOAT> get_x_hat_without_delay(void) {
+  auto x_hat = kf.get_x_hat_without_delay();
+
+  py::array_t<FLOAT> result;
+  result.resize({static_cast<int>(STATE_SIZE), 1});
+
+  for (std::size_t i = 0; i < STATE_SIZE; ++i) {
+    result.mutable_at(i, 0) = x_hat.access(i, 0);
+  }
+
+  return result;
+}
+
 PYBIND11_MODULE(KalmanFilterSIL, m) {
   m.def("initialize", &initialize, "initialize kalman filter");
   m.def("predict_and_update", &predict_and_update,
         "predict and update kalman filter with input and output");
   m.def("set_x_hat", &set_x_hat, "set x_hat");
   m.def("get_x_hat", &get_x_hat, "get x_hat");
+  m.def("get_x_hat_without_delay", &get_x_hat_without_delay,
+        "get x_hat without delay");
 }
