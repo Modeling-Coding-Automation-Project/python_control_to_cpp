@@ -1213,8 +1213,8 @@ void check_python_control_extended_kalman_filter(void) {
     using Q_Type = decltype(Q);
 
     auto R = make_KalmanFilter_R<OUTPUT_SIZE>(
-        static_cast<T>(100), static_cast<T>(100),
-        static_cast<T>(100), static_cast<T>(100));
+        static_cast<T>(10), static_cast<T>(10),
+        static_cast<T>(10), static_cast<T>(10));
 
     using R_Type = decltype(R);
 
@@ -1224,8 +1224,8 @@ void check_python_control_extended_kalman_filter(void) {
     Parameter_Type parameters(
         static_cast<T>(0.1),
         static_cast<T>(0.5),
-        static_cast<T>(0),
-        static_cast<T>(0),
+        static_cast<T>(-1.0),
+        static_cast<T>(-1.0),
         static_cast<T>(10.0),
         static_cast<T>(10.0)
     );
@@ -1301,7 +1301,7 @@ void check_python_control_extended_kalman_filter(void) {
         ekf.update(y_store[delay_index]);
 
         x_true_store[store_index] = x_true;
-        x_estimated_store[store_index] = ekf.get_x_hat();
+        x_estimated_store[store_index] = ekf.get_x_hat_without_delay();
         store_index++;
         
         if (store_index >= STORE_SIZE) {
@@ -1611,9 +1611,9 @@ int main(void) {
 
     check_python_control_linear_kalman_filter<float>();
 
-    //check_python_control_extended_kalman_filter<double>();
+    check_python_control_extended_kalman_filter<double>();
 
-    //check_python_control_extended_kalman_filter<float>();
+    check_python_control_extended_kalman_filter<float>();
 
     //check_python_control_unscented_kalman_filter<double>();
 

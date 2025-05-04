@@ -157,11 +157,11 @@ template <> struct Linear<0> {
 template <std::size_t NumberOfDelay> struct Extended {
   template <typename StateFunction_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
-  static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
-                      const U_Store_Type &U_store,
+  static auto compute(StateFunction_Object &state_function,
+                      const X_Type &X_hat_in, const U_Store_Type &U_store,
                       const Parameter_Type &parameters,
                       const std::size_t &input_count) -> X_Type {
-    auto x_hat = X_hat;
+    auto X_hat = X_hat_in;
     std::size_t delay_index = U_store.get_delay_ring_buffer_index();
 
     for (std::size_t i = 0; i < input_count; i++) {
@@ -174,7 +174,7 @@ template <std::size_t NumberOfDelay> struct Extended {
           state_function(X_hat, U_store.get_by_index(delay_index), parameters);
     }
 
-    return x_hat;
+    return X_hat;
   }
 };
 
@@ -702,7 +702,8 @@ public:
   inline auto get_x_hat_without_delay(void) const -> _State_Type {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
-        this->state_space, this->_input_count);
+        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_input_count);
   }
 
   /* Set */
