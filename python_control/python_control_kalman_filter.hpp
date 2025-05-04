@@ -256,28 +256,38 @@ public:
     return this->state_space.get_X();
   }
 
-  inline auto get_x_hat_without_delay(void) const ->
-      typename DiscreteStateSpace_Type::Original_X_Type {
+  template <std::size_t NumberOfDelay> struct GetXHatWithoutDelay {
+    template <typename DiscreteStateSpace_Type>
+    static auto compute(const DiscreteStateSpace_Type &state_space) ->
+        typename DiscreteStateSpace_Type::Original_X_Type {
+      auto x_hat = state_space.get_X();
+      std::size_t delay_index = state_space.get_delay_ring_buffer_index();
 
-    if (0 == NUMBER_OF_DELAY) {
-      return this->state_space.get_X();
-    } else {
-      auto x_hat = this->state_space.get_X();
-      std::size_t delay_index = this->state_space.get_delay_ring_buffer_index();
-
-      for (std::size_t i = 0; i < NUMBER_OF_DELAY; i++) {
+      for (std::size_t i = 0; i < NumberOfDelay; i++) {
         delay_index++;
-        if (delay_index > NUMBER_OF_DELAY) {
+        if (delay_index > NumberOfDelay) {
           delay_index = 0;
         }
 
-        x_hat =
-            this->state_space.A * x_hat +
-            this->state_space.B * this->state_space.U.get_by_index(delay_index);
+        x_hat = state_space.A * x_hat +
+                state_space.B * state_space.U.get_by_index(delay_index);
       }
 
       return x_hat;
     }
+  };
+
+  template <> struct GetXHatWithoutDelay<0> {
+    template <typename DiscreteStateSpace_Type>
+    static auto compute(const DiscreteStateSpace_Type &state_space) ->
+        typename DiscreteStateSpace_Type::Original_X_Type {
+      return state_space.get_X();
+    }
+  };
+
+  inline auto get_x_hat_without_delay(void) const ->
+      typename DiscreteStateSpace_Type::Original_X_Type {
+    return GetXHatWithoutDelay<NUMBER_OF_DELAY>::compute(this->state_space);
   }
 
   /* Set */
