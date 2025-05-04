@@ -268,35 +268,41 @@ public:
   /* Constructor */
   DiscreteStateSpace()
       : A(), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in)
       : A(A_in), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in)
       : A(A_in), B(B_in), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in)
       : A(A_in), B(B_in), C(C_in), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
                      const D_Type &D_in)
       : A(A_in), B(B_in), C(C_in), D(D_in),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)) {}
+        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
                      const D_Type &D_in, const _T &delta_time)
-      : A(A_in), B(B_in), C(C_in), D(D_in), delta_time(delta_time) {}
+      : A(A_in), B(B_in), C(C_in), D(D_in), delta_time(delta_time), U(), X(),
+        X_initial(), Y() {}
 
   /* Copy Constructor */
   DiscreteStateSpace(
       const DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &input)
       : A(input.A), B(input.B), C(input.C), D(input.D),
-        delta_time(input.delta_time), X(input.X), X_initial(input.X_initial),
-        Y(input.Y) {}
+        delta_time(input.delta_time), X(input.X), U(input.U),
+        X_initial(input.X_initial), Y(input.Y) {}
 
   DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &
   operator=(const DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &input) {
@@ -306,6 +312,7 @@ public:
       this->C = input.C;
       this->D = input.D;
       this->delta_time = input.delta_time;
+      this->U = input.U;
       this->X = input.X;
       this->X_initial = input.X_initial;
       this->Y = input.Y;
@@ -318,8 +325,8 @@ public:
       DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &&input) noexcept
       : A(std::move(input.A)), B(std::move(input.B)), C(std::move(input.C)),
         D(std::move(input.D)), delta_time(std::move(input.delta_time)),
-        X(std::move(input.X)), X_initial(std::move(input.X_initial)),
-        Y(std::move(input.Y)) {}
+        U(std::move(input.U)), X(std::move(input.X)),
+        X_initial(std::move(input.X_initial)), Y(std::move(input.Y)) {}
 
   DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &operator=(
       DiscreteStateSpace<A_Type, B_Type, C_Type, D_Type> &&input) noexcept {
@@ -329,6 +336,7 @@ public:
       this->C = std::move(input.C);
       this->D = std::move(input.D);
       this->delta_time = std::move(input.delta_time);
+      this->U = std::move(input.U);
       this->X = std::move(input.X);
       this->X_initial = std::move(input.X_initial);
       this->Y = std::move(input.Y);
@@ -344,55 +352,57 @@ public:
 
   inline auto get_X(void) const -> Original_X_Type { return this->X; }
 
-  inline auto get_Y(void) const -> Original_Y_Type { return this->Y.get(); }
+  inline auto get_Y(void) const -> Original_Y_Type { return this->Y; }
 
-  template <std::size_t Index> inline auto access_Y(void) -> _T & {
-    static_assert(Index < _Output_Size, "Index must be less than output size.");
+  template <std::size_t Index> inline auto access_U(void) -> _T & {
+    static_assert(Index < _Input_Size, "Index must be less than input size.");
 
-    return this->Y.template access<Index>();
+    return this->U.template access<Index>();
   }
 
   inline const std::size_t get_delay_ring_buffer_index(void) const {
-    return this->Y.get_delay_ring_buffer_index();
+    return this->U.get_delay_ring_buffer_index();
   }
 
-  inline void update(const Original_U_Type &U) {
+  inline void update(const Original_U_Type &U_in) {
 
-    this->_calc_output_function(U);
+    this->U.push(U_in);
 
-    this->_calc_state_function(U);
+    this->_calc_output_function();
+
+    this->_calc_state_function();
   }
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
-  inline auto
-  output_function(const Original_X_Type &X_in,
-                  const Original_U_Type &U) const -> Original_Y_Type {
+  inline auto output_function(const Original_X_Type &X_in,
+                              const Original_U_Type &U_in) const
+      -> Original_Y_Type {
 
-    Original_Y_Type Y_out = this->C * X_in + this->D * U;
+    Original_Y_Type Y_out = this->C * X_in + this->D * U_in;
 
     return Y_out;
   }
 
-  inline auto
-  state_function(const Original_X_Type &X_in,
-                 const Original_U_Type &U) const -> Original_X_Type {
+  inline auto state_function(const Original_X_Type &X_in,
+                             const Original_U_Type &U_in) const
+      -> Original_X_Type {
 
-    Original_X_Type X_out = this->A * X_in + this->B * U;
+    Original_X_Type X_out = this->A * X_in + this->B * U_in;
 
     return X_out;
   }
 
 private:
   /* Function */
-  inline void _calc_output_function(const Original_U_Type &U) {
+  inline void _calc_output_function(void) {
 
-    this->Y.push(this->output_function(this->X, U));
+    this->Y = this->output_function(this->X, this->U.get());
   }
 
-  inline void _calc_state_function(const Original_U_Type &U) {
+  inline void _calc_state_function(void) {
 
-    this->X = this->state_function(this->X, U);
+    this->X = this->state_function(this->X, this->U.get());
   }
 
 public:
@@ -407,10 +417,12 @@ public:
   D_Type D;
   _T delta_time;
 
+  DelayedVectorObject<Original_U_Type, Number_Of_Delay> U;
+
   Original_X_Type X;
   Original_X_Type X_initial;
 
-  DelayedVectorObject<Original_Y_Type, Number_Of_Delay> Y;
+  Original_Y_Type Y;
 };
 
 /* Make Discrete State Space */

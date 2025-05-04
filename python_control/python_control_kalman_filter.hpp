@@ -175,7 +175,9 @@ public:
 
     this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
 
-    this->state_space.X = this->state_space.X + this->G * this->calc_y_dif(Y);
+    this->state_space.X =
+        this->state_space.X +
+        this->G * (Y - this->state_space.C * this->state_space.X);
 
     this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
                this->G * this->state_space.C) *

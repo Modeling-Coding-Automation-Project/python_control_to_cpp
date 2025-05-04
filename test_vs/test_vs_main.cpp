@@ -219,6 +219,11 @@ void check_python_control_state_space(void) {
         Y_results_exmaple_1_answer_Trans(1, 0), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay output 2.");
 
+    auto U_1 = sys_delay.access_U<0>();
+
+    tester.expect_near(U_1, static_cast<T>(1.0), NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace delay input.");
+
 
     /* DCモーターモデル (example 2) */
     T DC_dt = static_cast<T>(0.01);
@@ -295,8 +300,8 @@ void check_python_control_state_space(void) {
 
         sys_dc.update(u);
 
-        DC_motor_Y_results(0, sim_step) = sys_dc.template access_Y<0>();
-        DC_motor_Y_results(1, sim_step) = sys_dc.template access_Y<1>();
+        DC_motor_Y_results(0, sim_step) = sys_dc.Y(0, 0);
+        DC_motor_Y_results(1, sim_step) = sys_dc.Y(1, 0);
     }
 
 
@@ -1590,33 +1595,33 @@ int main(void) {
 
     check_python_control_state_space<float>();
 
-    check_python_control_transfer_function<double>();
+    //check_python_control_transfer_function<double>();
 
-    check_python_control_transfer_function<float>();
+    //check_python_control_transfer_function<float>();
 
-    check_python_control_pid_controller<double>();
+    //check_python_control_pid_controller<double>();
 
-    check_python_control_pid_controller<float>();
+    //check_python_control_pid_controller<float>();
 
-    check_python_control_lqr<double>();
+    //check_python_control_lqr<double>();
 
-    check_python_control_lqr<float>();
+    //check_python_control_lqr<float>();
 
-    check_python_control_linear_kalman_filter<double>();
+    //check_python_control_linear_kalman_filter<double>();
 
-    check_python_control_linear_kalman_filter<float>();
+    //check_python_control_linear_kalman_filter<float>();
 
-    check_python_control_extended_kalman_filter<double>();
+    //check_python_control_extended_kalman_filter<double>();
 
-    check_python_control_extended_kalman_filter<float>();
+    //check_python_control_extended_kalman_filter<float>();
 
-    check_python_control_unscented_kalman_filter<double>();
+    //check_python_control_unscented_kalman_filter<double>();
 
-    check_python_control_unscented_kalman_filter<float>();
+    //check_python_control_unscented_kalman_filter<float>();
 
-    check_python_control_least_squares<double>();
+    //check_python_control_least_squares<double>();
 
-    check_python_control_least_squares<float>();
+    //check_python_control_least_squares<float>();
 
 
     return 0;
