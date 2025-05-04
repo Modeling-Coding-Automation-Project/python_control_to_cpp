@@ -83,11 +83,11 @@ def main():
     y_store = [np.zeros((C.shape[0], 1))] * (Number_of_Delay + 1)
     delay_index = 0
 
-    plotter.append(x_true)
-    plotter.append(x_estimate)
-    plotter.append(y_measured)
+    plotter.append_name(x_true, "x_true")
+    plotter.append_name(x_estimate, "x_estimate")
+    plotter.append_name(y_measured, "y_measured")
     u = np.array(u_data_T.reshape(50, 2))
-    plotter.append_sequence(u)
+    plotter.append_sequence_name(u, "u")
 
     for k in range(1, num_steps):
         u = u_data[:, k - 1].reshape(-1, 1)
@@ -111,9 +111,9 @@ def main():
         # x_estimate = lkf.get_x_hat()
         x_estimate = lkf.get_x_hat_without_delay()
 
-        plotter.append(x_true)
-        plotter.append(x_estimate)
-        plotter.append(y_measured)
+        plotter.append_name(x_true, "x_true")
+        plotter.append_name(x_estimate, "x_estimate")
+        plotter.append_name(y_measured, "y_measured")
 
     # Kalman Gain
     print("Kalman Gain:\n", lkf.G)

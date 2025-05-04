@@ -78,15 +78,14 @@ class LinearKalmanFilter(KalmanFilterCommon):
         else:
             x_hat = copy.deepcopy(self.x_hat)
             delay_index = self.u_store.delay_index
-            for i in range(self.Number_of_Delay):
 
-                if delay_index == self.Number_of_Delay:
+            for i in range(self.Number_of_Delay):
+                delay_index += 1
+                if delay_index > self.Number_of_Delay:
                     delay_index = 0
 
                 x_hat = self.A @ x_hat + \
                     self.B @ self.u_store.get_by_index(delay_index)
-
-                delay_index += 1
 
             return x_hat
 
