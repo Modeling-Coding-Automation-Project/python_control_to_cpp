@@ -56,7 +56,7 @@ int main(void) {
   using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;
   using Y_Type = StateSpaceOutput_Type<double, OUTPUT_SIZE>;
 
-  auto Q = make_KalmanFilter_Q<STATE_SIZE>(0.01, 0.01, 0.001);
+  auto Q = make_KalmanFilter_Q<STATE_SIZE>(0.01, 0.01, 0.01);
 
   using Q_Type = decltype(Q);
 
@@ -67,7 +67,7 @@ int main(void) {
   /* Parameters */
   using Parameter_Type = BicycleModelParameter<double>;
 
-  Parameter_Type parameters(0.1, 0.5, 0.0, 0.0, 10.0, 10.0);
+  Parameter_Type parameters(0.1, 0.5, -1.0, -1.0, 10.0, 10.0);
 
   /* state and measurement functions */
   StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
@@ -111,7 +111,8 @@ int main(void) {
     ukf.update(y_store[delay_index]);
 
     for (std::size_t j = 0; j < STATE_SIZE; j++) {
-      std::cout << "X_hat[" << j << "]: " << ukf.X_hat(j, 0) << ", ";
+      std::cout << "X_hat[" << j << "]: " << ukf.get_x_hat_without_delay()(j, 0)
+                << ", ";
     }
     std::cout << std::endl;
   }

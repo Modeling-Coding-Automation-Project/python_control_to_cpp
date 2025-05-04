@@ -202,7 +202,7 @@ def run_simulation():
 
         tester.expect_near(
             x_estimate_cpp_without_delay, x_estimate_without_delay, NEAR_LIMIT,
-            "Linear Kalman Filter SIL, check x_hat_without_delay.")
+            "Extended Kalman Filter SIL, check x_hat_without_delay.")
 
 
 def main():
