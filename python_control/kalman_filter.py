@@ -96,10 +96,12 @@ class LinearKalmanFilter(KalmanFilterCommon):
 
     # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u: np.ndarray):
+        self.u_store.push(u)
+
         if self._input_count < self.Number_of_Delay:
             self._input_count += 1
         else:
-            self.x_hat = self.A @ self.x_hat + self.B @ u
+            self.x_hat = self.A @ self.x_hat + self.B @ self.u_store.get()
 
     def update_with_fixed_G(self, y: np.ndarray):
         self.x_hat = self.x_hat + self.G @ (y - self.C @ self.x_hat)
