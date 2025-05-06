@@ -28,6 +28,15 @@ class DelayedVectorObject:
 
         return self.store[:, index].reshape(-1, 1)
 
+    def get_latest(self):
+        index = self.delay_index
+        if index == 0:
+            index = self.Number_of_Delay
+        else:
+            index = index - 1
+
+        return self.store[:, index].reshape(-1, 1)
+
 
 class KalmanFilterCommon:
     def __init__(self, Number_of_Delay=0):

@@ -81,6 +81,12 @@ def main():
         tester.expect_near(x_estimate_cpp, x_estimate, NEAR_LIMIT,
                            "Linear Kalman Filter with fixed G SIL, check x_hat.")
 
+        u_latest = lkf.u_store.get_latest()
+        u_latest_cpp = KalmanFilterFixSIL.u_store_get_latest()
+
+        tester.expect_near(u_latest_cpp, u_latest, NEAR_LIMIT,
+                           "Linear Kalman Filter with fixed G SIL, check u_store latest.")
+
     tester.throw_error_if_test_failed()
 
 

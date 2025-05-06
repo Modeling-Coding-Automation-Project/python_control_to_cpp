@@ -150,6 +150,17 @@ public:
     return this->_store[index];
   }
 
+  inline auto get_latest(void) const -> Vector_Type {
+    std::size_t index = this->_delay_ring_buffer_index;
+    if (static_cast<std::size_t>(0) == index) {
+      index = Number_Of_Delay;
+    } else {
+      index = index - 1;
+    }
+
+    return this->_store[index];
+  }
+
   template <std::size_t Index> inline auto access(void) -> _T & {
     static_assert(Index < Vector_Type::COLS,
                   "Index must be less than vector size.");
@@ -265,9 +276,6 @@ public:
   using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
   using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
   using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
-
-  using Y_with_Delay_Type =
-      PythonNumpy::DenseMatrix_Type<_T, _Output_Size, (1 + Number_Of_Delay)>;
 
   /* Check Compatibility */
   /* Check Data Type */

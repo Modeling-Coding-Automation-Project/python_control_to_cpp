@@ -207,6 +207,11 @@ void check_python_control_state_space(void) {
     tester.expect_near(static_cast<T>(delay_ring_buffer_index), static_cast<T>(DELAY_STEP), NEAR_LIMIT_STRICT,
         "check DiscreteStateSpace delay ring buffer index.");
 
+    auto U_latest = sys_delay.U.get_latest();
+
+    tester.expect_near(U_latest(0, 0), static_cast<T>(1.0), NEAR_LIMIT_STRICT,
+        "check DiscreteStateSpace delay input latest.");
+
     T Y_delayed = sys_delay.get_Y()(0, 0);
     tester.expect_near(Y_delayed,
         Y_results_exmaple_1_answer_Trans(0, 0), NEAR_LIMIT_STRICT,
