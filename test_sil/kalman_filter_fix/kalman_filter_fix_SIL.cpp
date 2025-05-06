@@ -83,10 +83,24 @@ py::array_t<FLOAT> get_x_hat(void) {
   return result;
 }
 
+py::array_t<FLOAT> u_store_get_latest(void) {
+  auto u_store_latest = kf.state_space.U.get_latest();
+
+  py::array_t<FLOAT> result;
+  result.resize({static_cast<int>(INPUT_SIZE), 1});
+
+  for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
+    result.mutable_at(i, 0) = u_store_latest.access(i, 0);
+  }
+
+  return result;
+}
+
 PYBIND11_MODULE(KalmanFilterFixSIL, m) {
   m.def("initialize", &initialize, "initialize kalman filter");
   m.def("predict_and_update_with_fixed_G", &predict_and_update_with_fixed_G,
         "predict and update kalman filter with input and output");
   m.def("set_x_hat", &set_x_hat, "set x_hat");
   m.def("get_x_hat", &get_x_hat, "get x_hat");
+  m.def("u_store_get_latest", &u_store_get_latest, "get latest u from u_store");
 }
