@@ -711,6 +711,10 @@ public:
 
 public:
   /* Constant */
+  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
+  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
+  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+
   static constexpr std::size_t NUMBER_OF_DELAY =
       DiscreteStateSpace_Type::NUMBER_OF_DELAY;
 
@@ -991,6 +995,10 @@ public:
 
 public:
   /* Constant */
+  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
+  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
+  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
 public:
@@ -1455,6 +1463,10 @@ public:
 
 public:
   /* Constant */
+  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
+  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
+  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
 public:
