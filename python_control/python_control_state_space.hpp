@@ -256,9 +256,16 @@ inline auto make_StateSpaceOutput(T value_1, Args... args)
 }
 
 /* Discrete State Space */
-template <typename A_Type, typename B_Type, typename C_Type, typename D_Type,
-          std::size_t Number_Of_Delay = 0>
+template <typename A_Type_In, typename B_Type_In, typename C_Type_In,
+          typename D_Type_In, std::size_t Number_Of_Delay = 0>
 class DiscreteStateSpace {
+public:
+  /* Type */
+  using A_Type = A_Type_In;
+  using B_Type = B_Type_In;
+  using C_Type = C_Type_In;
+  using D_Type = D_Type_In;
+
 private:
   /* Type */
   using _T = typename A_Type::Value_Type;
@@ -271,16 +278,12 @@ private:
   static constexpr std::size_t _Output_Size = C_Type::COLS;
 
 public:
+  /* Type */
   using Value_Type = _T;
 
   using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
   using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
   using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
-
-  using A_Type = A_Type;
-  using B_Type = B_Type;
-  using C_Type = C_Type;
-  using D_Type = D_Type;
 
   /* Check Compatibility */
   /* Check Data Type */
