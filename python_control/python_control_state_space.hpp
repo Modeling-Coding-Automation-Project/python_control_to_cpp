@@ -277,6 +277,11 @@ public:
   using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
   using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
 
+  using A_Type = A_Type;
+  using B_Type = B_Type;
+  using C_Type = C_Type;
+  using D_Type = D_Type;
+
   /* Check Compatibility */
   /* Check Data Type */
   static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
@@ -407,18 +412,18 @@ public:
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
-  inline auto output_function(const Original_X_Type &X_in,
-                              const Original_U_Type &U_in) const
-      -> Original_Y_Type {
+  inline auto
+  output_function(const Original_X_Type &X_in,
+                  const Original_U_Type &U_in) const -> Original_Y_Type {
 
     Original_Y_Type Y_out = this->C * X_in + this->D * U_in;
 
     return Y_out;
   }
 
-  inline auto state_function(const Original_X_Type &X_in,
-                             const Original_U_Type &U_in) const
-      -> Original_X_Type {
+  inline auto
+  state_function(const Original_X_Type &X_in,
+                 const Original_U_Type &U_in) const -> Original_X_Type {
 
     Original_X_Type X_out = this->A * X_in + this->B * U_in;
 
