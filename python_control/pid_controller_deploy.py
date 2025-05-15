@@ -5,6 +5,7 @@ sys.path.append(os.getcwd())
 import inspect
 import numpy as np
 
+from python_control.pid_controller import DiscretePID_Controller
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
 
@@ -14,7 +15,7 @@ class DiscretePID_ControllerDeploy:
         pass
 
     @staticmethod
-    def generate_PID_cpp_code(pid, file_name=None):
+    def generate_PID_cpp_code(pid: DiscretePID_Controller, file_name=None):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(pid.data_type)

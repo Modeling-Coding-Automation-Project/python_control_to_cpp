@@ -3,6 +3,7 @@ import sys
 sys.path.append(os.getcwd())
 
 import inspect
+import control
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
@@ -13,7 +14,8 @@ class TransferFunctionDeploy(ControlDeploy):
         super().__init__()
 
     @staticmethod
-    def generate_transfer_function_cpp_code(transfer_function, file_name=None, number_of_delay=0):
+    def generate_transfer_function_cpp_code(
+            transfer_function: control.TransferFunction, file_name=None, number_of_delay=0):
         deployed_file_names = []
         den_factors = transfer_function.den[0][0]
         num_factors = transfer_function.num[0][0]
