@@ -256,9 +256,16 @@ inline auto make_StateSpaceOutput(T value_1, Args... args)
 }
 
 /* Discrete State Space */
-template <typename A_Type, typename B_Type, typename C_Type, typename D_Type,
-          std::size_t Number_Of_Delay = 0>
+template <typename A_Type_In, typename B_Type_In, typename C_Type_In,
+          typename D_Type_In, std::size_t Number_Of_Delay = 0>
 class DiscreteStateSpace {
+public:
+  /* Type */
+  using A_Type = A_Type_In;
+  using B_Type = B_Type_In;
+  using C_Type = C_Type_In;
+  using D_Type = D_Type_In;
+
 private:
   /* Type */
   using _T = typename A_Type::Value_Type;
@@ -271,6 +278,7 @@ private:
   static constexpr std::size_t _Output_Size = C_Type::COLS;
 
 public:
+  /* Type */
   using Value_Type = _T;
 
   using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
@@ -407,18 +415,18 @@ public:
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
-  inline auto output_function(const Original_X_Type &X_in,
-                              const Original_U_Type &U_in) const
-      -> Original_Y_Type {
+  inline auto
+  output_function(const Original_X_Type &X_in,
+                  const Original_U_Type &U_in) const -> Original_Y_Type {
 
     Original_Y_Type Y_out = this->C * X_in + this->D * U_in;
 
     return Y_out;
   }
 
-  inline auto state_function(const Original_X_Type &X_in,
-                             const Original_U_Type &U_in) const
-      -> Original_X_Type {
+  inline auto
+  state_function(const Original_X_Type &X_in,
+                 const Original_U_Type &U_in) const -> Original_X_Type {
 
     Original_X_Type X_out = this->A * X_in + this->B * U_in;
 

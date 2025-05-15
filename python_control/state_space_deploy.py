@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+import control
 import inspect
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
@@ -13,7 +14,8 @@ class StateSpaceDeploy:
         pass
 
     @staticmethod
-    def generate_state_space_cpp_code(state_space, file_name=None, number_of_delay=0):
+    def generate_state_space_cpp_code(
+            state_space: control.StateSpace, file_name=None, number_of_delay=0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(state_space.A.dtype.name)
@@ -90,24 +92,32 @@ class StateSpaceDeploy:
 
         code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
 
-        code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
+        code_text += f"using A_Type = {A_file_name_no_extension}::type;\n\n"
 
-        code_text += f"auto B = {B_file_name_no_extension}::make();\n\n"
+        code_text += f"using B_Type = {B_file_name_no_extension}::type;\n\n"
 
-        code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
+        code_text += f"using C_Type = {C_file_name_no_extension}::type;\n\n"
 
-        code_text += f"auto D = {D_file_name_no_extension}::make();\n\n"
+        code_text += f"using D_Type = {D_file_name_no_extension}::type;\n\n"
 
-        code_text += f"{type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
-
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;\n"
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::COLS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;\n\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = B_Type::ROWS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::COLS;\n\n"
 
         code_text += "using type = DiscreteStateSpace_Type<\n" + \
-            "    decltype(A), decltype(B), decltype(C), decltype(D), NUMBER_OF_DELAY>;\n\n"
+            "    A_Type, B_Type, C_Type, D_Type, NUMBER_OF_DELAY>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
+
+        code_text += f"  {type_name} dt = static_cast<{type_name}>({state_space.dt});\n\n"
+
+        code_text += f"  auto A = {A_file_name_no_extension}::make();\n\n"
+
+        code_text += f"  auto B = {B_file_name_no_extension}::make();\n\n"
+
+        code_text += f"  auto C = {C_file_name_no_extension}::make();\n\n"
+
+        code_text += f"  auto D = {D_file_name_no_extension}::make();\n\n"
 
         code_text += f"  return make_DiscreteStateSpace<NUMBER_OF_DELAY>(\n" + \
             "    A, B, C, D, dt);\n\n"

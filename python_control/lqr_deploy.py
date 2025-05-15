@@ -74,14 +74,27 @@ class LQR_Deploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += f"auto Ac = {Ac_file_name_no_extension}::make();\n\n"
+        code_text += f"using Ac_Type = {Ac_file_name_no_extension}::type;\n\n"
 
-        code_text += f"auto Bc = {Bc_file_name_no_extension}::make();\n\n"
+        code_text += f"using Bc_Type = {Bc_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(Ac)::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(Bc)::ROWS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = Ac_Type::COLS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = Bc_Type::ROWS;\n\n"
 
-        code_text += "auto Q = make_DiagMatrix<STATE_SIZE>(\n"
+        code_text += f"using Q_Type = DiagMatrix_Type<{type_name}, STATE_SIZE>;\n\n"
+
+        code_text += f"using R_Type = DiagMatrix_Type<{type_name}, INPUT_SIZE>;\n\n"
+
+        code_text += "using type = LQR_Type<" + \
+            "Ac_Type, Bc_Type, Q_Type, R_Type>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += f"  auto Ac = {Ac_file_name_no_extension}::make();\n\n"
+
+        code_text += f"  auto Bc = {Bc_file_name_no_extension}::make();\n\n"
+
+        code_text += "  auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(Q.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(Q[i, i]) + ")"
@@ -90,9 +103,9 @@ class LQR_Deploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "auto R = make_DiagMatrix<INPUT_SIZE>(\n"
+        code_text += "  auto R = make_DiagMatrix<INPUT_SIZE>(\n"
         for i in range(R.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(R[i, i]) + ")"
@@ -101,14 +114,9 @@ class LQR_Deploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "using type = LQR_Type<" + \
-            "decltype(Ac), decltype(Bc), decltype(Q), decltype(R)>;\n\n"
-
-        code_text += "auto make() -> type {\n\n"
-
-        code_text += "    return make_LQR(Ac, Bc, Q, R);\n\n"
+        code_text += "  return make_LQR(Ac, Bc, Q, R);\n\n"
 
         code_text += "}\n\n"
 

@@ -14,34 +14,35 @@ constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
 
 /* Numerator and Denominator definition */
 template <typename T, std::size_t Numerator_Size>
-using TransferFunctionNumeratorType = PythonNumpy::SparseMatrix_Type<
+using TransferFunctionNumerator_Type = PythonNumpy::SparseMatrix_Type<
     T, PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
 
 template <typename T, std::size_t Denominator_Size>
-using TransferFunctionDenominatorType = PythonNumpy::SparseMatrix_Type<
+using TransferFunctionDenominator_Type = PythonNumpy::SparseMatrix_Type<
     T, PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
 
 namespace MakeNumerator {
 
-template <std::size_t IndexCount, typename TransferFunctionNumeratorType,
+template <std::size_t IndexCount, typename TransferFunctionNumerator_Type,
           typename T>
-inline void assign_values(TransferFunctionNumeratorType &numerator, T value_1) {
+inline void assign_values(TransferFunctionNumerator_Type &numerator,
+                          T value_1) {
 
   static_assert(
-      IndexCount < TransferFunctionNumeratorType::COLS,
+      IndexCount < TransferFunctionNumerator_Type::COLS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   numerator.template set<IndexCount, 0>(value_1);
 }
 
-template <std::size_t IndexCount, typename TransferFunctionNumeratorType,
+template <std::size_t IndexCount, typename TransferFunctionNumerator_Type,
           typename T, typename U, typename... Args>
-inline void assign_values(TransferFunctionNumeratorType &numerator, T value_1,
+inline void assign_values(TransferFunctionNumerator_Type &numerator, T value_1,
                           U value_2, Args... args) {
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < TransferFunctionNumeratorType::COLS,
+      IndexCount < TransferFunctionNumerator_Type::COLS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   numerator.template set<IndexCount, 0>(value_1);
@@ -53,26 +54,26 @@ inline void assign_values(TransferFunctionNumeratorType &numerator, T value_1,
 
 namespace MakeDenominator {
 
-template <std::size_t IndexCount, typename TransferFunctionDenominatorType,
+template <std::size_t IndexCount, typename TransferFunctionDenominator_Type,
           typename T>
-inline void assign_values(TransferFunctionDenominatorType &denominator,
+inline void assign_values(TransferFunctionDenominator_Type &denominator,
                           T value_1) {
 
   static_assert(
-      IndexCount < TransferFunctionDenominatorType::COLS,
+      IndexCount < TransferFunctionDenominator_Type::COLS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   denominator.template set<IndexCount, 0>(value_1);
 }
 
-template <std::size_t IndexCount, typename TransferFunctionDenominatorType,
+template <std::size_t IndexCount, typename TransferFunctionDenominator_Type,
           typename T, typename U, typename... Args>
-inline void assign_values(TransferFunctionDenominatorType &denominator,
+inline void assign_values(TransferFunctionDenominator_Type &denominator,
                           T value_1, U value_2, Args... args) {
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < TransferFunctionDenominatorType::COLS,
+      IndexCount < TransferFunctionDenominator_Type::COLS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   denominator.template set<IndexCount, 0>(value_1);
@@ -85,9 +86,9 @@ inline void assign_values(TransferFunctionDenominatorType &denominator,
 /* make Numerator and Denominator */
 template <std::size_t M, typename T, typename... Args>
 inline auto make_TransferFunctionNumerator(T value_1, Args... args)
-    -> TransferFunctionNumeratorType<T, M> {
+    -> TransferFunctionNumerator_Type<T, M> {
 
-  TransferFunctionNumeratorType<T, M> numerator;
+  TransferFunctionNumerator_Type<T, M> numerator;
 
   MakeNumerator::assign_values<0>(numerator, value_1, args...);
 
@@ -96,9 +97,9 @@ inline auto make_TransferFunctionNumerator(T value_1, Args... args)
 
 template <std::size_t M, typename T, typename... Args>
 inline auto make_TransferFunctionDenominator(T value_1, Args... args)
-    -> TransferFunctionNumeratorType<T, M> {
+    -> TransferFunctionNumerator_Type<T, M> {
 
-  TransferFunctionNumeratorType<T, M> denominator;
+  TransferFunctionNumerator_Type<T, M> denominator;
 
   MakeNumerator::assign_values<0>(denominator, value_1, args...);
 

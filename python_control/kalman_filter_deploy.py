@@ -511,13 +511,24 @@ class KalmanFilterDeploy:
 
         code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
 
-        code_text += f"auto lkf_state_space = {ss_file_name_no_extension}::make();\n\n"
+        code_text += f"using LkfStateSpace_Type = {ss_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(lkf_state_space.A)::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(lkf_state_space.B)::ROWS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(lkf_state_space.C)::COLS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = LkfStateSpace_Type::A_Type::COLS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = LkfStateSpace_Type::B_Type::ROWS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = LkfStateSpace_Type::C_Type::COLS;\n\n"
 
-        code_text += "auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
+        code_text += f"using Q_Type = KalmanFilter_Q_Type<{type_name}, STATE_SIZE>;\n\n"
+
+        code_text += f"using R_Type = KalmanFilter_R_Type<{type_name}, OUTPUT_SIZE>;\n\n"
+
+        code_text += "using type = LinearKalmanFilter_Type<\n" + \
+            "    LkfStateSpace_Type, Q_Type, R_Type>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += f"  auto lkf_state_space = {ss_file_name_no_extension}::make();\n\n"
+
+        code_text += "  auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(lkf.Q.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(lkf.Q[i, i]) + ")"
@@ -526,9 +537,9 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
+        code_text += "  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
         for i in range(lkf.R.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(lkf.R[i, i]) + ")"
@@ -537,42 +548,37 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "using type = LinearKalmanFilter_Type<\n" + \
-            "    decltype(lkf_state_space), decltype(Q), decltype(R)>;\n\n"
-
-        code_text += "auto make() -> type {\n\n"
-
-        code_text += "    auto lkf = make_LinearKalmanFilter(\n" + \
+        code_text += "  auto lkf = make_LinearKalmanFilter(\n" + \
             "    lkf_state_space, Q, R);\n\n"
 
         if P_G_initialization_flag:
-            code_text += "    lkf.P = make_DenseMatrix<STATE_SIZE, STATE_SIZE>(\n"
+            code_text += "  lkf.P = make_DenseMatrix<STATE_SIZE, STATE_SIZE>(\n"
             for i in range(lkf.P.shape[0]):
                 for j in range(lkf.P.shape[1]):
-                    code_text += "        static_cast<" + \
+                    code_text += "    static_cast<" + \
                         type_name + ">(" + str(lkf.P[i, j]) + ")"
                     if i == lkf.P.shape[0] - 1 and j == lkf.P.shape[1] - 1:
                         code_text += "\n"
                         break
                     else:
                         code_text += ",\n"
-            code_text += "    );\n\n"
+            code_text += "  );\n\n"
 
-            code_text += "    lkf.G = make_DenseMatrix<STATE_SIZE, OUTPUT_SIZE>(\n"
+            code_text += "  lkf.G = make_DenseMatrix<STATE_SIZE, OUTPUT_SIZE>(\n"
             for i in range(lkf.G.shape[0]):
                 for j in range(lkf.G.shape[1]):
-                    code_text += "        static_cast<" + \
+                    code_text += "    static_cast<" + \
                         type_name + ">(" + str(lkf.G[i, j]) + ")"
                     if i == lkf.G.shape[0] - 1 and j == lkf.G.shape[1] - 1:
                         code_text += "\n"
                         break
                     else:
                         code_text += ",\n"
-            code_text += "    );\n\n"
+            code_text += "  );\n\n"
 
-        code_text += "    return lkf;\n\n"
+        code_text += "  return lkf;\n\n"
 
         code_text += "}\n\n"
 
@@ -683,11 +689,9 @@ class KalmanFilterDeploy:
 
         code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
 
-        code_text += f"using A_Type = {A_file_name_no_extension}::type;\n"
-        code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
+        code_text += f"using A_Type = {A_file_name_no_extension}::type;\n\n"
 
-        code_text += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
+        code_text += f"using C_Type = {C_file_name_no_extension}::type;\n\n"
 
         code_text += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
@@ -740,7 +744,20 @@ class KalmanFilterDeploy:
 
         code_text += "} // namespace measurement_function_jacobian\n\n"
 
-        code_text += "auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
+        code_text += f"using Q_Type = KalmanFilter_Q_Type<{type_name}, STATE_SIZE>;\n\n"
+
+        code_text += f"using R_Type = KalmanFilter_R_Type<{type_name}, OUTPUT_SIZE>;\n\n"
+
+        code_text += "using type = ExtendedKalmanFilter_Type<\n" + \
+            "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += f"  auto A = {A_file_name_no_extension}::make();\n\n"
+
+        code_text += f"  auto C = {C_file_name_no_extension}::make();\n\n"
+
+        code_text += "  auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(ekf.Q[i, i]) + ")"
@@ -749,9 +766,9 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
+        code_text += "  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
         for i in range(ekf.R.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(ekf.R[i, i]) + ")"
@@ -760,32 +777,27 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "using type = ExtendedKalmanFilter_Type<\n" + \
-            "    A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>;\n\n"
+        code_text += "  Parameter_Type parameters;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
+            "    state_function::function;\n\n"
 
-        code_text += "    Parameter_Type parameters;\n\n"
+        code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> state_function_jacobian_object =\n" + \
+            "    state_function_jacobian::function;\n\n"
 
-        code_text += "    StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
-            "        state_function::function;\n\n"
+        code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
+            "    measurement_function::function;\n\n"
 
-        code_text += "    StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> state_function_jacobian_object =\n" + \
-            "        state_function_jacobian::function;\n\n"
+        code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> measurement_function_jacobian_object =\n" + \
+            "    measurement_function_jacobian::function;\n\n"
 
-        code_text += "    MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
-            "        measurement_function::function;\n\n"
-
-        code_text += "    MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> measurement_function_jacobian_object =\n" + \
-            "        measurement_function_jacobian::function;\n\n"
-
-        code_text += "    return ExtendedKalmanFilter_Type<\n" + \
-            "        A_Type, C_Type, U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>(\n" + \
-            "        Q, R, state_function_object, state_function_jacobian_object,\n" + \
-            "        measurement_function_object, measurement_function_jacobian_object,\n" + \
-            "        parameters);\n\n"
+        code_text += "  return ExtendedKalmanFilter_Type<\n" + \
+            "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>(\n" + \
+            "    Q, R, state_function_object, state_function_jacobian_object,\n" + \
+            "    measurement_function_object, measurement_function_jacobian_object,\n" + \
+            "    parameters);\n\n"
 
         code_text += "}\n\n"
 
@@ -924,7 +936,16 @@ class KalmanFilterDeploy:
 
         code_text += "} // namespace measurement_function\n\n"
 
-        code_text += "auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
+        code_text += f"using Q_Type = KalmanFilter_Q_Type<{type_name}, STATE_SIZE>;\n\n"
+
+        code_text += f"using R_Type = KalmanFilter_R_Type<{type_name}, OUTPUT_SIZE>;\n\n"
+
+        code_text += "using type = UnscentedKalmanFilter_Type<\n" + \
+            "    U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
+
+        code_text += "auto make() -> type {\n\n"
+
+        code_text += "  auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(ukf.Q.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(ukf.Q[i, i]) + ")"
@@ -933,9 +954,9 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
+        code_text += "  auto R = make_KalmanFilter_R<OUTPUT_SIZE>(\n"
         for i in range(ukf.R.shape[0]):
             code_text += "    static_cast<" + \
                 type_name + ">(" + str(ukf.R[i, i]) + ")"
@@ -944,25 +965,20 @@ class KalmanFilterDeploy:
                 break
             else:
                 code_text += ",\n"
-        code_text += ");\n\n"
+        code_text += "  );\n\n"
 
-        code_text += "using type = UnscentedKalmanFilter_Type<\n" + \
-            "    U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>;\n\n"
+        code_text += "  Parameter_Type parameters;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
+            "    state_function::function;\n\n"
 
-        code_text += "    Parameter_Type parameters;\n\n"
+        code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
+            "    measurement_function::function;\n\n"
 
-        code_text += "    StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
-            "        state_function::function;\n\n"
-
-        code_text += "    MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
-            "        measurement_function::function;\n\n"
-
-        code_text += "    return UnscentedKalmanFilter_Type<\n" + \
-            "        U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>(\n" + \
-            "        Q, R, state_function_object, measurement_function_object,\n" + \
-            "        parameters);\n\n"
+        code_text += "  return UnscentedKalmanFilter_Type<\n" + \
+            "    U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>(\n" + \
+            "    Q, R, state_function_object, measurement_function_object,\n" + \
+            "    parameters);\n\n"
 
         code_text += "}\n\n"
 

@@ -3,6 +3,7 @@ import sys
 sys.path.append(os.getcwd())
 
 import inspect
+import control
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from python_control.control_deploy import ControlDeploy
@@ -13,7 +14,8 @@ class TransferFunctionDeploy(ControlDeploy):
         super().__init__()
 
     @staticmethod
-    def generate_transfer_function_cpp_code(transfer_function, file_name=None, number_of_delay=0):
+    def generate_transfer_function_cpp_code(
+            transfer_function: control.TransferFunction, file_name=None, number_of_delay=0):
         deployed_file_names = []
         den_factors = transfer_function.den[0][0]
         num_factors = transfer_function.num[0][0]
@@ -67,33 +69,37 @@ class TransferFunctionDeploy(ControlDeploy):
         code_text += f"constexpr std::size_t DENOMINATOR_SIZE = {den_factors.shape[0]};\n"
         code_text += f"constexpr std::size_t NUMBER_OF_DELAY = {number_of_delay};\n\n"
 
-        code_text += "auto numerator = make_TransferFunctionNumerator<NUMERATOR_SIZE>(\n"
+        code_text += f"using Numerator_Type = TransferFunctionNumerator_Type<{type_name}, NUMERATOR_SIZE>;\n\n"
 
-        for i in range(num_factors.shape[0]):
-            code_text += f"  static_cast<{type_name}>({num_factors[i]})"
-            if i < num_factors.shape[0] - 1:
-                code_text += ",\n"
-            else:
-                code_text += "\n);\n\n"
-
-        code_text += "auto denominator = make_TransferFunctionDenominator<DENOMINATOR_SIZE>(\n"
-
-        for i in range(den_factors.shape[0]):
-            code_text += f"  static_cast<{type_name}>({den_factors[i]})"
-            if i < den_factors.shape[0] - 1:
-                code_text += ",\n"
-            else:
-                code_text += "\n);\n\n"
-
-        code_text += f"{type_name} dt = static_cast<{type_name}>({transfer_function.dt});\n\n"
+        code_text += f"using Denominator_Type = TransferFunctionDenominator_Type<{type_name}, DENOMINATOR_SIZE>;\n\n"
 
         code_text += "using type = " + "DiscreteTransferFunction<\n" + \
-            "    decltype(numerator), decltype(denominator), NUMBER_OF_DELAY>;\n\n"
+            "    Numerator_Type, Denominator_Type, NUMBER_OF_DELAY>;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
+        code_text += "  auto numerator = make_TransferFunctionNumerator<NUMERATOR_SIZE>(\n"
+
+        for i in range(num_factors.shape[0]):
+            code_text += f"    static_cast<{type_name}>({num_factors[i]})"
+            if i < num_factors.shape[0] - 1:
+                code_text += ",\n"
+            else:
+                code_text += "\n  );\n\n"
+
+        code_text += "  auto denominator = make_TransferFunctionDenominator<DENOMINATOR_SIZE>(\n"
+
+        for i in range(den_factors.shape[0]):
+            code_text += f"    static_cast<{type_name}>({den_factors[i]})"
+            if i < den_factors.shape[0] - 1:
+                code_text += ",\n"
+            else:
+                code_text += "\n  );\n\n"
+
+        code_text += f"  {type_name} dt = static_cast<{type_name}>({transfer_function.dt});\n\n"
+
         code_text += f"  return make_DiscreteTransferFunction<NUMBER_OF_DELAY>(\n" + \
-            "numerator, denominator, dt);\n\n"
+            "    numerator, denominator, dt);\n\n"
 
         code_text += "}\n\n"
 
