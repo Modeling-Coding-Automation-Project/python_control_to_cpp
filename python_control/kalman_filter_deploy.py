@@ -941,7 +941,7 @@ class KalmanFilterDeploy:
         code_text += f"using R_Type = KalmanFilter_R_Type<{type_name}, OUTPUT_SIZE>;\n\n"
 
         code_text += "using type = UnscentedKalmanFilter_Type<\n" + \
-            "    U_Type, decltype(Q), decltype(R), Parameter_Type, NUMBER_OF_DELAY>;\n\n"
+            "    U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
 
         code_text += "auto make() -> type {\n\n"
 
