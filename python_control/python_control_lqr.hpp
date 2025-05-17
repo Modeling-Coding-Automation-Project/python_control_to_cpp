@@ -95,8 +95,16 @@ inline void lqr_solve_with_arimoto_potter(
 }
 
 /* Linear Quadratic Regulator */
-template <typename A_Type, typename B_Type, typename Q_Type, typename R_Type>
+template <typename A_Type_In, typename B_Type_In, typename Q_Type_In,
+          typename R_Type_In>
 class LQR {
+public:
+  /* Type */
+  using A_Type = A_Type_In;
+  using B_Type = B_Type_In;
+  using Q_Type = Q_Type_In;
+  using R_Type = R_Type_In;
+
 private:
   /* Type */
   using _T = typename A_Type::Value_Type;
@@ -284,9 +292,17 @@ template <typename A_Type, typename B_Type, typename Q_Type, typename R_Type>
 using LQR_Type = LQR<A_Type, B_Type, Q_Type, R_Type>;
 
 /* Linear Quadratic optimum control with Integral action */
-template <typename A_Type, typename B_Type, typename C_Type, typename Q_Type,
-          typename R_Type>
+template <typename A_Type_In, typename B_Type_In, typename C_Type_In,
+          typename Q_Type_In, typename R_Type_In>
 class LQI {
+public:
+  /* Type */
+  using A_Type = A_Type_In;
+  using B_Type = B_Type_In;
+  using C_Type = C_Type_In;
+  using Q_Type = Q_Type_In;
+  using R_Type = R_Type_In;
+
 private:
   /* Type */
   using _T = typename A_Type::Value_Type;
