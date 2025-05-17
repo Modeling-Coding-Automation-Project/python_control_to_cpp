@@ -464,8 +464,15 @@ template <> struct Extended<0> {
 
 } // namespace GetXHatWithoutDelayOperation
 
-template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
+template <typename DiscreteStateSpace_Type_In, typename Q_Type_In,
+          typename R_Type_In>
 class LinearKalmanFilter {
+public:
+  /* Type */
+  using DiscreteStateSpace_Type = DiscreteStateSpace_Type_In;
+  using Q_Type = Q_Type_In;
+  using R_Type = R_Type_In;
+
 private:
   /* Type */
   using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
@@ -766,10 +773,19 @@ using MeasurementFunctionJacobian_Object =
     std::function<C_Type(const State_Type &, const Parameter_Type &)>;
 
 /* Extended Kalman Filter */
-template <typename A_Type, typename C_Type, typename U_Type, typename Q_Type,
-          typename R_Type, typename Parameter_Type,
+template <typename A_Type_In, typename C_Type_In, typename U_Type_In,
+          typename Q_Type_In, typename R_Type_In, typename Parameter_Type_In,
           std::size_t Number_Of_Delay = 0>
 class ExtendedKalmanFilter {
+public:
+  /* Type */
+  using A_Type = A_Type_In;
+  using C_Type = C_Type_In;
+  using U_Type = U_Type_In;
+  using Q_Type = Q_Type_In;
+  using R_Type = R_Type_In;
+  using Parameter_Type = Parameter_Type_In;
+
 private:
   /* Type */
   using _T = typename A_Type::Value_Type;
@@ -1117,9 +1133,16 @@ private:
 };
 
 /* Unscented Kalman Filter */
-template <typename U_Type, typename Q_Type, typename R_Type,
-          typename Parameter_Type, std::size_t Number_Of_Delay = 0>
+template <typename U_Type_In, typename Q_Type_In, typename R_Type_In,
+          typename Parameter_Type_In, std::size_t Number_Of_Delay = 0>
 class UnscentedKalmanFilter {
+public:
+  /* Type */
+  using U_Type = U_Type_In;
+  using Q_Type = Q_Type_In;
+  using R_Type = R_Type_In;
+  using Parameter_Type = Parameter_Type_In;
+
 private:
   /* Type */
   using _T = typename U_Type::Value_Type;
