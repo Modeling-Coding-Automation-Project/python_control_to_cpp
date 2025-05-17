@@ -62,7 +62,11 @@ inline auto make_LeastSquaresInput(T value_1, Args... args)
 }
 
 /* Least Squares Method */
-template <typename X_Type> class LeastSquares {
+template <typename X_Type_In> class LeastSquares {
+public:
+  /* Type */
+  using X_Type = X_Type_In;
+
 private:
   /* Type */
   using _T = typename X_Type::Value_Type;
@@ -161,7 +165,11 @@ inline auto make_LeastSquares(void) -> LeastSquares<X_Type> {
 template <typename X_Type> using LeastSquares_Type = LeastSquares<X_Type>;
 
 /* Recursive Least Squares Method */
-template <typename X_Type> class RecursiveLeastSquares {
+template <typename X_Type_In> class RecursiveLeastSquares {
+public:
+  /* Type */
+  using X_Type = X_Type_In;
+
 private:
   /* Type */
   using _T = typename X_Type::Value_Type;

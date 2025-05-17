@@ -426,9 +426,14 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
 } // namespace ForDiscreteTransferFunction
 
 /* Discrete Transfer Function */
-template <typename Numerator_Type, typename Denominator_Type,
+template <typename Numerator_Type_In, typename Denominator_Type_In,
           std::size_t Number_Of_Delay = 0>
 class DiscreteTransferFunction {
+public:
+  /* Type */
+  using Numerator_Type = Numerator_Type_In;
+  using Denominator_Type = Denominator_Type_In;
+
 private:
   /* Type */
   using _T = typename Numerator_Type::Value_Type;
