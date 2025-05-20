@@ -1,0 +1,85 @@
+import os
+import sys
+sys.path.append(os.getcwd())
+
+import numpy as np
+from dataclasses import dataclass
+
+from python_control.pid_controller import DiscretePID_Controller
+from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
+
+
+@dataclass
+class ServoParams:
+    R: float = 2.0           # Omega
+    L: float = 5.0e-3        # H
+    J: float = 1.0e-2        # kg·m^2
+    B: float = 1.0e-3        # N·m·s/rad
+    Kt: float = 0.1          # N·m/A
+    Kb: float = 0.1          # V·s/rad
+
+
+def servo_state_matrices(p: ServoParams):
+    A = np.array([
+        [0, 1, 0],
+        [0, -p.B / p.J, p.Kt / p.J],
+        [0, -p.Kb / p.L, -p.R / p.L]
+    ])
+    B = np.array([[0],
+                  [0],
+                  [1 / p.L]])
+    C = np.array([
+        [1, 0, 0],   # position θ
+        [0, 1, 0]    # speed w
+    ])
+    D = np.zeros((2, 1))
+    return A, B, C, D
+
+
+if __name__ == "__main__":
+    params = ServoParams()
+    A, B, C, D = servo_state_matrices(params)
+
+    plotter = SimulationPlotter()
+
+    # euler forward method simulation
+    sim_delta_time = 1e-3
+    x = np.zeros((3, 1))
+    u = np.array([[0.0]])
+    simulation_time = 10.0
+
+    # PID controller
+    Kp = 1.0
+    Ki = 0.0
+    Kd = 0.1
+    pid = DiscretePID_Controller(delta_time=sim_delta_time, Kp=Kp, Ki=Ki, Kd=Kd, N=(
+        1.0 / sim_delta_time), Kb=Ki, minimum_output=-12.0, maximum_output=12.0)
+
+    theta_ref = np.array([[1.0]])
+
+    time = np.arange(0, simulation_time, sim_delta_time)
+
+    for k in range(round(simulation_time / sim_delta_time)):
+        # plant response
+        u = np.array(u).reshape((1, 1))
+        x_dot = A @ x + B @ u
+        x += sim_delta_time * x_dot           # x(k+1) = x(k) + dt * ẋ
+
+        y = C @ x + D @ u
+
+        # PID controller
+        e = theta_ref - y[0, 0]
+        u = pid.update(e)
+
+        plotter.append_name(y, "y")
+        plotter.append_name(u, "u")
+
+    plotter.assign("y", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="position θ")
+    plotter.assign("y", column=1, row=0, position=(1, 0),
+                   x_sequence=time, label="speed ω")
+
+    plotter.assign("u", column=0, row=0, position=(2, 0),
+                   x_sequence=time, label="voltage V")
+
+    plotter.plot()
