@@ -434,7 +434,7 @@ public:
   using Numerator_Type = Numerator_Type_In;
   using Denominator_Type = Denominator_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename Numerator_Type::Value_Type;
   static_assert(
@@ -607,7 +607,7 @@ public:
   static constexpr std::size_t STATE_SIZE =
       _State_Space_Type::Original_X_Type::COLS;
 
-private:
+protected:
   /* Variable */
   _State_Space_Type _state_space;
 };

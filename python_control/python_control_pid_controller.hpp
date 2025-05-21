@@ -30,7 +30,7 @@ inline T saturation(const T &value, const T &min, const T &max) {
 
 /* PID Controller */
 template <typename T> class DiscretePID_Controller {
-private:
+protected:
   /* Type */
   using _T = T;
   static_assert(std::is_same<_T, double>::value ||
@@ -147,7 +147,7 @@ public:
     return this->_differentiation_store;
   }
 
-private:
+protected:
   /* Function */
   inline _T _back_calculation_for_I_term(const _T &error) {
     return this->Ki * error +
@@ -184,7 +184,7 @@ public:
   _T minimum_output;
   _T maximum_output;
 
-private:
+protected:
   /* Variables */
   _T _integration_store;
   _T _differentiation_store;
@@ -194,10 +194,11 @@ private:
 
 /* make Discrete PID Controller */
 template <typename T>
-inline auto make_DiscretePID_Controller(
-    const T &delta_time, const T &Kp, const T &Ki, const T &Kd, const T &N,
-    const T &Kb, const T &minimum_output,
-    const T &maximum_output) -> DiscretePID_Controller<T> {
+inline auto make_DiscretePID_Controller(const T &delta_time, const T &Kp,
+                                        const T &Ki, const T &Kd, const T &N,
+                                        const T &Kb, const T &minimum_output,
+                                        const T &maximum_output)
+    -> DiscretePID_Controller<T> {
   return DiscretePID_Controller<T>(delta_time, Kp, Ki, Kd, N, Kb,
                                    minimum_output, maximum_output);
 }
