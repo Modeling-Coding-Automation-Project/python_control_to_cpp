@@ -62,7 +62,7 @@ template <> struct UpdateRingBufferIndex<0> {
 /* Delayed Vector Object */
 template <typename Vector_Type, std::size_t Number_Of_Delay>
 class DelayedVectorObject {
-private:
+protected:
   /* Type */
   using _T = typename Vector_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -177,7 +177,7 @@ public:
   static constexpr std::size_t VECTOR_SIZE = Vector_Type::COLS;
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
-private:
+protected:
   /* Variable */
   _Vector_with_Delay_Type _store;
   std::size_t _delay_ring_buffer_index;
@@ -266,7 +266,7 @@ public:
   using C_Type = C_Type_In;
   using D_Type = D_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename A_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -415,25 +415,25 @@ public:
 
   inline void reset_state(void) { this->X = this->X_initial; }
 
-  inline auto
-  output_function(const Original_X_Type &X_in,
-                  const Original_U_Type &U_in) const -> Original_Y_Type {
+  inline auto output_function(const Original_X_Type &X_in,
+                              const Original_U_Type &U_in) const
+      -> Original_Y_Type {
 
     Original_Y_Type Y_out = this->C * X_in + this->D * U_in;
 
     return Y_out;
   }
 
-  inline auto
-  state_function(const Original_X_Type &X_in,
-                 const Original_U_Type &U_in) const -> Original_X_Type {
+  inline auto state_function(const Original_X_Type &X_in,
+                             const Original_U_Type &U_in) const
+      -> Original_X_Type {
 
     Original_X_Type X_out = this->A * X_in + this->B * U_in;
 
     return X_out;
   }
 
-private:
+protected:
   /* Function */
   inline void _calc_output_function(void) {
 

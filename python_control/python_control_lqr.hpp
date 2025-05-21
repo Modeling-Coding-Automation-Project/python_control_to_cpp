@@ -105,7 +105,7 @@ public:
   using Q_Type = Q_Type_In;
   using R_Type = R_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename A_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -115,7 +115,7 @@ private:
   using _Hamiltonian_Type =
       typename LQR_Operation::Hamiltonian<A_Type, B_Type, Q_Type, R_Type>::Type;
 
-private:
+protected:
   /* Constant */
   static constexpr std::size_t _Input_Size = B_Type::ROWS;
   static constexpr std::size_t _State_Size = A_Type::COLS;
@@ -264,7 +264,7 @@ public:
     this->eig_solver.set_small_value(small_value_in);
   }
 
-private:
+protected:
   /* Variable */
   A_Type _A;
   B_Type _B;
@@ -303,7 +303,7 @@ public:
   using Q_Type = Q_Type_In;
   using R_Type = R_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename A_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -323,7 +323,7 @@ private:
       typename LQR_Operation::Hamiltonian<_A_EX_Type, _B_EX_Type, Q_Type,
                                           R_Type>::Type;
 
-private:
+protected:
   /* Constant */
   static constexpr std::size_t _Input_Size = B_Type::ROWS;
   static constexpr std::size_t _State_Size = A_Type::COLS;
@@ -492,7 +492,7 @@ public:
     this->_eig_solver.set_small_value(small_value_in);
   }
 
-private:
+protected:
   /* Variable */
   A_Type _A;
   B_Type _B;

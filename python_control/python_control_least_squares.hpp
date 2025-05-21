@@ -67,7 +67,7 @@ public:
   /* Type */
   using X_Type = X_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename X_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -149,7 +149,7 @@ public:
     this->_lstsq_solver.set_division_min(division_min_in);
   }
 
-private:
+protected:
   /* Variables */
   _Wights_Type _weights;
   _LstsqSolver_Type _lstsq_solver;
@@ -170,7 +170,7 @@ public:
   /* Type */
   using X_Type = X_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename X_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -306,7 +306,7 @@ public:
     this->_lambda_X_P_Solver.set_division_min(division_min_in);
   }
 
-private:
+protected:
   /* Variables */
   _T _lambda_factor;
   _T _lambda_factor_inv;
