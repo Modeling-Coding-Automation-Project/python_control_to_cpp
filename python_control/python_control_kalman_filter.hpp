@@ -473,7 +473,7 @@ public:
   using Q_Type = Q_Type_In;
   using R_Type = R_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -733,7 +733,7 @@ public:
   P_Type P;
   G_Type G;
 
-private:
+protected:
   /* Variable */
   _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
   std::size_t _input_count;
@@ -786,7 +786,7 @@ public:
   using R_Type = R_Type_In;
   using Parameter_Type = Parameter_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename A_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -1031,7 +1031,7 @@ public:
 
   Parameter_Type parameters;
 
-private:
+protected:
   /* Variable */
   _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
   _StateFunction_Object _state_function;
@@ -1051,7 +1051,7 @@ using ExtendedKalmanFilter_Type =
 
 /* Sigma Points Calculator */
 template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
-private:
+protected:
   /* Type */
   using _T = typename State_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -1127,7 +1127,7 @@ public:
   /* Variable */
   _T sigma_point_weight;
 
-private:
+protected:
   /* Variable */
   _P_Chol_Solver_Type _P_cholesky_solver;
 };
@@ -1143,7 +1143,7 @@ public:
   using R_Type = R_Type_In;
   using Parameter_Type = Parameter_Type_In;
 
-private:
+protected:
   /* Type */
   using _T = typename U_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
@@ -1511,7 +1511,7 @@ public:
 
   Parameter_Type parameters;
 
-private:
+protected:
   /* Variable */
   _P_YY_R_Inv_Type _P_YY_R_inv_solver;
   _StateFunction_Object _state_function;
