@@ -61,3 +61,5 @@ for i in range(len(time_series)):
         u = float(u[0, 0])
     tester.expect_near(u_cpp, u, NEAR_LIMIT,
                        "Discrete PID controller, check u.")
+
+tester.throw_error_if_test_failed()
