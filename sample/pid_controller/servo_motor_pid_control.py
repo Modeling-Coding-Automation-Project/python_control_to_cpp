@@ -49,11 +49,11 @@ if __name__ == "__main__":
     simulation_time = 10.0
 
     # PID controller
-    Kp = 1.0
+    Kp = 2.0
     Ki = 0.5
     Kd = 1.0
     pid = DiscretePID_Controller(delta_time=sim_delta_time, Kp=Kp, Ki=Ki, Kd=Kd, N=(
-        1.0 / sim_delta_time), Kb=Ki, minimum_output=-12.0, maximum_output=12.0)
+        0.1 / sim_delta_time), Kb=Ki, minimum_output=-12.0, maximum_output=12.0)
 
     theta_ref = np.array([[1.0]])
 
@@ -78,7 +78,12 @@ if __name__ == "__main__":
 
         plotter.append_name(theta_ref, "theta_ref")
         plotter.append_name(y, "y")
+
+        u_max = pid.maximum_output
+        u_min = pid.minimum_output
         plotter.append_name(u, "u")
+        plotter.append_name(u_max, "u_max")
+        plotter.append_name(u_min, "u_min")
 
         plotter.append_name(u_offset, "u_offset")
         plotter.append_name(system_noise, "system_noise")
@@ -92,6 +97,10 @@ if __name__ == "__main__":
 
     plotter.assign("u", column=0, row=0, position=(2, 0),
                    x_sequence=time, label="voltage V")
+    plotter.assign("u_max", column=0, row=0, position=(2, 0),
+                   x_sequence=time, label="voltage max", line_style="--")
+    plotter.assign("u_min", column=0, row=0, position=(2, 0),
+                   x_sequence=time, label="voltage min", line_style="--")
 
     plotter.assign("u_offset", column=0, row=0, position=(0, 1),
                    x_sequence=time, label="voltage offset")
