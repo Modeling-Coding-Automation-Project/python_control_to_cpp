@@ -50,30 +50,41 @@ if __name__ == "__main__":
 
     # PID controller
     Kp = 1.0
-    Ki = 0.0
-    Kd = 0.1
+    Ki = 0.5
+    Kd = 1.0
     pid = DiscretePID_Controller(delta_time=sim_delta_time, Kp=Kp, Ki=Ki, Kd=Kd, N=(
         1.0 / sim_delta_time), Kb=Ki, minimum_output=-12.0, maximum_output=12.0)
 
     theta_ref = np.array([[1.0]])
 
     time = np.arange(0, simulation_time, sim_delta_time)
+    np.random.seed(0)  # for reproducibility
 
     for k in range(round(simulation_time / sim_delta_time)):
         # plant response
         u = np.array(u).reshape((1, 1))
-        x_dot = A @ x + B @ u
+        u_offset = np.array([[0.1]])
+
+        x_dot = A @ x + B @ (u + u_offset)
         x += sim_delta_time * x_dot           # x(k+1) = x(k) + dt * ẋ
 
-        y = C @ x + D @ u
+        system_noise = np.random.normal(0, 0.01, size=(C.shape[0], 1))
+
+        y = C @ x + D @ u + system_noise
 
         # PID controller
         e = theta_ref - y[0, 0]
         u = pid.update(e)
 
+        plotter.append_name(theta_ref, "theta_ref")
         plotter.append_name(y, "y")
         plotter.append_name(u, "u")
 
+        plotter.append_name(u_offset, "u_offset")
+        plotter.append_name(system_noise, "system_noise")
+
+    plotter.assign("theta_ref", column=0, row=0, position=(0, 0),
+                   x_sequence=time, label="reference θ")
     plotter.assign("y", column=0, row=0, position=(0, 0),
                    x_sequence=time, label="position θ")
     plotter.assign("y", column=1, row=0, position=(1, 0),
@@ -81,5 +92,10 @@ if __name__ == "__main__":
 
     plotter.assign("u", column=0, row=0, position=(2, 0),
                    x_sequence=time, label="voltage V")
+
+    plotter.assign("u_offset", column=0, row=0, position=(0, 1),
+                   x_sequence=time, label="voltage offset")
+    plotter.assign("system_noise", column=0, row=0, position=(1, 1),
+                   x_sequence=time, label="system noise")
 
     plotter.plot()
