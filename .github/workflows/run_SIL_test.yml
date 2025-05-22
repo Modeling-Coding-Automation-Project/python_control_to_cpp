@@ -2,7 +2,7 @@ name: Run SIL test
 
 on:
   push:
-    branches: [ develop]
+    branches: [ develop, feature/pid_demo ]
 
 jobs:
 
@@ -46,6 +46,7 @@ jobs:
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_3_4_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_transfer_function/discrete_transfer_function_4_4_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/pid_controller/discrete_pid_controller_SIL.py
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/pid_controller/servo_motor_pid_control_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/lqr/discrete_state_space_lqr_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/lqi/discrete_state_space_lqi_easy_SIL.py
         /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/linear_kalman_filter_SIL.py
