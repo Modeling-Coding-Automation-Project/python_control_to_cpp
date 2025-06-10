@@ -88,7 +88,7 @@ class LQR_Deploy:
         code_text += "using type = LQR_Type<" + \
             "Ac_Type, Bc_Type, Q_Type, R_Type>;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "inline auto make() -> type {\n\n"
 
         code_text += f"  auto Ac = {Ac_file_name_no_extension}::make();\n\n"
 
@@ -238,7 +238,7 @@ class LQI_Deploy:
         code_text += "using type = LQI_Type<" + \
             "decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "inline auto make() -> type {\n\n"
 
         code_text += "    return make_LQI(Ac, Bc, Cc, Q_ex, R_ex);\n\n"
 
