@@ -524,7 +524,7 @@ class KalmanFilterDeploy:
         code_text += "using type = LinearKalmanFilter_Type<\n" + \
             "    LkfStateSpace_Type, Q_Type, R_Type>;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "inline auto make() -> type {\n\n"
 
         code_text += f"  auto lkf_state_space = {ss_file_name_no_extension}::make();\n\n"
 
@@ -751,7 +751,7 @@ class KalmanFilterDeploy:
         code_text += "using type = ExtendedKalmanFilter_Type<\n" + \
             "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "inline auto make() -> type {\n\n"
 
         code_text += f"  auto A = {A_file_name_no_extension}::make();\n\n"
 
@@ -943,7 +943,7 @@ class KalmanFilterDeploy:
         code_text += "using type = UnscentedKalmanFilter_Type<\n" + \
             "    U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
 
-        code_text += "auto make() -> type {\n\n"
+        code_text += "inline auto make() -> type {\n\n"
 
         code_text += "  auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(ukf.Q.shape[0]):
