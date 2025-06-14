@@ -10,6 +10,7 @@ import inspect
 import ast
 import astor
 import numpy as np
+import sympy as sp
 import control
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
@@ -455,7 +456,7 @@ class KalmanFilterDeploy:
         pass
 
     @staticmethod
-    def create_sympy_code(sym_object):
+    def create_sympy_code(sym_object: sp.Matrix):
         """
         Creates a string representation of a symbolic function in Python, which can be used to generate C++ code.
         Args:
@@ -469,6 +470,9 @@ class KalmanFilterDeploy:
         The generated code is suitable for deployment in a C++ environment, allowing for efficient execution of
         symbolic computations.
         """
+        if not isinstance(sym_object, sp.Matrix):
+            raise ValueError(
+                "The input must be a sympy.Matrix object.")
 
         value_example = np.array([[1.0]])
         value_type = str(value_example.dtype.name)
@@ -478,6 +482,8 @@ class KalmanFilterDeploy:
 
         arguments_text = ""
         arguments_text_out = ""
+
+        replacements_list, reduced_expression = sp.cse(sym_object)
 
         sym_symbols = sym_object.free_symbols
         for i, symbol in enumerate(sym_symbols):
@@ -494,7 +500,13 @@ class KalmanFilterDeploy:
 
         code_text += f" -> Tuple[{sym_object.shape[0]}, {sym_object.shape[1]}]:\n\n"
 
-        calculation_code = f"{sym_object.tolist()}"
+        if len(replacements_list) > 0:
+            for i, value in enumerate(replacements_list):
+                code_text += f"    {value[0]} = {value[1]}\n\n"
+
+            calculation_code = f"{reduced_expression[0].tolist()}"
+        else:
+            calculation_code = f"{sym_object.tolist()}"
 
         code_text += f"    return np.array({calculation_code})\n\n\n"
 
