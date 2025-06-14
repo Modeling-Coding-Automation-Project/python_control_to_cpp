@@ -1,11 +1,20 @@
-#include <iostream>
+#/**
+ * @file linear_kalman_filter.cpp
+ * @brief Example implementation of a discrete-time Linear Kalman Filter simulation.
+ *
+ * This file demonstrates the setup and simulation of a discrete-time linear system
+ * using sparse matrices for the state-space representation, and applies a Kalman Filter
+ * for state estimation. The simulation iteratively updates the true system state and
+ * the Kalman Filter's estimated state, printing the results at each step.
+ */
+include<iostream>
 
 #include "python_control.hpp"
 #include "python_numpy.hpp"
 
 #include <array>
 
-using namespace PythonNumpy;
+    using namespace PythonNumpy;
 using namespace PythonControl;
 
 constexpr std::size_t LKF_SIM_STEP_MAX = 50;
