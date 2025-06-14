@@ -1,3 +1,13 @@
+/**
+ * @file discrete_pid_controller.cpp
+ * @brief Example simulation of a discrete-time PID controller applied to a
+ * plant model.
+ *
+ * This file demonstrates the creation and simulation of a discrete-time PID
+ * controller regulating a simple plant, both represented as discrete transfer
+ * functions. The simulation runs for 100 time steps, printing the controller
+ * output and plant response at each step.
+ */
 #include <iostream>
 
 #include "python_control.hpp"
