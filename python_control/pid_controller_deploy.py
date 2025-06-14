@@ -1,3 +1,8 @@
+"""
+This module provides functionality to generate C++ header files for deploying discrete PID controllers
+defined in Python. It automates the translation of Python-based PID controller parameters and configuration
+into C++ code, facilitating integration with C++ projects.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -11,11 +16,25 @@ from python_control.control_deploy import ControlDeploy
 
 
 class DiscretePID_ControllerDeploy:
+    """
+    A class for generating C++ code for Discrete PID Controllers.
+    This class provides static methods to generate C++ header files based on Python DiscretePID_Controller objects.
+    The generated code includes type definitions, constants, and functions to create instances of the DiscretePID_Controller.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_PID_cpp_code(pid: DiscretePID_Controller, file_name=None):
+        """
+        Generates C++ code for a Discrete PID Controller based on the provided Python DiscretePID_Controller object.
+        Args:
+            pid: A DiscretePID_Controller object containing the PID parameters.
+            file_name: Optional; the base name for the generated C++ header file.
+        Returns:
+            A list of file names for the generated C++ header files.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(pid.data_type)
