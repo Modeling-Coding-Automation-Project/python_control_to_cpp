@@ -1,5 +1,7 @@
 """
-Linear-Quadratic Regulator sample code
+File Name: discrete_state_space_lqi.py
+
+This script demonstrates the implementation of a Linear-Quadratic Integral (LQI) controller for a discrete-time state-space model of a pendulum system. The code sets up the continuous-time state-space representation, discretizes it, augments the system for integral action, and computes the optimal feedback gain using the Arimoto-Potter method. The simulation tracks a reference trajectory and visualizes the results using a custom plotting utility.
 
 Reference URL:
 https://github.com/AtsushiSakai/PyAdvancedControl

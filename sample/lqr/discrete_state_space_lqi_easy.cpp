@@ -1,3 +1,13 @@
+/**
+ * @file discrete_state_space_lqi_easy.cpp
+ * @brief Example of discrete-time state-space LQI control simulation in C++
+ *
+ * This file demonstrates the modeling, discretization, and simulation of a
+ * simple plant using discrete-time state-space representation and Linear
+ * Quadratic Integral (LQI) control. The code constructs a plant model,
+ * discretizes it, designs an LQI controller, and runs a simulation loop to
+ * control the plant output to track a reference signal.
+ */
 #include <iostream>
 
 #include "python_control.hpp"
