@@ -1,3 +1,15 @@
+/**
+ * @file least_squares_method.cpp
+ * @brief Demonstrates the usage of a Least Squares fitting method using dense
+ * matrices.
+ *
+ * This program initializes input (X) and output (Y) matrices with test data,
+ * fits a Least Squares regression model, and outputs the resulting weights.
+ * The code utilizes a LeastSquares class template, which is constructed using
+ * a dense matrix type for the input data. The fit method computes the optimal
+ * weights to minimize the squared error between the predicted and actual
+ * outputs.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

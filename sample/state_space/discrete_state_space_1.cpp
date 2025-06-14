@@ -1,3 +1,12 @@
+/**
+ * @file discrete_state_space_1.cpp
+ * @brief Example simulation of a discrete-time state-space system in C++.
+ *
+ * This file demonstrates the creation and simulation of a discrete-time
+ * state-space model. The state-space system is defined by matrices A, B, C, and
+ * D, and is simulated over 50 time steps with a constant input. The state and
+ * output values are printed at each simulation step.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

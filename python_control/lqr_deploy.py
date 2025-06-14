@@ -1,3 +1,8 @@
+"""
+File: lqr_deploy.py
+
+This module provides utilities for generating C++ header files that implement LQR (Linear Quadratic Regulator) and LQI (Linear Quadratic Integrator) controllers from Python-based system matrices and weighting matrices. The generated C++ code is intended for use with a compatible C++ control library, enabling seamless deployment of control algorithms designed in Python to C++ environments.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -12,11 +17,35 @@ from python_control.control_deploy import ControlDeploy
 
 
 class LQR_Deploy:
+    """
+    A class for generating C++ code for Linear Quadratic Regulator (LQR) controllers.
+    This class provides a static method to generate C++ header files that define the LQR controller
+    based on the provided state-space matrices and weighting matrices.
+    Attributes:
+        None
+    Methods:
+        generate_LQR_cpp_code(Ac, Bc, Q, R, file_name=None):
+            Generates C++ code for an LQR controller using the provided state-space matrices and weighting matrices.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_LQR_cpp_code(Ac, Bc, Q, R, file_name=None):
+        """
+        Generates C++ code for an LQR controller using the provided state-space matrices and weighting matrices.
+        Args:
+            Ac (np.ndarray): State matrix of the system.
+            Bc (np.ndarray): Input matrix of the system.
+            Q (np.ndarray): State weighting matrix for the LQR controller.
+            R (np.ndarray): Input weighting matrix for the LQR controller.
+            file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
+        Returns:
+            list: A list of file names for the generated C++ header files.
+        Raises:
+            ValueError: If the input matrices are not compatible or if the data type is unsupported.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(Ac.dtype.name)
@@ -133,11 +162,36 @@ class LQR_Deploy:
 
 
 class LQI_Deploy:
+    """
+    A class for generating C++ code for Linear Quadratic Integrator (LQI) controllers.
+    This class provides a static method to generate C++ header files that define the LQI controller
+    based on the provided state-space matrices and weighting matrices.
+    Attributes:
+        None
+    Methods:
+        generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex, file_name=None):
+            Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex, file_name=None):
+        """
+        Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
+        Args:
+            Ac (np.ndarray): State matrix of the system.
+            Bc (np.ndarray): Input matrix of the system.
+            Cc (np.ndarray): Output matrix of the system.
+            Q_ex (np.ndarray): Extended state weighting matrix for the LQI controller.
+            R_ex (np.ndarray): Input weighting matrix for the LQI controller.
+            file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
+        Returns:
+            list: A list of file names for the generated C++ header files.
+        Raises:
+            ValueError: If the input matrices are not compatible or if the data type is unsupported.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(Ac.dtype.name)

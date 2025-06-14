@@ -1,3 +1,15 @@
+/**
+ * @file extended_kalman_filter.cpp
+ * @brief Example implementation of an Extended Kalman Filter (EKF) for a
+ * bicycle model.
+ *
+ * This file demonstrates the setup and simulation of an Extended Kalman Filter
+ * (EKF) applied to a nonlinear bicycle model. The code defines the plant model,
+ * state and measurement functions, their Jacobians, and the EKF structure. It
+ * then runs a simulation loop where the true state evolves according to the
+ * plant model, measurements are generated, and the EKF estimates the state in
+ * the presence of system delay.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

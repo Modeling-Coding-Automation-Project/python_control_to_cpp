@@ -1,3 +1,15 @@
+/**
+ * @file unscented_kalman_filter.cpp
+ * @brief Demonstrates the use of an Unscented Kalman Filter (UKF) for state
+ * estimation of a nonlinear bicycle model.
+ *
+ * This program sets up a plant model using a nonlinear bicycle model,
+ * initializes process and measurement noise covariances, and defines the state
+ * and measurement functions. It then constructs an Unscented Kalman Filter
+ * (UKF) object and simulates the system over a number of time steps, applying
+ * control inputs and updating the filter with delayed measurements. The
+ * estimated states and true states are printed for comparison.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

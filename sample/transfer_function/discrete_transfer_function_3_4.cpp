@@ -1,3 +1,14 @@
+/**
+ * @file discrete_transfer_function_3_4.cpp
+ * @brief Example usage of a discrete transfer function system in C++.
+ *
+ * This file demonstrates how to define and simulate a discrete-time transfer
+ * function system using numerator and denominator coefficients. The code
+ * constructs the transfer function, simulates its response to a step input, and
+ * computes the steady-state input required to achieve a specified steady-state
+ * output. The simulation results and steady-state values are printed to the
+ * standard output.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

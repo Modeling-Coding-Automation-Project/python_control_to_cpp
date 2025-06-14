@@ -1,3 +1,13 @@
+/**
+ * @file discrete_transfer_function_4_4.cpp
+ * @brief Example usage of a discrete transfer function system in C++.
+ *
+ * This file demonstrates the creation and simulation of a discrete transfer
+ * function system with a 4th-order numerator and denominator. The code
+ * initializes the transfer function coefficients, simulates the system response
+ * to a step input, and computes the steady-state input required to achieve a
+ * specified steady-state output.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

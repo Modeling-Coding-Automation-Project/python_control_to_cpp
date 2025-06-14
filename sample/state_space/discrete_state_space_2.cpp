@@ -1,3 +1,14 @@
+/**
+ * @file discrete_state_space_2.cpp
+ * @brief Example of discrete-time state-space system simulation with delay
+ * using PythonControl C++ library.
+ *
+ * This code demonstrates how to define and simulate a discrete-time state-space
+ * model with a specified input delay. It constructs sparse matrices for the
+ * state-space representation (A, B, C, D), sets the sampling time, and creates
+ * a discrete state-space system with a delay of two steps. The simulation runs
+ * for 100 steps, applying a constant input, and prints the output at each step.
+ */
 #include <iostream>
 
 #include "python_control.hpp"

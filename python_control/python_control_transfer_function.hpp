@@ -1,3 +1,15 @@
+/**
+ * @file python_control_transfer_function.hpp
+ * @brief Discrete Transfer Function implementation for PythonControl C++
+ * library.
+ *
+ * This header provides a template-based implementation of discrete transfer
+ * functions, including utilities for constructing numerator and denominator
+ * matrices, and converting transfer functions to state-space representations.
+ * It supports single-input single-output (SISO) systems and provides methods
+ * for updating, resetting, and solving steady-state responses of discrete
+ * transfer functions.
+ */
 #ifndef __PYTHON_CONTROL_TRANSFER_FUNCTION_HPP__
 #define __PYTHON_CONTROL_TRANSFER_FUNCTION_HPP__
 
@@ -13,16 +25,61 @@ namespace PythonControl {
 constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
 
 /* Numerator and Denominator definition */
+
+/**
+ * @brief Alias template for representing the numerator of a transfer function
+ * as a sparse matrix.
+ *
+ * This type alias defines a transfer function numerator using a sparse matrix
+ * type from the PythonNumpy module. The matrix is parameterized by the element
+ * type `T` and the number of numerator coefficients `Numerator_Size`. The
+ * matrix is constructed with dimensions determined by `Numerator_Size` rows and
+ * 1 column, using the `DenseAvailable` trait to select the appropriate storage
+ * format.
+ *
+ * @tparam T The data type of the matrix elements (e.g., double, float).
+ * @tparam Numerator_Size The number of coefficients in the numerator (number of
+ * rows).
+ */
 template <typename T, std::size_t Numerator_Size>
 using TransferFunctionNumerator_Type = PythonNumpy::SparseMatrix_Type<
     T, PythonNumpy::DenseAvailable<Numerator_Size, 1>>;
 
+/**
+ * @brief Alias template for representing the denominator of a transfer function
+ * as a sparse matrix.
+ *
+ * This type alias defines a transfer function denominator using a sparse matrix
+ * type from the PythonNumpy module. The matrix is parameterized by the element
+ * type `T` and the number of denominator coefficients `Denominator_Size`. The
+ * matrix is constructed with dimensions determined by `Denominator_Size` rows
+ * and 1 column, using the `DenseAvailable` trait to select the appropriate
+ * storage format.
+ *
+ * @tparam T The data type of the matrix elements (e.g., double, float).
+ * @tparam Denominator_Size The number of coefficients in the denominator
+ * (number of rows).
+ */
 template <typename T, std::size_t Denominator_Size>
 using TransferFunctionDenominator_Type = PythonNumpy::SparseMatrix_Type<
     T, PythonNumpy::DenseAvailable<Denominator_Size, 1>>;
 
 namespace MakeNumerator {
 
+/**
+ * @brief Assigns values to the numerator matrix of a transfer function.
+ *
+ * This function recursively assigns values to the numerator matrix, ensuring
+ * that the number of arguments does not exceed the number of columns in the
+ * numerator matrix. It uses static assertions to enforce type consistency and
+ * size constraints.
+ *
+ * @tparam IndexCount The current index in the numerator matrix being assigned.
+ * @tparam TransferFunctionNumerator_Type The type of the numerator matrix.
+ * @tparam T The type of the first value to assign.
+ * @param numerator The numerator matrix to which values are assigned.
+ * @param value_1 The first value to assign to the numerator matrix.
+ */
 template <std::size_t IndexCount, typename TransferFunctionNumerator_Type,
           typename T>
 inline void assign_values(TransferFunctionNumerator_Type &numerator,
@@ -35,6 +92,24 @@ inline void assign_values(TransferFunctionNumerator_Type &numerator,
   numerator.template set<IndexCount, 0>(value_1);
 }
 
+/**
+ * @brief Assigns multiple values to the numerator matrix of a transfer
+ * function.
+ *
+ * This function recursively assigns multiple values to the numerator matrix,
+ * ensuring that all arguments are of the same type and that the number of
+ * arguments does not exceed the number of columns in the numerator matrix. It
+ * uses static assertions to enforce type consistency and size constraints.
+ *
+ * @tparam IndexCount The current index in the numerator matrix being assigned.
+ * @tparam TransferFunctionNumerator_Type The type of the numerator matrix.
+ * @tparam T The type of the first value to assign.
+ * @tparam U The type of the second value to assign.
+ * @param numerator The numerator matrix to which values are assigned.
+ * @param value_1 The first value to assign to the numerator matrix.
+ * @param value_2 The second value to assign to the numerator matrix.
+ * @param args Additional values to assign, if any.
+ */
 template <std::size_t IndexCount, typename TransferFunctionNumerator_Type,
           typename T, typename U, typename... Args>
 inline void assign_values(TransferFunctionNumerator_Type &numerator, T value_1,
@@ -54,6 +129,22 @@ inline void assign_values(TransferFunctionNumerator_Type &numerator, T value_1,
 
 namespace MakeDenominator {
 
+/**
+ * @brief Assigns values to the denominator matrix of a transfer function.
+ *
+ * This function recursively assigns values to the denominator matrix,
+ * ensuring that the number of arguments does not exceed the number of columns
+ * in the denominator matrix. It uses static assertions to enforce type
+ * consistency and size constraints.
+ *
+ * @tparam IndexCount The current index in the denominator matrix being
+ * assigned.
+ * @tparam TransferFunctionDenominator_Type The type of the denominator
+ * matrix.
+ * @tparam T The type of the first value to assign.
+ * @param denominator The denominator matrix to which values are assigned.
+ * @param value_1 The first value to assign to the denominator matrix.
+ */
 template <std::size_t IndexCount, typename TransferFunctionDenominator_Type,
           typename T>
 inline void assign_values(TransferFunctionDenominator_Type &denominator,
@@ -66,6 +157,26 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
   denominator.template set<IndexCount, 0>(value_1);
 }
 
+/**
+ * @brief Assigns multiple values to the denominator matrix of a transfer
+ * function.
+ *
+ * This function recursively assigns multiple values to the denominator matrix,
+ * ensuring that all arguments are of the same type and that the number of
+ * arguments does not exceed the number of columns in the denominator matrix. It
+ * uses static assertions to enforce type consistency and size constraints.
+ *
+ * @tparam IndexCount The current index in the denominator matrix being
+ * assigned.
+ * @tparam TransferFunctionDenominator_Type The type of the denominator
+ * matrix.
+ * @tparam T The type of the first value to assign.
+ * @tparam U The type of the second value to assign.
+ * @param denominator The denominator matrix to which values are assigned.
+ * @param value_1 The first value to assign to the denominator matrix.
+ * @param value_2 The second value to assign to the denominator matrix.
+ * @param args Additional values to assign, if any.
+ */
 template <std::size_t IndexCount, typename TransferFunctionDenominator_Type,
           typename T, typename U, typename... Args>
 inline void assign_values(TransferFunctionDenominator_Type &denominator,
@@ -84,6 +195,23 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
 } // namespace MakeDenominator
 
 /* make Numerator and Denominator */
+
+/**
+ * @brief Creates a TransferFunctionNumerator_Type object with specified values.
+ *
+ * This function constructs a TransferFunctionNumerator_Type object by
+ * assigning values to its elements using a variadic template. It allows for a
+ * variable number of arguments to be passed, which are assigned to the
+ * numerator matrix.
+ *
+ * @tparam M The number of coefficients in the numerator (number of rows).
+ * @tparam T The type of the first value to assign.
+ * @tparam Args Additional types for subsequent values.
+ * @param value_1 The first value to assign to the numerator matrix.
+ * @param args Additional values to assign, if any.
+ * @return A TransferFunctionNumerator_Type object initialized with the
+ * provided values.
+ */
 template <std::size_t M, typename T, typename... Args>
 inline auto make_TransferFunctionNumerator(T value_1, Args... args)
     -> TransferFunctionNumerator_Type<T, M> {
@@ -95,6 +223,23 @@ inline auto make_TransferFunctionNumerator(T value_1, Args... args)
   return numerator;
 }
 
+/**
+ * @brief Creates a TransferFunctionDenominator_Type object with specified
+ * values.
+ *
+ * This function constructs a TransferFunctionDenominator_Type object by
+ * assigning values to its elements using a variadic template. It allows for a
+ * variable number of arguments to be passed, which are assigned to the
+ * denominator matrix.
+ *
+ * @tparam M The number of coefficients in the denominator (number of rows).
+ * @tparam T The type of the first value to assign.
+ * @tparam Args Additional types for subsequent values.
+ * @param value_1 The first value to assign to the denominator matrix.
+ * @param args Additional values to assign, if any.
+ * @return A TransferFunctionDenominator_Type object initialized with the
+ * provided values.
+ */
 template <std::size_t M, typename T, typename... Args>
 inline auto make_TransferFunctionDenominator(T value_1, Args... args)
     -> TransferFunctionNumerator_Type<T, M> {
@@ -110,7 +255,16 @@ namespace ForDiscreteTransferFunction {
 
 /* Create A type definition */
 template <typename T, std::size_t N> struct DiscreteStateSpace_A_Type {
-
+  /**
+   * @brief Type definition for the A matrix in a discrete state-space system.
+   *
+   * This struct defines the type of the A matrix based on the number of states
+   * (N). It uses PythonNumpy utilities to create a sparse matrix type that
+   * concatenates available sparse structures vertically and horizontally.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   * @tparam N The number of states in the discrete state-space system.
+   */
   using SparseAvailable_DiscreteStateSpace_A =
       PythonNumpy::ConcatenateSparseAvailableVertically<
           PythonNumpy::DenseAvailable<1, N>,
@@ -118,11 +272,31 @@ template <typename T, std::size_t N> struct DiscreteStateSpace_A_Type {
               PythonNumpy::DiagAvailable<N - 1>,
               PythonNumpy::SparseAvailableEmpty<N - 1, 1>>>;
 
+  /**
+   * @brief Type definition for the A matrix in a discrete state-space system.
+   *
+   * This type alias uses PythonNumpy to create a sparse matrix type that
+   * represents the A matrix with the specified element type T and the defined
+   * sparse structure.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   */
   using type =
       PythonNumpy::SparseMatrix_Type<T, SparseAvailable_DiscreteStateSpace_A>;
 };
 
 /* Create B type definition */
+
+/**
+ * @brief Type definition for the B matrix in a discrete state-space system.
+ *
+ * This struct defines the type of the B matrix based on the number of inputs
+ * (N). It uses PythonNumpy utilities to create a sparse matrix type that
+ * concatenates available sparse structures vertically and horizontally.
+ *
+ * @tparam T The data type of the matrix elements (e.g., double, float).
+ * @tparam N The number of inputs in the discrete state-space system.
+ */
 template <typename T, std::size_t N> struct DiscreteStateSpace_B_Type {
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::ConcatenateSparseAvailableVertically<
@@ -133,6 +307,18 @@ template <typename T, std::size_t N> struct DiscreteStateSpace_B_Type {
 /* Create C type definition */
 template <typename T, std::size_t Denominator_Size, std::size_t Den_Num_Dif>
 struct DiscreteStateSpace_C_Type {
+  /**
+   * @brief Type definition for the C matrix in a discrete state-space system.
+   *
+   * This struct defines the type of the C matrix based on the number of
+   * denominator differences (Den_Num_Dif) and the total size of the denominator
+   * (Denominator_Size). It uses PythonNumpy utilities to create a sparse matrix
+   * type that concatenates available sparse structures horizontally.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   * @tparam Denominator_Size The total size of the denominator.
+   * @tparam Den_Num_Dif The number of differences in the denominator.
+   */
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::ConcatenateSparseAvailableHorizontally<
              PythonNumpy::DenseAvailable<1, (Den_Num_Dif - 1)>,
@@ -141,12 +327,35 @@ struct DiscreteStateSpace_C_Type {
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 1> {
+  /**
+   * @brief Type definition for the C matrix in a discrete state-space system
+   * with a single denominator difference.
+   *
+   * This struct defines the type of the C matrix when there is only one
+   * difference in the denominator. It uses PythonNumpy utilities to create a
+   * sparse matrix type that concatenates available sparse structures
+   * horizontally.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   * @tparam Denominator_Size The total size of the denominator.
+   */
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
 
 template <typename T, std::size_t Denominator_Size>
 struct DiscreteStateSpace_C_Type<T, Denominator_Size, 0> {
+  /**
+   * @brief Type definition for the C matrix in a discrete state-space system
+   * with no denominator differences.
+   *
+   * This struct defines the type of the C matrix when there are no differences
+   * in the denominator. It uses PythonNumpy utilities to create a sparse matrix
+   * type that consists of a single dense available column.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   * @tparam Denominator_Size The total size of the denominator.
+   */
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::DenseAvailable<1, (Denominator_Size - 1)>>;
 };
@@ -156,11 +365,31 @@ template <typename T, bool IsStrictlyProper>
 struct DiscreteStateSpace_D_Type {};
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, true> {
+  /**
+   * @brief Type definition for the D matrix in a discrete state-space system
+   * when it is strictly proper.
+   *
+   * This struct defines the type of the D matrix as a sparse matrix with no
+   * columns, indicating that there is no direct feedthrough from input to
+   * output in a strictly proper system.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   */
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<false>>>;
 };
 
 template <typename T> struct DiscreteStateSpace_D_Type<T, false> {
+  /**
+   * @brief Type definition for the D matrix in a discrete state-space system
+   * when it is not strictly proper.
+   *
+   * This struct defines the type of the D matrix as a sparse matrix with one
+   * column, indicating that there is a direct feedthrough from input to output
+   * in a non-strictly proper system.
+   *
+   * @tparam T The data type of the matrix elements (e.g., double, float).
+   */
   using type = PythonNumpy::SparseMatrix_Type<
       T, PythonNumpy::SparseAvailable<PythonNumpy::ColumnAvailable<true>>>;
 };
@@ -169,6 +398,16 @@ template <typename T> struct DiscreteStateSpace_D_Type<T, false> {
 template <typename T, typename DiscreteStateSpace_A_type,
           typename Denominator_Type, std::size_t I, std::size_t LoopCount>
 struct Set_A_Value {
+  /**
+   * @brief Sets the value of the A matrix at index I based on the denominator.
+   *
+   * This function sets the value of the A matrix at index I to a calculated
+   * value based on the denominator. It recursively calls itself to set values
+   * for subsequent indices until LoopCount reaches zero.
+   *
+   * @param A The A matrix to be modified.
+   * @param denominator The denominator used for calculating the A matrix value.
+   */
   static void set(DiscreteStateSpace_A_type &A,
                   const Denominator_Type &denominator) {
     A(I) = -denominator(I + 1) /
@@ -183,6 +422,16 @@ struct Set_A_Value {
 template <typename T, typename DiscreteStateSpace_A_type,
           typename Denominator_Type, std::size_t I>
 struct Set_A_Value<T, DiscreteStateSpace_A_type, Denominator_Type, I, 0> {
+  /**
+   * @brief Sets the value of the A matrix at index I based on the denominator.
+   *
+   * This function sets the value of the A matrix at index I to a calculated
+   * value based on the denominator. It is the base case for recursion when
+   * LoopCount reaches zero.
+   *
+   * @param A The A matrix to be modified.
+   * @param denominator The denominator used for calculating the A matrix value.
+   */
   static void set(DiscreteStateSpace_A_type &A,
                   const Denominator_Type &denominator) {
     A(I) = -denominator(I + 1) /
@@ -195,6 +444,15 @@ struct Set_A_Value<T, DiscreteStateSpace_A_type, Denominator_Type, I, 0> {
 template <typename T, typename DiscreteStateSpace_A_type,
           typename std::size_t I, std::size_t LoopCount>
 struct Set_A_Ones {
+  /**
+   * @brief Sets the value of the A matrix at index I to one.
+   *
+   * This function sets the value of the A matrix at index I to one and
+   * recursively calls itself to set values for subsequent indices until
+   * LoopCount reaches zero.
+   *
+   * @param A The A matrix to be modified.
+   */
   static void set(DiscreteStateSpace_A_type &A) {
     A(I) = static_cast<T>(1);
     Set_A_Ones<T, DiscreteStateSpace_A_type, (I + 1), (LoopCount - 1)>::set(A);
@@ -203,6 +461,14 @@ struct Set_A_Ones {
 
 template <typename T, typename DiscreteStateSpace_A_type, std::size_t I>
 struct Set_A_Ones<T, DiscreteStateSpace_A_type, I, 0> {
+  /**
+   * @brief Sets the value of the A matrix at index I to one.
+   *
+   * This function sets the value of the A matrix at index I to one. It is the
+   * base case for recursion when LoopCount reaches zero.
+   *
+   * @param A The A matrix to be modified.
+   */
   static void set(DiscreteStateSpace_A_type &A) { A(I) = static_cast<T>(1); }
 };
 
@@ -219,6 +485,20 @@ template <typename T, typename DiscreteStateSpace_C_type,
 struct Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
                            Denominator_Type, C_INDEX_OFFSET, I, LoopCount,
                            true> {
+  /**
+   * @brief Sets the value of the C matrix at index I based on the numerator and
+   * denominator.
+   *
+   * This function sets the value of the C matrix at index I to a calculated
+   * value based on the numerator and the inverse of the first element of the
+   * denominator. It recursively calls itself to set values for subsequent
+   * indices until LoopCount reaches zero.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator_0_inv The inverse of the first element of the
+   * denominator.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const T &denominator_0_inv) {
     C(I + C_INDEX_OFFSET) = numerator(I) * denominator_0_inv;
@@ -235,6 +515,19 @@ template <typename T, typename DiscreteStateSpace_C_type,
           std::size_t C_INDEX_OFFSET, std::size_t I>
 struct Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
                            Denominator_Type, C_INDEX_OFFSET, I, 0, true> {
+  /**
+   * @brief Sets the value of the C matrix at index I based on the numerator and
+   * denominator.
+   *
+   * This function sets the value of the C matrix at index I to a calculated
+   * value based on the numerator and the inverse of the first element of the
+   * denominator. It is the base case for recursion when LoopCount reaches zero.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator_0_inv The inverse of the first element of the
+   * denominator.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const T &denominator_0_inv) {
     C(I + C_INDEX_OFFSET) = numerator(I) * denominator_0_inv;
@@ -247,6 +540,20 @@ template <typename T, typename DiscreteStateSpace_C_type,
 struct Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
                            Denominator_Type, C_INDEX_OFFSET, I, LoopCount,
                            false> {
+  /**
+   * @brief Sets the value of the C matrix at index I based on the numerator and
+   * denominator.
+   *
+   * This function sets the value of the C matrix at index I to a calculated
+   * value based on the numerator and denominator. It recursively calls itself
+   * to set values for subsequent indices until LoopCount reaches zero.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator The denominator used for calculating the C matrix value.
+   * @param denominator_0_inv The inverse of the first element of the
+   * denominator.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const Denominator_Type &denominator,
                   const T &denominator_0_inv) {
@@ -266,6 +573,20 @@ template <typename T, typename DiscreteStateSpace_C_type,
           std::size_t C_INDEX_OFFSET, std::size_t I>
 struct Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
                            Denominator_Type, C_INDEX_OFFSET, I, 0, false> {
+  /**
+   * @brief Sets the value of the C matrix at index I based on the numerator and
+   * denominator.
+   *
+   * This function sets the value of the C matrix at index I to a calculated
+   * value based on the numerator and denominator. It is the base case for
+   * recursion when LoopCount reaches zero.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator The denominator used for calculating the C matrix value.
+   * @param denominator_0_inv The inverse of the first element of the
+   * denominator.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const Denominator_Type &denominator,
                   const T &denominator_0_inv) {
@@ -285,6 +606,17 @@ template <typename T, typename DiscreteStateSpace_C_type,
 struct Set_C_Value<T, DiscreteStateSpace_C_type, Numerator_Type,
                    Denominator_Type, true> {
 
+  /**
+   * @brief Sets the C matrix values for a strictly proper transfer function.
+   *
+   * This function sets the C matrix values based on the numerator and
+   * denominator, ensuring that the first element of the denominator is not
+   * zero. It uses a specialized method to handle strictly proper systems.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator The denominator used for calculating the C matrix value.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const Denominator_Type &denominator) {
 
@@ -307,7 +639,18 @@ template <typename T, typename DiscreteStateSpace_C_type,
           typename Numerator_Type, typename Denominator_Type>
 struct Set_C_Value<T, DiscreteStateSpace_C_type, Numerator_Type,
                    Denominator_Type, false> {
-
+  /**
+   * @brief Sets the C matrix values for a non-strictly proper transfer
+   * function.
+   *
+   * This function sets the C matrix values based on the numerator and
+   * denominator, ensuring that the first element of the denominator is not
+   * zero. It uses a specialized method to handle non-strictly proper systems.
+   *
+   * @param C The C matrix to be modified.
+   * @param numerator The numerator used for calculating the C matrix value.
+   * @param denominator The denominator used for calculating the C matrix value.
+   */
   static void set(DiscreteStateSpace_C_type &C, const Numerator_Type &numerator,
                   const Denominator_Type &denominator) {
 
@@ -334,6 +677,18 @@ template <typename T, typename DiscreteStateSpace_D_type,
           typename Numerator_Type, typename Denominator_Type>
 struct Set_D_Value<T, DiscreteStateSpace_D_type, Numerator_Type,
                    Denominator_Type, true> {
+  /**
+   * @brief Sets the D matrix value for a strictly proper transfer function.
+   *
+   * This function does nothing for strictly proper systems, as they do not have
+   * a direct feedthrough term in the D matrix.
+   *
+   * @param D The D matrix to be modified (no modification occurs).
+   * @param numerator The numerator used for calculating the D matrix value
+   * (not used).
+   * @param denominator The denominator used for calculating the D matrix value
+   * (not used).
+   */
   static void set(DiscreteStateSpace_D_type &D, const Numerator_Type &numerator,
                   const Denominator_Type &denominator) {
     /* Do Nothing */
@@ -347,6 +702,17 @@ template <typename T, typename DiscreteStateSpace_D_type,
           typename Numerator_Type, typename Denominator_Type>
 struct Set_D_Value<T, DiscreteStateSpace_D_type, Numerator_Type,
                    Denominator_Type, false> {
+  /**
+   * @brief Sets the D matrix value for a non-strictly proper transfer
+   * function.
+   *
+   * This function sets the D matrix value based on the first element of the
+   * numerator and denominator, ensuring that the denominator is not zero.
+   *
+   * @param D The D matrix to be modified.
+   * @param numerator The numerator used for calculating the D matrix value.
+   * @param denominator The denominator used for calculating the D matrix value.
+   */
   static void set(DiscreteStateSpace_D_type &D, const Numerator_Type &numerator,
                   const Denominator_Type &denominator) {
     D(0) = numerator(0) /
@@ -362,6 +728,19 @@ struct SolveSteadyStateAndInput {};
 
 template <typename T, typename State_Space_Type>
 struct SolveSteadyStateAndInput<T, State_Space_Type, true> {
+  /**
+   * @brief Solves for the steady state and input of a discrete transfer
+   * function.
+   *
+   * This function calculates the steady state input based on the provided
+   * steady state output and the state space representation of the transfer
+   * function. It uses matrix operations to compute the input that results in
+   * the desired steady state output.
+   *
+   * @param state_space The state space representation of the transfer function.
+   * @param y_steady_state The desired steady state output.
+   * @return The calculated steady state input.
+   */
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
@@ -393,6 +772,19 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, true> {
 
 template <typename T, typename State_Space_Type>
 struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
+  /**
+   * @brief Solves for the steady state and input of a discrete transfer
+   * function that is not strictly proper.
+   *
+   * This function calculates the steady state input based on the provided
+   * steady state output and the state space representation of the transfer
+   * function. It uses matrix operations to compute the input that results in
+   * the desired steady state output.
+   *
+   * @param state_space The state space representation of the transfer function.
+   * @param y_steady_state The desired steady state output.
+   * @return The calculated steady state input.
+   */
   static T solve(State_Space_Type &state_space, const T &y_steady_state) {
     T u_steady_state;
 
@@ -426,6 +818,19 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
 } // namespace ForDiscreteTransferFunction
 
 /* Discrete Transfer Function */
+
+/**
+ * @brief Represents a discrete transfer function with numerator and denominator
+ * matrices.
+ *
+ * This class encapsulates the properties and methods of a discrete transfer
+ * function, including its numerator and denominator matrices, state space
+ * representation, and methods for solving steady state inputs and outputs.
+ *
+ * @tparam Numerator_Type_In The type of the numerator matrix.
+ * @tparam Denominator_Type_In The type of the denominator matrix.
+ * @tparam Number_Of_Delay The number of delays in the system (default is 0).
+ */
 template <typename Numerator_Type_In, typename Denominator_Type_In,
           std::size_t Number_Of_Delay = 0>
 class DiscreteTransferFunction {
@@ -550,24 +955,67 @@ public:
 
 public:
   /* Function */
-  constexpr std::size_t get_number_of_delay(void) const {
+
+  /**
+   * @brief Returns the number of delays in the transfer function.
+   *
+   * This function returns the constant value representing the number of delays
+   * in the transfer function.
+   *
+   * @return The number of delays.
+   */
+  static constexpr std::size_t get_number_of_delay(void) {
     return NUMBER_OF_DELAY;
   }
 
+  /**
+   * @brief Returns the state space representation of the transfer function.
+   *
+   * This function returns the state space representation of the transfer
+   * function, which includes matrices A, B, C, D, and the state vector X.
+   *
+   * @return The state space representation.
+   */
   auto get_X(void) const -> typename _State_Space_Type::Original_X_Type {
     return this->_state_space.X;
   }
 
+  /**
+   * @brief Returns the output of the transfer function.
+   *
+   * This function returns the output of the transfer function, which is
+   * calculated as the product of the C matrix and the state vector X.
+   *
+   * @return The output value.
+   */
   _T get_y(void) const {
     return this->_state_space.get_Y().template get<0, 0>();
   }
 
+  /**
+   * @brief Returns the input of the transfer function.
+   *
+   * This function returns the input of the transfer function, which is
+   * calculated as the product of the D matrix and the state vector X.
+   *
+   * @return The input value.
+   */
   void update(const _T &u) {
     auto input = make_StateSpaceInput<_U_Type::COLS>(u);
 
     this->_state_space.update(input);
   }
 
+  /**
+   * @brief Resets the numerator and denominator of the transfer function.
+   *
+   * This function resets the numerator and denominator matrices of the transfer
+   * function to the provided values, updating the state space representation
+   * accordingly.
+   *
+   * @param numerator The new numerator matrix.
+   * @param denominator The new denominator matrix.
+   */
   void reset_numerator_and_denominator(const Numerator_Type &numerator,
                                        const Denominator_Type &denominator) {
     /* Set A */
@@ -590,8 +1038,25 @@ public:
         _IS_STRICTLY_PROPER>::set(this->_state_space.D, numerator, denominator);
   }
 
+  /**
+   * @brief Resets the state of the transfer function.
+   *
+   * This function resets the state of the transfer function, clearing the
+   * internal state space representation.
+   */
   void reset_state(void) { this->_state_space.reset_state(); }
 
+  /**
+   * @brief Solves for the steady state input based on the provided steady state
+   * output.
+   *
+   * This function calculates the steady state input that would result in the
+   * specified steady state output, using the state space representation of the
+   * transfer function.
+   *
+   * @param y_steady_state The desired steady state output.
+   * @return The calculated steady state input.
+   */
   _T solve_steady_state_and_input(const _T &y_steady_state) {
 
     _T u_steady_state = ForDiscreteTransferFunction::SolveSteadyStateAndInput<
@@ -613,6 +1078,22 @@ protected:
 };
 
 /* make Discrete Transfer Function */
+
+/**
+ * @brief Creates a DiscreteTransferFunction object with the specified
+ * numerator, denominator, and delta time.
+ *
+ * This function constructs a DiscreteTransferFunction object using the provided
+ * numerator and denominator matrices, along with the specified delta time.
+ *
+ * @tparam Numerator_Type The type of the numerator matrix.
+ * @tparam Denominator_Type The type of the denominator matrix.
+ * @param numerator The numerator matrix.
+ * @param denominator The denominator matrix.
+ * @param delta_time The time step for the discrete system.
+ * @return A DiscreteTransferFunction object initialized with the given
+ * parameters.
+ */
 template <typename Numerator_Type, typename Denominator_Type>
 inline auto
 make_DiscreteTransferFunction(Numerator_Type numerator,
@@ -624,6 +1105,24 @@ make_DiscreteTransferFunction(Numerator_Type numerator,
       numerator, denominator, delta_time);
 }
 
+/**
+ * @brief Creates a DiscreteTransferFunction object with the specified
+ * numerator, denominator, and delta time, allowing for a specified number of
+ * delays.
+ *
+ * This function constructs a DiscreteTransferFunction object using the provided
+ * numerator and denominator matrices, along with the specified delta time and
+ * number of delays.
+ *
+ * @tparam Number_Of_Delay The number of delays in the system (default is 0).
+ * @tparam Numerator_Type The type of the numerator matrix.
+ * @tparam Denominator_Type The type of the denominator matrix.
+ * @param numerator The numerator matrix.
+ * @param denominator The denominator matrix.
+ * @param delta_time The time step for the discrete system.
+ * @return A DiscreteTransferFunction object initialized with the given
+ * parameters.
+ */
 template <std::size_t Number_Of_Delay, typename Numerator_Type,
           typename Denominator_Type>
 inline auto

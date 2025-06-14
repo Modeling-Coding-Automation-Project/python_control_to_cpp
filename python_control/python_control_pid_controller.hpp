@@ -1,3 +1,14 @@
+/**
+ * @file python_control_pid_controller.hpp
+ * @brief Discrete PID Controller implementation for C++.
+ *
+ * This header defines the PythonControl namespace, which provides a generic,
+ * type-safe implementation of a discrete PID (Proportional-Integral-Derivative)
+ * controller. The controller supports configurable gains, output saturation,
+ * anti-windup via back-calculation, and a filtered derivative term. The code is
+ * designed to be flexible and efficient, supporting both float and double
+ * types.
+ */
 #ifndef __PYTHON_CONTROL_PID_CONTROLLER_HPP__
 #define __PYTHON_CONTROL_PID_CONTROLLER_HPP__
 
@@ -15,6 +26,21 @@ constexpr double PID_CONTROLLER_MAXIMUM_OUTPUT_DEFAULT =
     std::numeric_limits<double>::infinity();
 
 /* Saturation */
+
+/**
+ * @brief Clamps a value to a specified range.
+ *
+ * This function ensures that the input value does not exceed the specified
+ * minimum and maximum bounds. If the value is below the minimum, it is set to
+ * the minimum; if it exceeds the maximum, it is set to the maximum.
+ *
+ * @tparam T The type of the value, which must support comparison and
+ * assignment.
+ * @param value The input value to be clamped.
+ * @param min The minimum allowable value.
+ * @param max The maximum allowable value.
+ * @return T The clamped value within the specified range.
+ */
 template <typename T>
 inline T saturation(const T &value, const T &min, const T &max) {
   T output = value;
@@ -29,6 +55,16 @@ inline T saturation(const T &value, const T &min, const T &max) {
 }
 
 /* PID Controller */
+
+/**
+ * @brief Discrete PID Controller class.
+ *
+ * This class implements a discrete PID controller with configurable gains for
+ * proportional, integral, and derivative terms. It supports output saturation,
+ * anti-windup via back-calculation, and a filtered derivative term.
+ *
+ * @tparam T The type of the controller's value (e.g., float or double).
+ */
 template <typename T> class DiscretePID_Controller {
 protected:
   /* Type */
@@ -125,6 +161,17 @@ public:
 
 public:
   /* Function */
+
+  /**
+   * @brief Updates the PID controller with the given error value.
+   *
+   * This function calculates the PID output based on the provided error value
+   * and updates the internal state of the controller. It applies saturation to
+   * the output to ensure it remains within specified limits.
+   *
+   * @param error The error value to be processed by the PID controller.
+   * @return The saturated PID output.
+   */
   _T update(const _T &error) {
     this->_PID_output = this->_calculate_P_term(error) +
                         this->_calculate_I_term(error) +
@@ -136,26 +183,77 @@ public:
     return this->_saturated_PID_output;
   }
 
+  /**
+   * @brief Resets the internal state of the PID controller.
+   *
+   * This function clears the integration and differentiation stores,
+   * effectively resetting the controller to its initial state.
+   */
   void reset(void) {
     this->_integration_store = static_cast<_T>(0);
     this->_differentiation_store = static_cast<_T>(0);
   }
 
+  /**
+   * @brief Returns the current PID output.
+   *
+   * This function retrieves the last computed PID output value.
+   *
+   * @return The last computed PID output.
+   */
   const T get_integration_store(void) const { return this->_integration_store; }
 
+  /**
+   * @brief Returns the current differentiation store.
+   *
+   * This function retrieves the last computed differentiation store value.
+   *
+   * @return The last computed differentiation store.
+   */
   const T get_differentiation_store(void) const {
     return this->_differentiation_store;
   }
 
 protected:
   /* Function */
+
+  /**
+   * @brief Back calculation for the integral term.
+   *
+   * This function computes the back calculation for the integral term based on
+   * the error and the current PID output. It is used to prevent integral windup
+   * by adjusting the integral term based on the difference between the
+   * saturated and actual PID outputs.
+   *
+   * @param error The error value to be processed.
+   * @return The computed back calculation for the integral term.
+   */
   inline _T _back_calculation_for_I_term(const _T &error) {
     return this->Ki * error +
            this->Kb * (this->_saturated_PID_output - this->_PID_output);
   }
 
+  /**
+   * @brief Calculates the proportional term of the PID controller.
+   *
+   * This function computes the proportional term based on the error and the
+   * proportional gain (Kp).
+   *
+   * @param error The error value to be processed.
+   * @return The computed proportional term.
+   */
   inline _T _calculate_P_term(const _T &error) { return this->Kp * error; }
 
+  /**
+   * @brief Calculates the integral term of the PID controller.
+   *
+   * This function computes the integral term based on the error and the
+   * integral gain (Ki). It accumulates the integral of the error over time,
+   * applying back calculation to prevent windup.
+   *
+   * @param error The error value to be processed.
+   * @return The computed integral term.
+   */
   inline _T _calculate_I_term(const _T &error) {
 
     this->_integration_store +=
@@ -163,6 +261,16 @@ protected:
     return this->_integration_store;
   }
 
+  /**
+   * @brief Calculates the derivative term of the PID controller.
+   *
+   * This function computes the derivative term based on the error and the
+   * derivative gain (Kd). It uses a filtered differentiation approach to reduce
+   * noise sensitivity.
+   *
+   * @param error The error value to be processed.
+   * @return The computed derivative term.
+   */
   inline _T _calculate_D_term(const _T &error) {
     /* incomplete differentiator */
     _T output = this->N * ((this->Kd * error) - this->_differentiation_store);
@@ -193,6 +301,18 @@ protected:
 };
 
 /* make Discrete PID Controller */
+
+/**
+ * @brief Creates a DiscretePID_Controller object with default settings.
+ *
+ * This function template initializes a DiscretePID_Controller object with the
+ * default delta time, gains, and output limits. It can be used for control
+ * applications requiring a PID controller.
+ *
+ * @tparam T The type of the controller's value (e.g., float or double).
+ * @return DiscretePID_Controller<T> The resulting DiscretePID_Controller
+ * object.
+ */
 template <typename T>
 inline auto make_DiscretePID_Controller(const T &delta_time, const T &Kp,
                                         const T &Ki, const T &Kd, const T &N,

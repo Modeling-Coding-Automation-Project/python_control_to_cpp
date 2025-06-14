@@ -1,3 +1,8 @@
+"""
+File: transfer_function_deploy.py
+
+This module provides functionality to generate C++ header files for discrete transfer functions defined using the `control.TransferFunction` class in Python. The generated C++ code is intended for deployment in environments where transfer function models need to be used in C++ projects, particularly for control and automation applications.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -10,12 +15,32 @@ from python_control.control_deploy import ControlDeploy
 
 
 class TransferFunctionDeploy(ControlDeploy):
+    """
+    A class to generate C++ code for discrete transfer functions.
+    This class provides a static method to convert a `control.TransferFunction` object
+    into a C++ header file containing the necessary definitions and functions
+    to represent the transfer function in C++.
+    """
+
     def __init__(self):
         super().__init__()
 
     @staticmethod
     def generate_transfer_function_cpp_code(
             transfer_function: control.TransferFunction, file_name=None, number_of_delay=0):
+        """
+        Generates C++ code for a discrete transfer function.
+        Args:
+            transfer_function (control.TransferFunction): The transfer function to convert.
+            file_name (str, optional): The base name for the generated C++ file.
+                If not provided, the caller's file name will be used.
+            number_of_delay (int, optional): The number of delays in the system.
+                Defaults to 0.
+        Returns:
+            list: A list of file names of the generated C++ files.
+        Raises:
+            ValueError: If the input transfer_function is not a valid control.TransferFunction object.
+        """
         deployed_file_names = []
         den_factors = transfer_function.den[0][0]
         num_factors = transfer_function.num[0][0]

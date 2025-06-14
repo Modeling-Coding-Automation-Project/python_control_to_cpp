@@ -1,3 +1,8 @@
+"""
+File: kalman_filter.py
+
+This module provides implementations of several types of Kalman Filters for state estimation in control systems and signal processing. It supports linear, extended (nonlinear), and unscented (nonlinear, non-Gaussian) Kalman Filters, with optional support for input delay handling.
+"""
 import math
 import numpy as np
 import copy
@@ -7,12 +12,26 @@ LKF_G_CONVERGE_REPEAT_MAX = 1000
 
 
 class DelayedVectorObject:
+    """
+    A class to manage a fixed-length buffer (delay line) of vectors, supporting delayed access and circular indexing.
+
+    Attributes:
+        store (np.ndarray): 2D array storing vectors for each delay step.
+        delay_index (int): Current index for the next vector insertion.
+        Number_of_Delay (int): Number of delay steps (buffer size - 1).
+    """
+
     def __init__(self, size, Number_of_Delay):
         self.store = np.zeros((size, Number_of_Delay + 1))
         self.delay_index = 0
         self.Number_of_Delay = Number_of_Delay
 
     def push(self, vector: np.ndarray):
+        """
+        Push a new vector into the delay line, replacing the oldest vector.
+        Args:
+            vector (np.ndarray): The vector to be added, must match the size of the store.
+        """
         self.store[:, self.delay_index] = vector.flatten()
 
         self.delay_index += 1
@@ -20,15 +39,32 @@ class DelayedVectorObject:
             self.delay_index = 0
 
     def get(self):
+        """
+        Get the current vector from the delay line, which is the most recent vector added.
+        Returns:
+            np.ndarray: The most recent vector in the delay line.
+        """
         return self.store[:, self.delay_index].reshape(-1, 1)
 
     def get_by_index(self, index):
+        """
+        Get a vector from the delay line by index.
+        Args:
+            index (int): The index of the vector to retrieve, where 0 is the most recent.
+        Returns:
+            np.ndarray: The vector at the specified index in the delay line.
+        """
         if index > self.Number_of_Delay:
             index = self.Number_of_Delay
 
         return self.store[:, index].reshape(-1, 1)
 
     def get_latest(self):
+        """
+        Get the latest vector from the delay line, which is the most recent vector added.
+        Returns:
+            np.ndarray: The latest vector in the delay line.
+        """
         index = self.delay_index
         if index == 0:
             index = self.Number_of_Delay
@@ -39,19 +75,54 @@ class DelayedVectorObject:
 
 
 class KalmanFilterCommon:
+    """
+    KalmanFilterCommon provides a base implementation for a Kalman filter with optional input delay handling.
+
+    Attributes:
+        Number_of_Delay (int): The number of input delays to consider in the filter.
+        _input_count (int): Internal counter for the number of inputs processed.
+    """
+
     def __init__(self, Number_of_Delay=0):
         self.Number_of_Delay = Number_of_Delay
         self._input_count = 0
 
     def predict_and_update(self, u: np.ndarray, y: np.ndarray):
+        """
+        Predict the next state based on the input and update the state estimate with the measurement.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+            y (np.ndarray): Measurement vector for the update step.
+        """
         self.predict(u)
         self.update(y)
 
     def get_x_hat(self):
+        """
+        Get the current state estimate.
+        Returns:
+            np.ndarray: The current state estimate vector.
+        """
         return self.x_hat
 
 
 class LinearKalmanFilter(KalmanFilterCommon):
+    """
+    LinearKalmanFilter implements a standard Kalman filter for linear systems.
+    It uses matrices A, B, C for state transition, control input, and measurement respectively,
+    along with process noise covariance Q and measurement noise covariance R.
+    Attributes:
+        A (np.ndarray): State transition matrix.
+        B (np.ndarray): Control input matrix.
+        C (np.ndarray): Measurement matrix.
+        Q (np.ndarray): Process noise covariance matrix.
+        R (np.ndarray): Measurement noise covariance matrix.
+        x_hat (np.ndarray): Current state estimate.
+        P (np.ndarray): Estimate error covariance.
+        G (np.ndarray): Kalman gain.
+        u_store (DelayedVectorObject): Object to handle delayed input vectors.
+    """
+
     def __init__(self, A: np.ndarray, B: np.ndarray,
                  C: np.ndarray, Q: np.ndarray, R: np.ndarray,
                  Number_of_Delay=0):
@@ -68,6 +139,11 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.u_store = DelayedVectorObject(B.shape[1], Number_of_Delay)
 
     def predict(self, u: np.ndarray):
+        """
+        Predict the next state based on the current state and input.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+        """
         self.u_store.push(u)
 
         if self._input_count < self.Number_of_Delay:
@@ -77,6 +153,11 @@ class LinearKalmanFilter(KalmanFilterCommon):
             self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, y: np.ndarray):
+        """
+        Update the state estimate with the measurement.
+        Args:
+            y (np.ndarray): Measurement vector for the update step.
+        """
         P_CT_matrix = self.P @ self.C.T
 
         S_matrix = self.C @ P_CT_matrix + self.R
@@ -86,6 +167,11 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
     def get_x_hat_without_delay(self):
+        """
+        Get the current state estimate without considering input delays.
+        Returns:
+            np.ndarray: The current state estimate vector without delay.
+        """
         if self.Number_of_Delay == 0:
             return self.x_hat
         else:
@@ -105,6 +191,11 @@ class LinearKalmanFilter(KalmanFilterCommon):
 
     # If G is known, you can use below "_fixed_G" functions.
     def predict_with_fixed_G(self, u: np.ndarray):
+        """
+        Predict the next state using a fixed Kalman gain G.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+        """
         self.u_store.push(u)
 
         if self._input_count < self.Number_of_Delay:
@@ -113,13 +204,28 @@ class LinearKalmanFilter(KalmanFilterCommon):
             self.x_hat = self.A @ self.x_hat + self.B @ self.u_store.get()
 
     def update_with_fixed_G(self, y: np.ndarray):
+        """
+        Update the state estimate with the measurement using a fixed Kalman gain G.
+        Args:
+            y (np.ndarray): Measurement vector for the update step.
+        """
         self.x_hat = self.x_hat + self.G @ (y - self.C @ self.x_hat)
 
     def predict_and_update_with_fixed_G(self, u: np.ndarray, y: np.ndarray):
+        """
+        Predict the next state and update the state estimate using a fixed Kalman gain G.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+            y (np.ndarray): Measurement vector for the update step.
+        """
         self.predict_with_fixed_G(u)
         self.update_with_fixed_G(y)
 
     def update_P_one_step(self):
+        """
+        Update the estimate error covariance P one step, assuming G is already calculated.
+        This method is used to iteratively refine the covariance estimate.
+        """
         self.P = self.A @ self.P @ self.A.T + self.Q
 
         P_CT_matrix = self.P @ self.C.T
@@ -129,7 +235,11 @@ class LinearKalmanFilter(KalmanFilterCommon):
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
     def converge_G(self):
-
+        """
+        Iteratively refine the Kalman gain G until convergence.
+        This method checks if the change in G is below a certain threshold for all elements.
+        It is useful when G is not known initially and needs to be estimated.
+        """
         for k in range(LKF_G_CONVERGE_REPEAT_MAX):
             if self.G is None:
                 self.update_P_one_step()
@@ -151,6 +261,24 @@ class LinearKalmanFilter(KalmanFilterCommon):
 
 
 class ExtendedKalmanFilter(KalmanFilterCommon):
+    """
+    ExtendedKalmanFilter implements an extended Kalman filter for nonlinear systems.
+    It uses nonlinear state and measurement functions, along with their Jacobians.
+    Attributes:
+        state_function (callable): Nonlinear state transition function.
+        measurement_function (callable): Nonlinear measurement function.
+        state_function_jacobian (callable): Jacobian of the state function.
+        measurement_function_jacobian (callable): Jacobian of the measurement function.
+        A (np.ndarray): State transition Jacobian matrix.
+        C (np.ndarray): Measurement Jacobian matrix.
+        Q (np.ndarray): Process noise covariance matrix.
+        R (np.ndarray): Measurement noise covariance matrix.
+        x_hat (np.ndarray): Current state estimate.
+        P (np.ndarray): Estimate error covariance.
+        G (np.ndarray): Kalman gain.
+        u_store (DelayedVectorObject): Object to handle delayed input vectors.
+    """
+
     def __init__(self, state_function, measurement_function,
                  state_function_jacobian, measurement_function_jacobian,
                  Q: np.ndarray, R: np.ndarray, Parameters=None, Number_of_Delay=0):
@@ -173,6 +301,11 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
         self.u_store = None
 
     def predict(self, u: np.ndarray):
+        """
+        Predict the next state based on the current state and input.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+        """
         if self.u_store is None:
             self.u_store = DelayedVectorObject(
                 u.shape[0], self.Number_of_Delay)
@@ -189,6 +322,11 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
             self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, y):
+        """
+        Update the state estimate with the measurement.
+        Args:
+            y (np.ndarray): Measurement vector for the update step.
+        """
         self.C = self.measurement_function_jacobian(
             self.x_hat, self.Parameters)
 
@@ -202,6 +340,11 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
         self.P = (np.eye(self.A.shape[0]) - self.G @ self.C) @ self.P
 
     def get_x_hat_without_delay(self):
+        """
+        Get the current state estimate without considering input delays.
+        Returns:
+            np.ndarray: The current state estimate vector without delay.
+        """
         if self.Number_of_Delay == 0:
             return self.x_hat
         else:
@@ -221,6 +364,20 @@ class ExtendedKalmanFilter(KalmanFilterCommon):
 
 
 class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
+    """
+    UnscentedKalmanFilter_Basic implements a basic unscented Kalman filter for nonlinear systems.
+    It uses nonlinear state and measurement functions, along with a method to calculate sigma points.
+    Attributes:
+        state_function (callable): Nonlinear state transition function.
+        measurement_function (callable): Nonlinear measurement function.
+        Q (np.ndarray): Process noise covariance matrix.
+        R (np.ndarray): Measurement noise covariance matrix.
+        x_hat (np.ndarray): Current state estimate.
+        P (np.ndarray): Estimate error covariance.
+        G (np.ndarray): Kalman gain.
+        u_store (DelayedVectorObject): Object to handle delayed input vectors.
+    """
+
     def __init__(self, state_function, measurement_function,
                  Q: np.ndarray, R: np.ndarray, Parameters=None,
                  Number_of_Delay=0, kappa=0.0):
@@ -251,7 +408,10 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         self.calc_weights()
 
     def calc_weights(self):
-
+        """
+        Calculate the weights for the sigma points based on the kappa parameter.
+        The weights are used to compute the mean and covariance of the sigma points.
+        """
         lambda_weight = self.kappa
 
         self.W[0, 0] = self.kappa / \
@@ -262,6 +422,14 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         self.sigma_point_weight = math.sqrt(self.STATE_SIZE + lambda_weight)
 
     def calc_sigma_points(self, x: np.ndarray, P: np.ndarray):
+        """
+        Calculate the sigma points based on the current state estimate and covariance.
+        Args:
+            x (np.ndarray): Current state estimate vector.
+            P (np.ndarray): Current estimate error covariance matrix.
+        Returns:
+            np.ndarray: Sigma points matrix, where each column is a sigma point.
+        """
         sqrtP = np.linalg.cholesky(P, upper=True)
         Kai = np.zeros((self.STATE_SIZE, 2 * self.STATE_SIZE + 1))
 
@@ -276,6 +444,11 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         return Kai
 
     def predict(self, u: np.ndarray):
+        """
+        Predict the next state based on the current state and input.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+        """
         if self.u_store is None:
             self.u_store = DelayedVectorObject(
                 u.shape[0], self.Number_of_Delay)
@@ -302,6 +475,11 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
             self.P = self.X_d @ self.W @ self.X_d.T + self.Q
 
     def update(self, y):
+        """
+        Update the state estimate with the measurement.
+        Args:
+            y (np.ndarray): Measurement vector for the update step.
+        """
         Kai = self.calc_sigma_points(self.x_hat, self.P)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))
@@ -325,6 +503,11 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
         self.P = self.P - self.G @ P_xy.T
 
     def get_x_hat_without_delay(self):
+        """
+        Get the current state estimate without considering input delays.
+        Returns:
+            np.ndarray: The current state estimate vector without delay.
+        """
         if self.Number_of_Delay == 0:
             return self.x_hat
         else:
@@ -344,6 +527,15 @@ class UnscentedKalmanFilter_Basic(KalmanFilterCommon):
 
 
 class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
+    """
+    UnscentedKalmanFilter implements an unscented Kalman filter for nonlinear systems with additional parameters for tuning.
+    It extends the basic unscented Kalman filter with parameters for kappa, alpha, and beta.
+    Attributes:
+        kappa (float): Scaling parameter for the sigma points.
+        alpha (float): Parameter for the spread of the sigma points.
+        beta (float): Parameter for the optimality of the filter.
+    """
+
     def __init__(self, state_function, measurement_function,
                  Q: np.ndarray, R: np.ndarray, Parameters=None,
                  Number_of_Delay=0, kappa=0.0, alpha=0.5, beta=2.0):
@@ -364,6 +556,10 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
                          Q, R, Parameters, Number_of_Delay, self.kappa)
 
     def calc_weights(self):
+        """
+        Calculate the weights for the sigma points based on the alpha, beta, and kappa parameters.
+        The weights are used to compute the mean and covariance of the sigma points.
+        """
         lambda_weight = self.alpha * self.alpha * \
             (self.STATE_SIZE + self.kappa) - self.STATE_SIZE
 
@@ -376,6 +572,11 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
         self.sigma_point_weight = math.sqrt(self.STATE_SIZE + lambda_weight)
 
     def predict(self, u):
+        """
+        Predict the next state based on the current state and input.
+        Args:
+            u (np.ndarray): Input vector for the prediction step.
+        """
         if self.u_store is None:
             self.u_store = DelayedVectorObject(
                 u.shape[0], self.Number_of_Delay)
@@ -402,6 +603,11 @@ class UnscentedKalmanFilter(UnscentedKalmanFilter_Basic):
             self.P = self.X_d @ self.W @ self.X_d.T + self.Q
 
     def update(self, y):
+        """
+        Update the state estimate with the measurement.
+        Args:
+            y (np.ndarray): Measurement vector for the update step.
+        """
         Kai = self.calc_sigma_points(self.x_hat, self.P)
 
         Y_d = np.zeros((self.OUTPUT_SIZE, 2 * self.STATE_SIZE + 1))

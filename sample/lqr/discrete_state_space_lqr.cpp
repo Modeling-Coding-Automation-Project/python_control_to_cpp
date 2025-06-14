@@ -1,3 +1,13 @@
+/**
+ * @file discrete_state_space_lqr.cpp
+ * @brief Example of discrete-time state-space LQR control simulation.
+ *
+ * This file demonstrates the use of a discrete-time state-space model and the
+ * Linear Quadratic Regulator (LQR) controller for a simple plant. The code
+ * constructs sparse matrices for the plant's state-space representation, sets
+ * up the LQR controller, and simulates the closed-loop system response over
+ * time.
+ */
 #include <iostream>
 
 #include "python_control.hpp"
