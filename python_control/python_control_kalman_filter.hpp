@@ -1,3 +1,14 @@
+/**
+ * @file python_control_kalman_filter.hpp
+ * @brief Kalman Filter implementations for PythonControl C++ library.
+ *
+ * This header provides C++ template implementations of Linear, Extended, and
+ * Unscented Kalman Filters, supporting both standard and delayed-input systems.
+ * It includes utility functions and types for Kalman filter weights, sigma
+ * point calculations, and prediction/update operations. The code is designed
+ * for high flexibility and type safety, leveraging template metaprogramming and
+ * static assertions.
+ */
 #ifndef __PYTHON_CONTROL_KALMAN_FILTER_HPP__
 #define __PYTHON_CONTROL_KALMAN_FILTER_HPP__
 
@@ -18,6 +29,25 @@ template <typename T, std::size_t Vector_Size>
 using KalmanFilter_Q_Type = PythonNumpy::DiagMatrix_Type<T, Vector_Size>;
 
 /* make Kalman Filter Weights  */
+
+/**
+ * @brief Creates a diagonal matrix for the process noise covariance (Q) used in
+ * a Kalman Filter.
+ *
+ * This templated function constructs a diagonal matrix of size Vector_Size,
+ * where the diagonal elements are initialized with the provided values. The
+ * function is intended to facilitate the creation of the Q matrix for Kalman
+ * Filter implementations.
+ *
+ * @tparam Vector_Size The size of the square matrix (number of states).
+ * @tparam T The type of the matrix elements (e.g., float, double).
+ * @tparam Args Variadic template parameter for additional values to fill the
+ * diagonal.
+ * @param value_1 The value for the first diagonal element.
+ * @param args Additional values for the remaining diagonal elements.
+ * @return KalmanFilter_Q_Type<T, Vector_Size> The resulting diagonal matrix of
+ * type KalmanFilter_Q_Type.
+ */
 template <std::size_t Vector_Size, typename T, typename... Args>
 inline auto make_KalmanFilter_Q(T value_1, Args... args)
     -> KalmanFilter_Q_Type<T, Vector_Size> {
@@ -32,6 +62,25 @@ template <typename T, std::size_t Vector_Size>
 using KalmanFilter_R_Type = PythonNumpy::DiagMatrix_Type<T, Vector_Size>;
 
 /* make Kalman Filter Weights  */
+
+/**
+ * @brief Creates a diagonal matrix for the measurement noise covariance (R)
+ * used in a Kalman Filter.
+ *
+ * This templated function constructs a diagonal matrix of size Vector_Size,
+ * where the diagonal elements are initialized with the provided values. The
+ * function is intended to facilitate the creation of the R matrix for Kalman
+ * Filter implementations.
+ *
+ * @tparam Vector_Size The size of the square matrix (number of measurements).
+ * @tparam T The type of the matrix elements (e.g., float, double).
+ * @tparam Args Variadic template parameter for additional values to fill the
+ * diagonal.
+ * @param value_1 The value for the first diagonal element.
+ * @param args Additional values for the remaining diagonal elements.
+ * @return KalmanFilter_R_Type<T, Vector_Size> The resulting diagonal matrix of
+ * type KalmanFilter_R_Type.
+ */
 template <std::size_t Vector_Size, typename T, typename... Args>
 inline auto make_KalmanFilter_R(T value_1, Args... args)
     -> KalmanFilter_R_Type<T, Vector_Size> {
@@ -47,6 +96,21 @@ namespace UKF_Operation {
 
 template <typename T, typename W_Type, std::size_t Index, std::size_t Rest>
 struct SetRestOfW_Loop {
+  /**
+   * @brief Sets the specified weight value at the given index in the weight
+   * matrix W, and recursively sets the same value for the remaining indices.
+   *
+   * @tparam T         The type of the weight value to set.
+   * @tparam W_Type    The type of the weight matrix.
+   * @tparam Index     The current index in the recursion.
+   * @tparam Rest      The number of remaining indices to set.
+   * @param W          Reference to the weight matrix to modify.
+   * @param weight_to_set The weight value to assign at the current index.
+   *
+   * This function uses template recursion to set the specified weight value
+   * at each index in the weight matrix W, starting from Index and continuing
+   * for Rest elements.
+   */
   static inline void set(W_Type &W, const T &weight_to_set) {
     W.template set<Index, Index>(weight_to_set);
     SetRestOfW_Loop<T, W_Type, Index + 1, Rest - 1>::set(W, weight_to_set);
@@ -55,11 +119,34 @@ struct SetRestOfW_Loop {
 
 template <typename T, typename W_Type, std::size_t Index>
 struct SetRestOfW_Loop<T, W_Type, Index, 0> {
+  /**
+   * @brief Base case for the recursive setting of weights in the weight matrix.
+   *
+   * @tparam T         The type of the weight value to set.
+   * @tparam W_Type    The type of the weight matrix.
+   * @tparam Index     The current index in the recursion.
+   * @param W          Reference to the weight matrix to modify.
+   * @param weight_to_set The weight value to assign at the current index.
+   *
+   * This function does nothing, serving as a base case for recursion.
+   */
   static inline void set(W_Type &W, const T &weight_to_set) {
     W.template set<Index, Index>(weight_to_set);
   }
 };
 
+/**
+ * @brief Sets the remaining weights in the weight matrix W starting from a
+ * specified index.
+ *
+ * This alias template simplifies the process of setting the remaining weights
+ * in the weight matrix W, starting from a given index and continuing to the
+ * end of the matrix.
+ *
+ * @tparam T         The type of the weight value to set.
+ * @tparam W_Type    The type of the weight matrix.
+ * @tparam Start_Index The index from which to start setting weights.
+ */
 template <typename T, typename W_Type, std::size_t Start_Index>
 using SetRestOfW =
     SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
@@ -68,6 +155,25 @@ using SetRestOfW =
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
           std::size_t Index, std::size_t End_Index>
 struct UpdateSigmaPointMatrix_Loop {
+  /**
+   * @brief Updates the sigma point matrix Kai by setting the rows based on the
+   * state vector X and the sigma points SP, scaled by a specified weight.
+   *
+   * @tparam T         The type of the weight to apply to the sigma points.
+   * @tparam Kai_Type  The type of the sigma point matrix to update.
+   * @tparam X_Type    The type of the state vector.
+   * @tparam SP_Type   The type of the sigma points matrix.
+   * @tparam Index     The current index in the recursion.
+   * @tparam End_Index The end index for recursion.
+   * @param Kai        Reference to the sigma point matrix to modify.
+   * @param X          The state vector used for updating the sigma points.
+   * @param SP         The sigma points matrix used for updating.
+   * @param sigma_point_weight The weight applied to the sigma points.
+   *
+   * This function uses template recursion to set two rows in the Kai matrix
+   * for each sigma point, one for the positive and one for the negative
+   * weighted sigma point, and continues until all indices are processed.
+   */
   static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
                          const T &sigma_point_weight) {
 
@@ -85,6 +191,21 @@ struct UpdateSigmaPointMatrix_Loop {
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
           std::size_t Index>
 struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
+  /**
+   * @brief Base case for the recursive update of the sigma point matrix.
+   *
+   * @tparam T         The type of the weight to apply to the sigma points.
+   * @tparam Kai_Type  The type of the sigma point matrix to update.
+   * @tparam X_Type    The type of the state vector.
+   * @tparam SP_Type   The type of the sigma points matrix.
+   * @tparam Index     The current index in the recursion.
+   * @param Kai        Reference to the sigma point matrix to modify.
+   * @param X          The state vector used for updating the sigma points.
+   * @param SP         The sigma points matrix used for updating.
+   * @param sigma_point_weight The weight applied to the sigma points.
+   *
+   * This function does nothing, serving as a base case for recursion.
+   */
   static inline void set(Kai_Type &Kai, const X_Type &X, const SP_Type &SP,
                          const T &sigma_point_weight) {
     // Do nothing.
@@ -95,14 +216,46 @@ struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
   }
 };
 
+/**
+ * @brief Updates the sigma point matrix Kai based on the state vector X and
+ * the sigma points SP, scaled by a specified weight.
+ *
+ * This alias template simplifies the process of updating the sigma point
+ * matrix Kai, setting rows for both positive and negative weighted sigma
+ * points.
+ *
+ * @tparam T         The type of the weight to apply to the sigma points.
+ * @tparam Kai_Type  The type of the sigma point matrix to update.
+ * @tparam X_Type    The type of the state vector.
+ * @tparam SP_Type   The type of the sigma points matrix.
+ */
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
 using UpdateSigmaPointMatrix =
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
 
 /* calc state function with each sigma points */
+
 template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
           typename Parameter_Type, std::size_t Index>
 struct StateFunctionEachSigmaPoints_Loop {
+  /**
+   * @brief Computes the state function for each sigma point in the Kai matrix
+   * and updates the corresponding row in the Kai matrix.
+   *
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @tparam StateFunction_Object The type of the state function object.
+   * @tparam U_Type The type of the input vector.
+   * @tparam Parameter_Type The type of the parameters for the state function.
+   * @tparam Index The current index in the recursion.
+   * @param Kai Reference to the sigma point matrix to modify.
+   * @param state_function The state function object used for computation.
+   * @param U The input vector used in the state function.
+   * @param parameters The parameters for the state function.
+   *
+   * This function uses template recursion to compute the state function for
+   * each sigma point and updates the corresponding row in the Kai matrix,
+   * continuing until all indices are processed.
+   */
   static inline void compute(Kai_Type &Kai,
                              const StateFunction_Object &state_function,
                              const U_Type &U,
@@ -122,6 +275,18 @@ template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
           typename Parameter_Type>
 struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
                                          Parameter_Type, 0> {
+  /**
+   * @brief Base case for the recursive computation of the state function for
+   * each sigma point.
+   *
+   * @param Kai Reference to the sigma point matrix to modify.
+   * @param state_function The state function object used for computation.
+   * @param U The input vector used in the state function.
+   * @param parameters The parameters for the state function.
+   * *
+   * This function computes the state function for the first sigma point and
+   * updates the corresponding row in the Kai matrix.
+   * */
   static inline void compute(Kai_Type &Kai,
                              const StateFunction_Object &state_function,
                              const U_Type &U,
@@ -132,6 +297,18 @@ struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
   }
 };
 
+/**
+ * @brief Computes the state function for each sigma point in the Kai matrix
+ * and updates the corresponding rows.
+ *
+ * This alias template simplifies the process of computing the state function
+ * for each sigma point, iterating through all indices in the Kai matrix.
+ *
+ * @tparam Kai_Type The type of the sigma point matrix.
+ * @tparam StateFunction_Object The type of the state function object.
+ * @tparam U_Type The type of the input vector.
+ * @tparam Parameter_Type The type of the parameters for the state function.
+ */
 template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
           typename Parameter_Type>
 using StateFunctionEachSigmaPoints =
@@ -142,6 +319,22 @@ using StateFunctionEachSigmaPoints =
 template <typename X_Type, typename W_Type, typename Kai_Type,
           std::size_t Index>
 struct AverageSigmaPoints_Loop {
+  /**
+   * @brief Computes the average of sigma points weighted by the corresponding
+   * weights and updates the state vector X_hat.
+   *
+   * @tparam X_Type The type of the state vector to update.
+   * @tparam W_Type The type of the weight matrix.
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @tparam Index The current index in the recursion.
+   * @param X_hat Reference to the state vector to update.
+   * @param W The weight matrix used for averaging.
+   * @param Kai The sigma point matrix containing the sigma points.
+   *
+   * This function uses template recursion to compute the weighted average of
+   * sigma points and updates the state vector X_hat, continuing until all
+   * indices are processed.
+   */
   static inline void compute(X_Type &X_hat, const W_Type &W,
                              const Kai_Type &Kai) {
     X_hat = X_hat +
@@ -154,6 +347,19 @@ struct AverageSigmaPoints_Loop {
 
 template <typename X_Type, typename W_Type, typename Kai_Type>
 struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 1> {
+  /**
+   * @brief Base case for the recursive averaging of sigma points.
+   *
+   * @tparam X_Type The type of the state vector to update.
+   * @tparam W_Type The type of the weight matrix.
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @param X_hat Reference to the state vector to update.
+   * @param W The weight matrix used for averaging.
+   * @param Kai The sigma point matrix containing the sigma points.
+   *
+   * This function computes the weighted average for the last sigma point and
+   * updates the state vector X_hat.
+   */
   static inline void compute(X_Type &X_hat, const W_Type &W,
                              const Kai_Type &Kai) {
     X_hat = X_hat + W.template get<1, 1>() * PythonNumpy::get_row<1>(Kai);
@@ -162,6 +368,19 @@ struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 1> {
 
 template <typename X_Type, typename W_Type, typename Kai_Type>
 struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
+  /**
+   * @brief Base case for the recursive averaging of sigma points when no
+   * sigma points are left to process.
+   *
+   * @param X_Type The type of the state vector to update.
+   * @param W_Type The type of the weight matrix.
+   * @param Kai_Type The type of the sigma point matrix.
+   * @param X_hat Reference to the state vector to update.
+   * @param W The weight matrix used for averaging.
+   * @param Kai The sigma point matrix containing the sigma points.
+   * *
+   * This function does nothing, serving as a base case for recursion.
+   */
   static inline void compute(X_Type &X_hat, const W_Type &W,
                              const Kai_Type &Kai) {
     // Do nothing.
@@ -171,6 +390,17 @@ struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
   }
 };
 
+/**
+ * @brief Computes the average of sigma points weighted by the corresponding
+ * weights and updates the state vector X_hat.
+ *
+ * This alias template simplifies the process of averaging sigma points,
+ * iterating through all indices in the Kai matrix.
+ *
+ * @tparam X_Type The type of the state vector to update.
+ * @tparam W_Type The type of the weight matrix.
+ * @tparam Kai_Type The type of the sigma point matrix.
+ */
 template <typename X_Type, typename W_Type, typename Kai_Type>
 using AverageSigmaPoints =
     AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::ROWS - 1)>;
@@ -178,6 +408,21 @@ using AverageSigmaPoints =
 /* calc covariance matrix */
 template <typename Kai_Type, typename X_Type, std::size_t Index>
 struct SigmaPointsCovariance_Loop {
+  /**
+   * @brief Computes the covariance matrix of the sigma points by subtracting
+   * the estimated state vector X_hat from each sigma point and storing the
+   * result in the output matrix X_d.
+   *
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @tparam X_Type The type of the estimated state vector.
+   * @tparam Index The current index in the recursion.
+   * @param X_d Reference to the output matrix where the covariance is stored.
+   * @param Kai The sigma point matrix containing the sigma points.
+   * @param X_hat The estimated state vector to subtract from each sigma point.
+   *
+   * This function uses template recursion to compute the covariance for each
+   * sigma point and continues until all indices are processed.
+   */
   static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
                              const X_Type &X_hat) {
 
@@ -190,12 +435,36 @@ struct SigmaPointsCovariance_Loop {
 
 template <typename Kai_Type, typename X_Type>
 struct SigmaPointsCovariance_Loop<Kai_Type, X_Type, 0> {
+  /**
+   * @brief Base case for the recursive computation of the covariance matrix
+   * of the sigma points.
+   *
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @tparam X_Type The type of the estimated state vector.
+   * @param X_d Reference to the output matrix where the covariance is stored.
+   * @param Kai The sigma point matrix containing the sigma points.
+   * @param X_hat The estimated state vector to subtract from each sigma point.
+   *
+   * This function computes the covariance for the first sigma point and
+   * updates the corresponding row in the output matrix X_d.
+   */
   static inline void compute(Kai_Type &X_d, const Kai_Type &Kai,
                              const X_Type &X_hat) {
     PythonNumpy::set_row<0>(X_d, PythonNumpy::get_row<0>(Kai) - X_hat);
   }
 };
 
+/**
+ * @brief Computes the covariance matrix of the sigma points by subtracting
+ * the estimated state vector X_hat from each sigma point and storing the
+ * result in the output matrix X_d.
+ *
+ * This alias template simplifies the process of computing the covariance
+ * matrix, iterating through all indices in the Kai matrix.
+ *
+ * @tparam Kai_Type The type of the sigma point matrix.
+ * @tparam X_Type The type of the estimated state vector.
+ */
 template <typename Kai_Type, typename X_Type>
 using SigmaPointsCovariance =
     SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::ROWS - 1)>;
@@ -205,6 +474,27 @@ template <typename Nu_Type, typename Kai_Type,
           typename MeasurementFunction_Object, typename Parameter_Type,
           std::size_t Index>
 struct MeasurementFunctionEachSigmaPoints_Loop {
+  /**
+   * @brief Computes the measurement function for each sigma point in the Kai
+   * matrix and updates the corresponding row in the Nu matrix.
+   *
+   * @tparam Nu_Type The type of the measurement output matrix.
+   * @tparam Kai_Type The type of the sigma point matrix.
+   * @tparam MeasurementFunction_Object The type of the measurement function
+   * object.
+   * @tparam Parameter_Type The type of the parameters for the measurement
+   * function.
+   * @tparam Index The current index in the recursion.
+   * @param Nu Reference to the measurement output matrix to modify.
+   * @param Kai The sigma point matrix containing the sigma points.
+   * @param measurement_function The measurement function object used for
+   * computation.
+   * @param parameters The parameters for the measurement function.
+   *
+   * This function uses template recursion to compute the measurement function
+   * for each sigma point and updates the corresponding row in the Nu matrix,
+   * continuing until all indices are processed.
+   */
   static inline void
   compute(Nu_Type &Nu, Kai_Type &Kai,
           const MeasurementFunction_Object &measurement_function,
@@ -223,6 +513,19 @@ template <typename Nu_Type, typename Kai_Type,
           typename MeasurementFunction_Object, typename Parameter_Type>
 struct MeasurementFunctionEachSigmaPoints_Loop<
     Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type, 0> {
+  /**
+   * @brief Base case for the recursive computation of the measurement
+   * function for each sigma point.
+   *
+   * @param Nu Reference to the measurement output matrix to modify.
+   * @param Kai The sigma point matrix containing the sigma points.
+   * @param measurement_function The measurement function object used for
+   * computation.
+   * @param parameters The parameters for the measurement function.
+   * *
+   * This function computes the measurement function for the first sigma
+   * point and updates the corresponding row in the Nu matrix.
+   */
   static inline void
   compute(Nu_Type &Nu, Kai_Type &Kai,
           const MeasurementFunction_Object &measurement_function,
@@ -233,6 +536,21 @@ struct MeasurementFunctionEachSigmaPoints_Loop<
   }
 };
 
+/**
+ * @brief Computes the measurement function for each sigma point in the Kai
+ * matrix and updates the corresponding rows in the Nu matrix.
+ *
+ * This alias template simplifies the process of computing the measurement
+ * function for each sigma point, iterating through all indices in the Kai
+ * matrix.
+ *
+ * @tparam Nu_Type The type of the measurement output matrix.
+ * @tparam Kai_Type The type of the sigma point matrix.
+ * @tparam MeasurementFunction_Object The type of the measurement function
+ * object.
+ * @tparam Parameter_Type The type of the parameters for the measurement
+ * function.
+ */
 template <typename Nu_Type, typename Kai_Type,
           typename MeasurementFunction_Object, typename Parameter_Type>
 using MeasurementFunctionEachSigmaPoints =
@@ -246,6 +564,17 @@ namespace PredictOperation {
 
 /* predict for Linear Kalman Filter */
 template <std::size_t NumberOfDelay> struct Linear {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for a
+   * Linear Kalman Filter.
+   * @param state_space The discrete state space object containing the system
+   * dynamics.
+   * @param P The covariance matrix to be updated.
+   * @param Q The process noise covariance matrix.
+   * @param U_store The input store containing the control inputs.
+   * @param _input_count The current input count, which determines if the
+   * prediction should be executed or delayed.
+   */
   template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
             typename U_Store_Type>
   static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
@@ -263,6 +592,16 @@ template <std::size_t NumberOfDelay> struct Linear {
 };
 
 template <> struct Linear<0> {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for a
+   * Linear Kalman Filter without delay.
+   * @param state_space The discrete state space object containing the system
+   * dynamics.
+   * @param P The covariance matrix to be updated.
+   * @param Q The process noise covariance matrix.
+   * @param U_store The input store containing the control inputs.
+   * @param _input_count The current input count, which is ignored in this case.
+   */
   template <typename DiscreteStateSpace_Type, typename P_Type, typename Q_Type,
             typename U_Store_Type>
   static void execute(DiscreteStateSpace_Type &state_space, P_Type &P,
@@ -278,6 +617,20 @@ template <> struct Linear<0> {
 
 /* predict for Extended Kalman Filter */
 template <std::size_t NumberOfDelay> struct Extended {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for an
+   * Extended Kalman Filter.
+   * @param state_function_jacobian The Jacobian of the state function.
+   * @param state_function The state function object.
+   * @param A The Jacobian matrix to be updated.
+   * @param P The covariance matrix to be updated.
+   * @param Q The process noise covariance matrix.
+   * @param U_store The input store containing the control inputs.
+   * @param X_hat The estimated state vector to be updated.
+   * @param parameters Additional parameters for the state function.
+   * @param input_count The current input count, which determines if the
+   * prediction should be executed or delayed.
+   */
   template <typename StateFunction_Object,
             typename StateFunction_Jacobian_Object, typename A_Type,
             typename P_Type, typename Q_Type, typename U_Store_Type,
@@ -300,6 +653,19 @@ template <std::size_t NumberOfDelay> struct Extended {
 };
 
 template <> struct Extended<0> {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for an
+   * Extended Kalman Filter without delay.
+   * @param state_function_jacobian The Jacobian of the state function.
+   * @param state_function The state function object.
+   * @param A The Jacobian matrix to be updated.
+   * @param P The covariance matrix to be updated.
+   * @param Q The process noise covariance matrix.
+   * @param U_store The input store containing the control inputs.
+   * @param X_hat The estimated state vector to be updated.
+   * @param parameters Additional parameters for the state function.
+   * @param input_count The current input count, which is ignored in this case.
+   */
   template <typename StateFunction_Object,
             typename StateFunction_Jacobian_Object, typename A_Type,
             typename P_Type, typename Q_Type, typename U_Store_Type,
@@ -320,6 +686,22 @@ template <> struct Extended<0> {
 
 /* predict for Unscented Kalman Filter */
 template <std::size_t NumberOfDelay> struct Unscented {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for an
+   * Unscented Kalman Filter.
+   * @param state_function The state function object.
+   * @param sigma_points_calculator The sigma points calculator object.
+   * @param X_hat The estimated state vector to be updated.
+   * @param U_store The input store containing the control inputs.
+   * @param P The covariance matrix to be updated.
+   * @param w_m The mean weight for the sigma points.
+   * @param W The weight matrix for the sigma points.
+   * @param Q The process noise covariance matrix.
+   * @param X_d The output matrix for the sigma points covariance.
+   * @param parameters Additional parameters for the state function.
+   * @param input_count The current input count, which determines if the
+   * prediction should be executed or delayed.
+   */
   template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
             typename X_Type, typename U_Store_Type, typename P_Type, typename T,
             typename W_Type, typename Q_Type, typename Kai_Type,
@@ -354,6 +736,21 @@ template <std::size_t NumberOfDelay> struct Unscented {
 };
 
 template <> struct Unscented<0> {
+  /**
+   * @brief Predicts the next state and updates the covariance matrix for an
+   * Unscented Kalman Filter without delay.
+   * @param state_function The state function object.
+   * @param sigma_points_calculator The sigma points calculator object.
+   * @param X_hat The estimated state vector to be updated.
+   * @param U_store The input store containing the control inputs.
+   * @param P The covariance matrix to be updated.
+   * @param w_m The mean weight for the sigma points.
+   * @param W The weight matrix for the sigma points.
+   * @param Q The process noise covariance matrix.
+   * @param X_d The output matrix for the sigma points covariance.
+   * @param parameters Additional parameters for the state function.
+   * @param input_count The current input count, which is ignored in this case.
+   */
   template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
             typename X_Type, typename U_Store_Type, typename P_Type, typename T,
             typename W_Type, typename Q_Type, typename Kai_Type,
@@ -392,6 +789,14 @@ namespace GetXHatWithoutDelayOperation {
 
 /* Get x_hat without delay for Linear Kalman Filter */
 template <std::size_t NumberOfDelay> struct Linear {
+  /**
+   * @brief Computes the estimated state vector x_hat without delay for a Linear
+   * Kalman Filter.
+   * @param state_space The discrete state space object containing the system
+   * dynamics.
+   * @param input_count The number of inputs to consider in the prediction.
+   * @return The estimated state vector x_hat.
+   */
   template <typename DiscreteStateSpace_Type>
   static auto compute(const DiscreteStateSpace_Type &state_space,
                       const std::size_t &input_count) ->
@@ -415,6 +820,13 @@ template <std::size_t NumberOfDelay> struct Linear {
 };
 
 template <> struct Linear<0> {
+  /**
+   * @brief Computes the estimated state vector x_hat without delay for a Linear
+   * Kalman Filter without considering input count.
+   * @param state_space The discrete state space object containing the system
+   * dynamics.
+   * @return The estimated state vector x_hat.
+   */
   template <typename DiscreteStateSpace_Type>
   static auto compute(const DiscreteStateSpace_Type &state_space) ->
       typename DiscreteStateSpace_Type::Original_X_Type {
@@ -424,6 +836,16 @@ template <> struct Linear<0> {
 
 /* Get x_hat without delay for Extended Kalman Filter */
 template <std::size_t NumberOfDelay> struct Extended {
+  /**
+   * @brief Computes the estimated state vector x_hat without delay for an
+   * Extended Kalman Filter.
+   * @param state_function The state function object.
+   * @param X_hat_in The initial estimated state vector.
+   * @param U_store The input store containing the control inputs.
+   * @param parameters Additional parameters for the state function.
+   * @param input_count The number of inputs to consider in the prediction.
+   * @return The estimated state vector x_hat.
+   */
   template <typename StateFunction_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
   static auto compute(StateFunction_Object &state_function,
@@ -449,6 +871,15 @@ template <std::size_t NumberOfDelay> struct Extended {
 };
 
 template <> struct Extended<0> {
+  /**
+   * @brief Computes the estimated state vector x_hat without delay for an
+   * Extended Kalman Filter without considering input count.
+   * @param state_function The state function object.
+   * @param X_hat The initial estimated state vector.
+   * @param U_store The input store containing the control inputs.
+   * @param parameters Additional parameters for the state function.
+   * @return The estimated state vector x_hat.
+   */
   template <typename StateFunction_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
   static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
@@ -464,6 +895,18 @@ template <> struct Extended<0> {
 
 } // namespace GetXHatWithoutDelayOperation
 
+/**
+ * @brief Linear Kalman Filter class template.
+ *
+ * This class implements a linear Kalman filter for discrete state spaces.
+ * It supports prediction and update operations, and it is designed to work
+ * with diagonal covariance matrices for process noise (Q) and measurement
+ * noise (R).
+ *
+ * @tparam DiscreteStateSpace_Type_In The type of the discrete state space.
+ * @tparam Q_Type_In The type of the process noise covariance matrix.
+ * @tparam R_Type_In The type of the measurement noise covariance matrix.
+ */
 template <typename DiscreteStateSpace_Type_In, typename Q_Type_In,
           typename R_Type_In>
 class LinearKalmanFilter {
@@ -575,6 +1018,15 @@ public:
 
 public:
   /* Function */
+
+  /**
+   * @brief Predicts the next state and updates the covariance matrix.
+   *
+   * This function performs the prediction step of the Kalman filter, updating
+   * the state vector and covariance matrix based on the current input.
+   *
+   * @param U The control input to be applied for prediction.
+   */
   inline void
   predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
@@ -585,6 +1037,15 @@ public:
         this->_input_count);
   }
 
+  /**
+   * @brief Updates the state estimate and covariance matrix based on the
+   * measurement.
+   *
+   * This function performs the update step of the Kalman filter, adjusting
+   * the state vector and covariance matrix based on the observed measurement.
+   *
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void
   update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
 
@@ -604,6 +1065,16 @@ public:
               this->P;
   }
 
+  /**
+   * @brief Predicts the next state and updates the state estimate based on the
+   * measurement.
+   *
+   * This function combines the prediction and update steps of the Kalman filter
+   * into a single operation.
+   *
+   * @param U The control input to be applied for prediction.
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void predict_and_update(
       const typename DiscreteStateSpace_Type::Original_U_Type &U,
       const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
@@ -613,6 +1084,15 @@ public:
   }
 
   // If G is known, you can use below "_fixed_G" functions.
+
+  /**
+   * @brief Predicts the next state with a fixed G matrix.
+   *
+   * This function performs the prediction step of the Kalman filter using a
+   * pre-defined G matrix, which is assumed to be constant.
+   *
+   * @param U The control input to be applied for prediction.
+   */
   inline void predict_with_fixed_G(
       const typename DiscreteStateSpace_Type::Original_U_Type &U) {
 
@@ -626,6 +1106,14 @@ public:
     }
   }
 
+  /**
+   * @brief Updates the state estimate with a fixed G matrix.
+   *
+   * This function performs the update step of the Kalman filter using a
+   * pre-defined G matrix, which is assumed to be constant.
+   *
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void update_with_fixed_G(
       const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
 
@@ -634,6 +1122,16 @@ public:
         this->G * (Y - this->state_space.C * this->state_space.X);
   }
 
+  /**
+   * @brief Predicts the next state and updates the state estimate with a fixed
+   * G matrix.
+   *
+   * This function combines the prediction and update steps of the Kalman filter
+   * using a pre-defined G matrix, which is assumed to be constant.
+   *
+   * @param U The control input to be applied for prediction.
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void predict_and_update_with_fixed_G(
       const typename DiscreteStateSpace_Type::Original_U_Type &U,
       const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
@@ -642,6 +1140,13 @@ public:
     this->update_with_fixed_G(Y);
   }
 
+  /**
+   * @brief Converges the G matrix to a stable value.
+   *
+   * This function iteratively updates the covariance matrix P and the G
+   * matrix until convergence is achieved, ensuring that the Kalman filter
+   * stabilizes.
+   */
   inline void update_P_one_step(void) {
     this->P = this->state_space.A *
                   PythonNumpy::A_mul_BTranspose(this->P, this->state_space.A) +
@@ -659,6 +1164,13 @@ public:
               this->P;
   }
 
+  /**
+   * @brief Converges the G matrix by iteratively updating the covariance matrix
+   * P and checking for convergence.
+   *
+   * This function performs multiple iterations to ensure that the G matrix
+   * stabilizes, allowing the Kalman filter to operate effectively.
+   */
   inline void converge_G(void) {
     this->update_P_one_step();
 
@@ -689,11 +1201,29 @@ public:
   }
 
   /* Get */
+
+  /**
+   * @brief Retrieves the estimated state vector x_hat.
+   *
+   * This function returns the current estimated state vector from the state
+   * space.
+   *
+   * @return The estimated state vector x_hat.
+   */
   inline auto get_x_hat(void) const ->
       typename DiscreteStateSpace_Type::Original_X_Type {
     return this->state_space.get_X();
   }
 
+  /**
+   * @brief Computes the estimated state vector x_hat without considering
+   * delays.
+   *
+   * This function calculates the estimated state vector based on the current
+   * state space and input count, ignoring any delays in the input.
+   *
+   * @return The estimated state vector x_hat without delay.
+   */
   inline auto get_x_hat_without_delay(void) const ->
       typename DiscreteStateSpace_Type::Original_X_Type {
 
@@ -702,15 +1232,38 @@ public:
   }
 
   /* Set */
+
+  /**
+   * @brief Sets the estimated state vector x_hat.
+   *
+   * This function updates the state space with a new estimated state vector.
+   *
+   * @param x_hat The new estimated state vector to be set.
+   */
   inline void
   set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
     this->state_space.X = x_hat;
   }
 
+  /**
+   * @brief Sets the covariance matrix P.
+   *
+   * This function updates the covariance matrix used in the Kalman filter.
+   *
+   * @param P_in The new covariance matrix to be set.
+   */
   inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
     this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
   }
 
+  /**
+   * @brief Sets the minimum division value for the C_P_CT_R_inv_solver.
+   *
+   * This function updates the minimum division value used in the Kalman filter
+   * to avoid division by zero errors.
+   *
+   * @param division_min_in The new minimum division value to be set.
+   */
   inline void
   set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
     this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
@@ -740,6 +1293,19 @@ protected:
 };
 
 /* make Linear Kalman Filter */
+
+/**
+ * @brief Factory function to create a LinearKalmanFilter instance.
+ *
+ * This function constructs a LinearKalmanFilter object with the specified
+ * discrete state space, process noise covariance matrix (Q), and measurement
+ * noise covariance matrix (R).
+ *
+ * @param DiscreteStateSpace The discrete state space object.
+ * @param Q The process noise covariance matrix.
+ * @param R The measurement noise covariance matrix.
+ * @return A LinearKalmanFilter instance.
+ */
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 inline auto make_LinearKalmanFilter(DiscreteStateSpace_Type DiscreteStateSpace,
                                     Q_Type Q, R_Type R)
@@ -750,29 +1316,104 @@ inline auto make_LinearKalmanFilter(DiscreteStateSpace_Type DiscreteStateSpace,
 }
 
 /* Linear Kalman Filter Type */
+
+/**
+ * @brief Type alias for LinearKalmanFilter with specified types.
+ *
+ * This alias simplifies the usage of LinearKalmanFilter by providing a
+ * convenient type name that includes the discrete state space, process noise
+ * covariance matrix, and measurement noise covariance matrix types.
+ *
+ * @tparam DiscreteStateSpace_Type The type of the discrete state space.
+ * @tparam Q_Type The type of the process noise covariance matrix.
+ * @tparam R_Type The type of the measurement noise covariance matrix.
+ */
 template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 using LinearKalmanFilter_Type =
     LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>;
 
 /* state and measurement function alias */
+
+/**
+ * @brief Type aliases for state and measurement function objects.
+ *
+ * These aliases define the types of function objects used for state and
+ * measurement functions in Kalman filters, allowing for flexible function
+ * signatures.
+ *
+ * @tparam State_Type The type of the state vector.
+ * @tparam Input_Type The type of the input vector.
+ * @tparam Parameter_Type The type of additional parameters for the functions.
+ */
 template <typename State_Type, typename Input_Type, typename Parameter_Type>
 using StateFunction_Object = std::function<State_Type(
     const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
+/**
+ * @brief Type alias for the Jacobian of the state function.
+ *
+ * This alias defines the type of the Jacobian function object for the state
+ * function, which computes the Jacobian matrix given the state, input, and
+ * parameters.
+ *
+ * @tparam A_Type The type of the Jacobian matrix.
+ * @tparam State_Type The type of the state vector.
+ * @tparam Input_Type The type of the input vector.
+ * @tparam Parameter_Type The type of additional parameters for the function.
+ */
 template <typename A_Type, typename State_Type, typename Input_Type,
           typename Parameter_Type>
 using StateFunctionJacobian_Object = std::function<A_Type(
     const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
+/**
+ * @brief Type alias for the measurement function object.
+ *
+ * This alias defines the type of the measurement function object, which maps
+ * the state and parameters to an output vector.
+ *
+ * @tparam Output_Type The type of the output vector.
+ * @tparam State_Type The type of the state vector.
+ * @tparam Parameter_Type The type of additional parameters for the function.
+ */
 template <typename Output_Type, typename State_Type, typename Parameter_Type>
 using MeasurementFunction_Object =
     std::function<Output_Type(const State_Type &, const Parameter_Type &)>;
 
+/**
+ * @brief Type alias for the Jacobian of the measurement function.
+ *
+ * This alias defines the type of the Jacobian function object for the
+ * measurement function, which computes the Jacobian matrix given the state and
+ * parameters.
+ *
+ * @tparam C_Type The type of the Jacobian matrix.
+ * @tparam State_Type The type of the state vector.
+ * @tparam Parameter_Type The type of additional parameters for the function.
+ */
 template <typename C_Type, typename State_Type, typename Parameter_Type>
 using MeasurementFunctionJacobian_Object =
     std::function<C_Type(const State_Type &, const Parameter_Type &)>;
 
 /* Extended Kalman Filter */
+
+/**
+ * @brief Extended Kalman Filter class template.
+ *
+ * This class implements an extended Kalman filter for discrete state spaces.
+ * It supports prediction and update operations, and it is designed to work
+ * with diagonal covariance matrices for process noise (Q) and measurement
+ * noise (R).
+ *
+ * @tparam A_Type_In The type of the state transition matrix.
+ * @tparam C_Type_In The type of the measurement matrix.
+ * @tparam U_Type_In The type of the input vector.
+ * @tparam Q_Type_In The type of the process noise covariance matrix.
+ * @tparam R_Type_In The type of the measurement noise covariance matrix.
+ * @tparam Parameter_Type_In The type of additional parameters for the filter.
+ * @tparam Number_Of_Delay The number of delays in the input store (default is
+ * 0).
+ */
 template <typename A_Type_In, typename C_Type_In, typename U_Type_In,
           typename Q_Type_In, typename R_Type_In, typename Parameter_Type_In,
           std::size_t Number_Of_Delay = 0>
@@ -951,6 +1592,15 @@ public:
 
 public:
   /* Function */
+
+  /**
+   * @brief Predicts the next state based on the current input.
+   *
+   * This function performs the prediction step of the extended Kalman filter,
+   * updating the state vector and covariance matrix based on the current input.
+   *
+   * @param U The control input to be applied for prediction.
+   */
   inline void predict(const U_Type &U) {
 
     U_store.push(U);
@@ -961,6 +1611,15 @@ public:
         this->_input_count);
   }
 
+  /**
+   * @brief Updates the state estimate based on the measurement.
+   *
+   * This function performs the update step of the extended Kalman filter,
+   * adjusting the state vector and covariance matrix based on the observed
+   * measurement.
+   *
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void update(const _Measurement_Type &Y) {
 
     this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
@@ -981,6 +1640,16 @@ public:
               this->P;
   }
 
+  /**
+   * @brief Predicts the next state and updates the state estimate based on the
+   * measurement.
+   *
+   * This function combines the prediction and update steps of the extended
+   * Kalman filter into a single operation.
+   *
+   * @param U The control input to be applied for prediction.
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
 
     this->predict(U);
@@ -988,8 +1657,26 @@ public:
   }
 
   /* Get */
+
+  /**
+   * @brief Retrieves the estimated state vector x_hat.
+   *
+   * This function returns the current estimated state vector.
+   *
+   * @return The estimated state vector x_hat.
+   */
   inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
 
+  /**
+   * @brief Computes the estimated state vector x_hat without considering
+   * delays.
+   *
+   * This function calculates the estimated state vector based on the current
+   * state function, input store, and parameters, ignoring any delays in the
+   * input.
+   *
+   * @return The estimated state vector x_hat without delay.
+   */
   inline auto get_x_hat_without_delay(void) const -> _State_Type {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
@@ -998,12 +1685,36 @@ public:
   }
 
   /* Set */
+
+  /**
+   * @brief Sets the estimated state vector x_hat.
+   *
+   * This function updates the estimated state vector with a new value.
+   *
+   * @param x_hat The new estimated state vector to be set.
+   */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
 
+  /**
+   * @brief Sets the covariance matrix P.
+   *
+   * This function updates the covariance matrix used in the extended Kalman
+   * filter.
+   *
+   * @param P_in The new covariance matrix to be set.
+   */
   inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
     this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
   }
 
+  /**
+   * @brief Sets the minimum division value for the C_P_CT_R_inv_solver.
+   *
+   * This function updates the minimum division value used in the extended
+   * Kalman filter to avoid division by zero errors.
+   *
+   * @param division_min_in The new minimum division value to be set.
+   */
   inline void
   set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
     this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
@@ -1050,6 +1761,17 @@ using ExtendedKalmanFilter_Type =
                          Number_Of_Delay>;
 
 /* Sigma Points Calculator */
+
+/**
+ * @brief Sigma Points Calculator class template.
+ *
+ * This class calculates sigma points for the Unscented Kalman Filter (UKF)
+ * based on the state and covariance matrix. It provides methods to set the
+ * sigma point weight and calculate the sigma points.
+ *
+ * @tparam State_Type The type of the state vector.
+ * @tparam P_Type The type of the covariance matrix.
+ */
 template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
 protected:
   /* Type */
@@ -1103,10 +1825,31 @@ public:
 
 public:
   /* Function */
+
+  /**
+   * @brief Sets the weight for the sigma points.
+   *
+   * This function updates the sigma point weight used in the calculation of
+   * sigma points.
+   *
+   * @param sigma_point_weight_in The new sigma point weight to be set.
+   */
   inline void set_weight(const _T &sigma_point_weight_in) {
     this->sigma_point_weight = sigma_point_weight_in;
   }
 
+  /**
+   * @brief Calculates the sigma points based on the state and covariance
+   * matrix.
+   *
+   * This function computes the sigma points using the provided state vector
+   * and covariance matrix, applying the Cholesky decomposition to the
+   * covariance matrix.
+   *
+   * @param X_in The state vector.
+   * @param P_in The covariance matrix.
+   * @return The calculated sigma points as a Kai_Type matrix.
+   */
   inline auto calculate(const State_Type &X_in, const P_Type &P_in)
       -> Kai_Type {
 
@@ -1133,6 +1876,22 @@ protected:
 };
 
 /* Unscented Kalman Filter */
+
+/**
+ * @brief Unscented Kalman Filter class template.
+ *
+ * This class implements an Unscented Kalman Filter (UKF) for discrete state
+ * spaces. It supports prediction and update operations, and it is designed to
+ * work with diagonal covariance matrices for process noise (Q) and measurement
+ * noise (R).
+ *
+ * @tparam U_Type_In The type of the input vector.
+ * @tparam Q_Type_In The type of the process noise covariance matrix.
+ * @tparam R_Type_In The type of the measurement noise covariance matrix.
+ * @tparam Parameter_Type_In The type of additional parameters for the filter.
+ * @tparam Number_Of_Delay The number of delays in the input store (default is
+ * 0).
+ */
 template <typename U_Type_In, typename Q_Type_In, typename R_Type_In,
           typename Parameter_Type_In, std::size_t Number_Of_Delay = 0>
 class UnscentedKalmanFilter {
@@ -1358,10 +2117,9 @@ public:
             std::move(input._update_sigma_points_calculator)),
         _input_count(std::move(input._input_count)) {}
 
-  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                        Number_Of_Delay> &
-  operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                                  Number_Of_Delay> &&input) noexcept {
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, Number_Of_Delay>
+      &operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                       Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->Q = std::move(input.Q);
       this->R = std::move(input.R);
@@ -1390,6 +2148,17 @@ public:
 
 public:
   /* Function */
+
+  /**
+   * @brief Calculates the weights for the sigma points.
+   *
+   * This function computes the weights used in the Unscented Kalman Filter
+   *
+   * to determine the contribution of each sigma point to the state
+   * estimation.
+   * @details The weights are calculated based on the filter parameters
+   * (alpha, beta, kappa) and the size of the state vector.
+   */
   inline void calculate_weights(void) {
     _T lambda_weight = this->alpha * this->alpha *
                            (static_cast<_T>(_STATE_SIZE) + this->kappa) -
@@ -1412,6 +2181,14 @@ public:
     this->_update_sigma_points_calculator.set_weight(sigma_point_weight);
   }
 
+  /**
+   * @brief Predicts the next state based on the current input.
+   *
+   * This function performs the prediction step of the Unscented Kalman Filter,
+   * updating the state vector and covariance matrix based on the current input.
+   *
+   * @param U The control input to be applied for prediction.
+   */
   inline void predict(const U_Type &U) {
 
     U_store.push(U);
@@ -1422,6 +2199,15 @@ public:
         this->X_d, this->parameters, this->_input_count);
   }
 
+  /**
+   * @brief Updates the state estimate based on the measurement.
+   *
+   * This function performs the update step of the Unscented Kalman Filter,
+   * adjusting the state vector and covariance matrix based on the observed
+   * measurement.
+   *
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void update(const _Measurement_Type &Y) {
 
     auto Kai =
@@ -1456,6 +2242,16 @@ public:
     this->P = this->P - PythonNumpy::A_mul_BTranspose(this->G, P_xy);
   }
 
+  /**
+   * @brief Predicts the next state and updates the state estimate based on the
+   * measurement.
+   *
+   * This function combines the prediction and update steps of the Unscented
+   * Kalman Filter into a single operation.
+   *
+   * @param U The control input to be applied for prediction.
+   * @param Y The observed measurement to be used for updating the state.
+   */
   inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
 
     this->predict(U);
@@ -1463,8 +2259,26 @@ public:
   }
 
   /* Get */
+
+  /**
+   * @brief Retrieves the estimated state vector x_hat.
+   *
+   * This function returns the current estimated state vector.
+   *
+   * @return The estimated state vector x_hat.
+   */
   inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
 
+  /**
+   * @brief Computes the estimated state vector x_hat without considering
+   * delays.
+   *
+   * This function calculates the estimated state vector based on the current
+   * state function, input store, and parameters, ignoring any delays in the
+   * input.
+   *
+   * @return The estimated state vector x_hat without delay.
+   */
   inline auto get_x_hat_without_delay(void) const -> _State_Type {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
@@ -1473,12 +2287,36 @@ public:
   }
 
   /* Set */
+
+  /**
+   * @brief Sets the estimated state vector x_hat.
+   *
+   * This function updates the estimated state vector with a new value.
+   *
+   * @param x_hat The new estimated state vector to be set.
+   */
   inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
 
+  /**
+   * @brief Sets the covariance matrix P.
+   *
+   * This function updates the covariance matrix used in the Unscented Kalman
+   * Filter
+   *
+   * @param P_in The new covariance matrix to be set.
+   */
   inline void set_decay_rate_for_P_YY_R_inv_solver(const _T &decay_rate_in) {
     this->_P_YY_R_inv_solver.set_decay_rate(decay_rate_in);
   }
 
+  /**
+   * @brief Sets the minimum division value for the P_YY_R_inv_solver.
+   *
+   * This function updates the minimum division value used in the Unscented
+   * Kalman Filter to avoid division by zero errors.
+   *
+   * @param division_min_in The new minimum division value to be set.
+   */
   inline void
   set_division_min_for_P_YY_R_inv_solver(const _T &division_min_in) {
     this->_P_YY_R_inv_solver.set_division_min(division_min_in);
