@@ -1,3 +1,13 @@
+/**
+ * @file recursive_squares_method.cpp
+ * @brief Contains the definition and initialization of the test data matrix for
+ * Recursive Least Squares (RLS) algorithm.
+ *
+ * This file defines a dense matrix, `RLS_test_X`, which is used as sample input
+ * data for testing the Recursive Least Squares (RLS) method. The matrix is
+ * initialized with a set of double precision values, representing multiple data
+ * points with two features each.
+ */
 #include <iostream>
 
 #include "python_control.hpp"
