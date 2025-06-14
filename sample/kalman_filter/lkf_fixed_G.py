@@ -1,3 +1,11 @@
+"""
+File: lkf_fixed_G.py
+
+This script demonstrates the use of a Linear Kalman Filter (LKF) for state estimation in a discrete-time linear system.
+It defines a simple 2-state system, configures the Kalman filter with system and noise parameters, and runs a simulation
+to estimate the system states from noisy measurements. The script also generates C++ header files for the configured
+Kalman filter and visualizes the true states, estimated states, control inputs, and measurements over time.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
