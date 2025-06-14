@@ -1,3 +1,8 @@
+"""
+File: state_space_deploy.py
+
+This module provides functionality to generate C++ header files representing discrete state-space systems defined using the Python `control` library. It automates the conversion of Python-based state-space models (A, B, C, D matrices and sampling time) into C++ code, facilitating deployment in C++ projects.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -10,12 +15,32 @@ from python_control.control_deploy import ControlDeploy
 
 
 class StateSpaceDeploy:
+    """
+    A class to generate C++ code for discrete state-space systems.
+    This class provides a static method to convert a `control.StateSpace` object
+    into a C++ header file containing the necessary definitions and functions
+    to represent the state-space model in C++.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_state_space_cpp_code(
             state_space: control.StateSpace, file_name=None, number_of_delay=0):
+        """
+        Generates C++ code for a discrete state-space system.
+        Args:
+            state_space (control.StateSpace): The state-space system to convert.
+            file_name (str, optional): The base name for the generated C++ file.
+                If not provided, the caller's file name will be used.
+            number_of_delay (int, optional): The number of delays in the system.
+                Defaults to 0.
+        Returns:
+            list: A list of file names of the generated C++ files.
+        Raises:
+            ValueError: If the input state_space is not a valid control.StateSpace object.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(state_space.A.dtype.name)
