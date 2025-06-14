@@ -1,3 +1,8 @@
+"""
+File: least_squares_deploy.py
+
+This module provides functionality for generating C++ header files that implement Least Squares (LS) and Recursive Least Squares (RLS) algorithms based on Python model objects. The generated C++ code is tailored to the structure and data types of the provided Python LS or RLS objects, facilitating deployment of Python-based control models into C++ environments.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -10,11 +15,25 @@ from python_control.control_deploy import ControlDeploy
 
 
 class LeastSquaresDeploy:
+    """
+    A class for generating C++ code for Least Squares (LS) and Recursive Least Squares (RLS) algorithms.
+    This class provides static methods to generate C++ header files based on Python LS and RLS objects.
+    The generated code includes type definitions, constants, and functions to create instances of the LS and RLS algorithms.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_LS_cpp_code(ls, file_name=None):
+        """
+        Generates C++ code for a Least Squares (LS) algorithm based on the provided Python LS object.
+        Args:
+            ls: A LeastSquares object containing the weights and other parameters.
+            file_name: Optional; the base name for the generated C++ header file.
+        Returns:
+            A list of file names for the generated C++ header files.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ls.weights.dtype.name)
@@ -95,6 +114,14 @@ class LeastSquaresDeploy:
 
     @staticmethod
     def generate_RLS_cpp_code(rls, file_name=None):
+        """
+        Generates C++ code for a Recursive Least Squares (RLS) algorithm based on the provided Python RLS object.
+        Args:
+            rls: A RecursiveLeastSquares object containing the lambda factor, delta, and other parameters.
+            file_name: Optional; the base name for the generated C++ header file.
+        Returns:
+            A list of file names for the generated C++ header files.
+        """
         deployed_file_names = []
 
         dummy_array = np.array(rls.lambda_factor)
