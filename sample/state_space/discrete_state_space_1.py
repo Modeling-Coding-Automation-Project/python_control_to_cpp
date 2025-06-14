@@ -1,3 +1,10 @@
+"""
+File: discrete_state_space_1.py
+
+This script demonstrates the simulation and C++ code generation of a discrete-time state-space model using Python.
+It defines a simple state-space system, simulates its response over a number of time steps, and visualizes the results.
+Additionally, it generates C++ header files for the defined state-space model for deployment purposes.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
