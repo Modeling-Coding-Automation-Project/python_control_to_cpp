@@ -1,3 +1,6 @@
+"""
+This module provides the `KalmanFilterDeploy` class, which contains a comprehensive set of static methods for automating the deployment and code generation of Kalman filter variants (Linear, Extended, and Unscented Kalman Filters) from Python to C++ code. The class is designed to facilitate the conversion of symbolic and numerical representations of system models and filter parameters into deployable C++ header files, supporting rapid prototyping and integration of control and estimation algorithms.
+"""
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -15,7 +18,24 @@ from python_control.state_space_deploy import StateSpaceDeploy
 
 
 class IntegerPowerReplacer(ast.NodeTransformer):
+    """
+    A custom AST NodeTransformer that replaces integer power operations with repeated multiplications.
+
+    This class traverses the abstract syntax tree (AST) of Python code and transforms expressions of the form
+    `a ** n` (where `n` is a positive integer constant) into equivalent repeated multiplication expressions,
+    i.e., `a * a * ... * a` (n times). This can be useful for code generation or translation to languages that
+    do not support the power operator.
+    """
+
     def visit_BinOp(self, node):
+        """
+        Visits binary operation nodes in the AST.
+        If the operation is a power operation with a positive integer exponent, it transforms it into repeated multiplication.
+        Args:
+            node (ast.BinOp): The binary operation node to visit.
+        Returns:
+            ast.AST: The transformed node, or the original node if no transformation is applied.
+        """
         self.generic_visit(node)
         if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and isinstance(node.right.value, int) and node.right.value > 0:
             n = node.right.value
@@ -26,6 +46,18 @@ class IntegerPowerReplacer(ast.NodeTransformer):
         return node
 
     def transform_code(self, source_code):
+        """
+        Transforms the given Python source code by replacing integer power operations with an alternative implementation.
+
+        Args:
+            source_code (str): The Python source code to be transformed.
+
+        Returns:
+            str: The transformed Python source code with integer power operations replaced.
+
+        Raises:
+            SyntaxError: If the provided source code cannot be parsed.
+        """
         tree = ast.parse(source_code)
         transformer = IntegerPowerReplacer()
         transformed_tree = transformer.visit(tree)
@@ -39,6 +71,17 @@ class IntegerPowerReplacer(ast.NodeTransformer):
 
 
 class NpArrayExtractor:
+    """
+    A class to extract elements from a NumPy array defined in Python code and convert them into C++ code.
+    This class parses the provided Python code to find NumPy array definitions, extracts their elements,
+    and generates C++ code that initializes a result array with the extracted values.
+    Attributes:
+        code_text (str): The Python code containing the NumPy array definition.
+        extract_text (str): The extracted C++ code for initializing the result array.
+        value_type_name (str): The C++ type name for the values in the NumPy array.
+        SparseAvailable (np.ndarray): A NumPy array indicating the sparsity of the extracted values.
+    """
+
     def __init__(self, code_text, Value_Type_name="float64"):
         self.code_text = code_text
         self.extract_text = ""
@@ -47,6 +90,18 @@ class NpArrayExtractor:
 
     @staticmethod
     def extract_elements(node):
+        """
+        Recursively extracts elements from an AST node representing a NumPy array or similar structure.
+        Args:
+            node (ast.AST): The AST node to extract elements from.
+        Returns:
+            list or str: A list of extracted elements if the node is a list, or a string representation of the node.
+        If the node is a constant numeric value, it returns the value directly.
+        If the node is a unary operation, it returns the negated value of the operand.
+        Raises:
+            TypeError: If the node type is not supported for extraction.
+        """
+
         if isinstance(node, ast.List):
             return [NpArrayExtractor.extract_elements(el) for el in node.elts]
         elif isinstance(node, ast.BinOp) or isinstance(node, ast.Call) or isinstance(node, ast.Name):
@@ -64,6 +119,15 @@ class NpArrayExtractor:
             return node
 
     def extract(self):
+        """
+        Extracts elements from the NumPy array defined in the provided Python code and generates C++ code
+        to initialize a result array with the extracted values.
+        This method parses the Python code to find the NumPy array definition, extracts its elements,
+        and constructs C++ code that initializes a result array with the extracted values.
+        It also creates a NumPy array indicating the sparsity of the extracted values.
+        The generated C++ code is stored in the `extract_text` attribute, and the sparsity information
+        is stored in the `SparseAvailable` attribute.
+        """
         extract_text = ""
 
         matrix_content = self.code_text[self.code_text .find(
@@ -98,6 +162,15 @@ class NpArrayExtractor:
         self.SparseAvailable = SparseAvailable
 
     def convert_to_cpp(self):
+        """
+        Converts the extracted Python code into C++ code that initializes a result array with the extracted values.
+        This method replaces the Python-specific syntax for array initialization with C++ syntax,
+        ensuring that the resulting C++ code is syntactically correct and compatible with C++ standards.
+        It also handles the conversion of Python data types to their C++ equivalents based on the specified
+        value type name.
+        Returns:
+            str: The converted C++ code that initializes the result array with the extracted values.
+        """
         try:
             value_type_name = python_to_cpp_types[self.value_type_name]
         except KeyError:
@@ -114,6 +187,16 @@ class NpArrayExtractor:
 
 
 class FunctionExtractor(ast.NodeVisitor):
+    """
+    A class to extract function definitions from a Python file and store them in a dictionary.
+    This class reads the source code from a specified file, parses it into an abstract syntax tree (AST),
+    and visits each function definition node to extract the function name and its source code.
+    Attributes:
+        file_path (str): The path to the Python file from which to extract function definitions.
+        source_code (str): The source code of the Python file.
+        functions (dict): A dictionary to store function names as keys and their source code as values.
+    """
+
     def __init__(self, file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             source_code = file.read()
@@ -122,12 +205,26 @@ class FunctionExtractor(ast.NodeVisitor):
         self.functions = {}
 
     def visit_FunctionDef(self, node):
+        """
+        Visits function definition nodes in the AST and extracts the function name and source code.
+        Args:
+            node (ast.FunctionDef): The function definition node to visit.
+        This method retrieves the function name and its source code segment from the original source code,
+        and stores them in the `functions` dictionary.
+        """
         function_name = node.name
         function_code = ast.get_source_segment(self.source_code, node)
         self.functions[function_name] = function_code
         self.generic_visit(node)
 
     def extract(self):
+        """
+        Parses the source code and extracts all function definitions.
+        This method creates an AST from the source code, visits each function definition node,
+        and populates the `functions` dictionary with function names and their corresponding source code.
+        Returns:
+            dict: A dictionary containing function names as keys and their source code as values.
+        """
         tree = ast.parse(self.source_code)
         self.visit(tree)
 
@@ -135,10 +232,28 @@ class FunctionExtractor(ast.NodeVisitor):
 
 
 class InputSizeVisitor(ast.NodeVisitor):
+    """
+    A class to visit AST nodes and extract the value of the INPUT_SIZE variable.
+    This class traverses the abstract syntax tree (AST) of Python code to find assignments to the INPUT_SIZE variable
+    and stores its value in the `input_size` attribute. It is used to determine the input size for Kalman filter functions.
+    Attributes:
+        input_size (int or None): The value of the INPUT_SIZE variable if found, otherwise None.
+    """
+
     def __init__(self):
         self.input_size = None
 
     def visit_Assign(self, node):
+        """
+        Visits assignment nodes in the AST and checks for assignments to the INPUT_SIZE variable.
+        Args:
+            node (ast.Assign): The assignment node to visit.
+        If the assignment targets a variable named INPUT_SIZE, it checks the value assigned to it.
+        If the value is a constant or a numeric literal, it stores that value in the `input_size` attribute.
+        If the value is a constant, it retrieves the value directly; if it is a numeric literal (for Python < 3.8),
+        it retrieves the numeric value using the `.n` attribute.
+        """
+
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id == 'INPUT_SIZE':
                 if isinstance(node.value, ast.Constant):
@@ -148,6 +263,18 @@ class InputSizeVisitor(ast.NodeVisitor):
 
 
 class FunctionToCppVisitor(ast.NodeVisitor):
+    """
+    A class to convert Python function definitions into C++ function definitions.
+    This class traverses the abstract syntax tree (AST) of Python code, specifically looking for function definitions,
+    and generates C++ code for those functions. It handles type annotations, return types, and the conversion of
+    NumPy array operations into C++ syntax.
+    Attributes:
+        cpp_code (str): The generated C++ code for the function definitions.
+        Output_Type_name (str): The name of the C++ type for the function's output.
+        Value_Type_name (str): The name of the C++ type for the function's input values.
+        SparseAvailable (bool or None): Indicates whether sparse matrix operations are available in the function.
+    """
+
     def __init__(self, Output_Type_name):
         self.cpp_code = ""
         self.Output_Type_name = Output_Type_name
@@ -156,6 +283,17 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         self.SparseAvailable = None
 
     def visit_FunctionDef(self, node):
+        """
+        Visits function definition nodes in the AST and generates C++ code for them.
+        Args:
+            node (ast.FunctionDef): The function definition node to visit.
+        This method constructs the C++ function signature, including the function name, argument types,
+        and return type. It also handles type annotations for each argument and the return type.
+        It generates the C++ code for the function body by visiting the function's body nodes.
+        The generated C++ code is stored in the `cpp_code` attribute.
+        If the function name is "sympy_function", it initializes a result variable of type `Output_Type_name`.
+        If the first argument is "X", it handles special cases for the arguments "X", "U", and "Parameters".
+        """
         self.cpp_code += "inline auto " + node.name + "("
         args = [arg.arg for arg in node.args.args]
         annotations = {}
@@ -220,6 +358,17 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         self.cpp_code += "}\n"
 
     def visit_Return(self, node):
+        """
+        Visits return nodes in the AST and generates C++ code for the return statement.
+        Args:
+            node (ast.Return): The return node to visit.
+        This method constructs the C++ code for the return statement based on the value being returned.
+        If the return value is a function call, it converts it to C++ syntax using `astor.to_source`.
+        If the return value is a NumPy array, it extracts the elements using `NpArrayExtractor` and converts them to C++ code.
+        It also handles integer power operations by replacing them with repeated multiplications using `IntegerPowerReplacer`.
+        The generated C++ code is appended to the `cpp_code` attribute.
+        If the return value is not supported, it raises a `TypeError`.
+        """
         return_code = ""
 
         if isinstance(node.value, ast.Call):
@@ -245,6 +394,20 @@ class FunctionToCppVisitor(ast.NodeVisitor):
             self.cpp_code += "    return " + return_code + ";\n"
 
     def visit_Assign(self, node):
+        """
+        Visits assignment nodes in the AST and generates C++ code for the assignment.
+        Args:
+            node (ast.Assign): The assignment node to visit.
+        This method constructs the C++ code for the assignment statement by extracting the target variables
+        and the value being assigned. It converts the target variables to C++ syntax using `astor.to_source`
+        and the value to C++ syntax as well. The generated C++ code is appended to the `cpp_code` attribute.
+        The assignment code is formatted to match C++ syntax, including the use of `template get<>` for array indexing.
+        The generated code is indented and formatted to ensure proper C++ syntax.
+        The assignment code is constructed by iterating over the targets and joining them with commas.
+        The value is also converted to C++ syntax using `astor.to_source`.
+        The generated C++ code is appended to the `cpp_code` attribute, and it replaces Python list indexing
+        with C++ template syntax for accessing elements.
+        """
         assign_code = ""
         targets = [astor.to_source(t).strip() for t in node.targets]
         value = astor.to_source(node.value).strip()
@@ -258,6 +421,20 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         self.cpp_code += assign_code
 
     def convert(self, python_code):
+        """
+        Converts the provided Python code into C++ code by parsing it into an AST and visiting each node.
+        Args:
+            python_code (str): The Python code to convert to C++.
+        Returns:
+            str: The generated C++ code.
+        This method initializes the AST parser with the provided Python code, creates an instance of the
+        `FunctionToCppVisitor`, and visits the AST nodes to generate the C++ code.
+        It uses the `ast.parse` function to parse the Python code into an AST, and then calls the `visit` method
+        of the `FunctionToCppVisitor` instance to traverse the AST and generate the C++ code.
+        The generated C++ code is stored in the `cpp_code` attribute of the `FunctionToCppVisitor` instance.
+        Returns:
+            str: The generated C++ code.
+        """
         tree = ast.parse(python_code)
         self.visit(tree)
 
@@ -265,11 +442,34 @@ class FunctionToCppVisitor(ast.NodeVisitor):
 
 
 class KalmanFilterDeploy:
+    """
+    A class for deploying Kalman filter algorithms by generating C++ code from symbolic representations.
+    This class provides methods to create C++ code for Kalman filter state and measurement functions,
+    as well as to generate C++ code for Linear, Extended, and Unscented Kalman Filters.
+    It includes functionality to convert symbolic expressions into C++ functions, handle input and output types,
+    and write the generated code to files. The class also supports the generation of parameter classes for
+    Kalman filters, allowing for easy integration of filter parameters into the generated C++ code.
+    """
+
     def __init__(self):
         pass
 
     @staticmethod
     def create_sympy_code(sym_object):
+        """
+        Creates a string representation of a symbolic function in Python, which can be used to generate C++ code.
+        Args:
+            sym_object (sympy.Matrix): A sympy Matrix object representing the symbolic function.
+        Returns:
+            tuple: A tuple containing the generated code as a string and the argument text for the function.
+        This method generates a Python function definition that takes symbolic variables as arguments and returns
+        a NumPy array representing the result of the symbolic computation.
+        It constructs the function signature, including the argument types based on the dtype of the symbolic matrix.
+        It also prepares the calculation code by converting the symbolic matrix to a list format.
+        The generated code is suitable for deployment in a C++ environment, allowing for efficient execution of
+        symbolic computations.
+        """
+
         value_example = np.array([[1.0]])
         value_type = str(value_example.dtype.name)
 
@@ -302,6 +502,22 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def create_interface_code(sym_object, arguments_text, X, U=None):
+        """
+        Creates a Python function interface for the symbolic function, which can be used to generate C++ code.
+        Args:
+            sym_object (sympy.Matrix): A sympy Matrix object representing the symbolic function.
+            arguments_text (str): A string containing the argument names for the function.
+            X (np.ndarray): A NumPy array representing the state variables.
+            U (np.ndarray, optional): A NumPy array representing the input variables. Defaults to None.
+        Returns:
+            str: A string containing the generated Python function interface code.
+        This method generates a Python function definition that serves as an interface for the symbolic function.
+        It constructs the function signature, including the argument types based on the dtype of the symbolic matrix.
+        It also prepares the function body by assigning the input variables to the symbolic variables and
+        initializing the parameters from the symbolic matrix.
+        The generated code is suitable for deployment in a C++ environment, allowing for efficient execution of
+        symbolic computations.
+        """
         sym_symbols = sym_object.free_symbols
 
         code_text = ""
@@ -341,6 +557,19 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def write_function_code_from_sympy(sym_object, sym_object_name, X, U=None):
+        """
+        Writes the generated C++ code for a Kalman filter function based on a symbolic representation.
+        Args:
+            sym_object (sympy.Matrix): A sympy Matrix object representing the symbolic function.
+            sym_object_name (str): The name of the symbolic function.
+            X (np.ndarray): A NumPy array representing the state variables.
+            U (np.ndarray, optional): A NumPy array representing the input variables. Defaults to None.
+        This method generates a C++ header file containing the symbolic function code, including the necessary imports,
+        class definitions, and constants for state and input sizes. It also creates the function code that implements
+        the symbolic function using the provided symbolic matrix. The generated code is written to a file named
+        `<sym_object_name>.py`, which can be used for deployment in a C++ environment.
+        """
+
         header_code = ""
         header_code += "import numpy as np\n"
         header_code += "from math import *\n"
@@ -372,6 +601,18 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def write_state_function_code_from_sympy(sym_object, X, U=None):
+        """
+        Writes the generated C++ code for a Kalman filter state function based on a symbolic representation.
+        Args:
+            sym_object (sympy.Matrix): A sympy Matrix object representing the symbolic function.
+            X (np.ndarray): A NumPy array representing the state variables.
+            U (np.ndarray, optional): A NumPy array representing the input variables. Defaults to None.
+        This method generates a C++ header file containing the symbolic function code, including the necessary imports,
+        class definitions, and constants for state and input sizes. It also creates the function code that implements
+        the symbolic function using the provided symbolic matrix. The generated code is written to a file named
+        `<sym_object_name>.py`, which can be used for deployment in a C++ environment.
+        """
+
         # Get the caller's frame
         frame = inspect.currentframe().f_back
         # Get the caller's local variables
@@ -388,6 +629,17 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def write_measurement_function_code_from_sympy(sym_object, X):
+        """
+        Writes the generated C++ code for a Kalman filter measurement function based on a symbolic representation.
+        Args:
+            sym_object (sympy.Matrix): A sympy Matrix object representing the symbolic function.
+            X (np.ndarray): A NumPy array representing the state variables.
+        This method generates a C++ header file containing the symbolic function code, including the necessary imports,
+        class definitions, and constants for state and input sizes. It also creates the function code that implements
+        the symbolic function using the provided symbolic matrix. The generated code is written to a file named
+        `<sym_object_name>.py`, which can be used for deployment in a C++ environment.
+        """
+
         # Get the caller's frame
         frame = inspect.currentframe().f_back
         # Get the caller's local variables
@@ -404,6 +656,19 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def get_input_size_from_function_code(file_path):
+        """
+        Extracts the input size from a Python file containing function definitions.
+        Args:
+            file_path (str): The path to the Python file from which to extract the input size.
+        Returns:
+            int: The input size extracted from the file, or None if not found.
+        This method reads the specified Python file, parses it into an abstract syntax tree (AST),
+        and uses a custom AST visitor to find the assignment to the INPUT_SIZE variable.
+        It returns the value of INPUT_SIZE if found, or None if not found.
+        Raises:
+            FileNotFoundError: If the specified file does not exist.
+            SyntaxError: If the file content cannot be parsed as valid Python code.
+        """
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
 
@@ -415,6 +680,19 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def find_file(filename, search_path):
+        """
+        Searches for a file with the specified name in the given search path.
+        Args:
+            filename (str): The name of the file to search for.
+            search_path (str): The path to search for the file.
+        Returns:
+            str or None: The full path to the file if found, otherwise None.
+        This method traverses the directory structure starting from the specified search path,
+        looking for a file with the specified name. If the file is found, it returns the full path to the file.
+        If the file is not found, it returns None.
+        Raises:
+            FileNotFoundError: If the specified search path does not exist.
+        """
         for root, _, files in os.walk(search_path):
             if filename in files:
                 return os.path.join(root, filename)
@@ -422,6 +700,20 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def generate_parameter_cpp_code(parameter_object, value_type_name):
+        """
+        Generates C++ code for a parameter class based on a Python object.
+        Args:
+            parameter_object (object): The Python object representing the parameters.
+            value_type_name (str): The C++ type name for the parameter values.
+        Returns:
+            str: The generated C++ code for the parameter class.
+        This method inspects the attributes of the provided parameter object and generates a C++ class definition
+        that contains member variables corresponding to the attributes of the parameter object.
+        It converts the Python data types to their C++ equivalents based on the provided value type name.
+        If the value type name is not found in the predefined mapping, it leaves the type name unchanged.
+        The generated C++ code includes a class definition with public member variables initialized to the values
+        from the parameter object. It also defines a type alias for the parameter class.
+        """
         try:
             value_type_name = python_to_cpp_types[value_type_name]
         except KeyError:
@@ -443,6 +735,27 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def generate_LKF_cpp_code(lkf, file_name=None, number_of_delay=0):
+        """
+        Generates C++ code for a Linear Kalman Filter (LKF) based on the provided LKF object.
+        Args:
+            lkf (LinearKalmanFilter): An instance of the LinearKalmanFilter class containing the filter parameters.
+            file_name (str, optional): The name of the file to which the generated code will be written. Defaults to None.
+            number_of_delay (int, optional): The number of delays to consider in the filter. Defaults to 0.
+        Returns:
+            list: A list of file names where the generated C++ code is written.
+        This method generates C++ code for a Linear Kalman Filter by inspecting the provided LKF object.
+        It restricts the data type of the filter, checks the data type of the A matrix, and generates C++ code
+        for the state space representation of the filter. It also creates a C++ header file containing the
+        necessary includes, namespace definitions, and type definitions for the filter.
+        The generated code includes the initialization of the filter's state space, covariance matrices, and
+        the Kalman gain. It also handles the initialization of the filter's parameters if they are provided.
+        The generated C++ code is written to a file named `<caller_file_name_without_ext>_<variable_name>.hpp`,
+        where `<caller_file_name_without_ext>` is the name of the file from which the function is called,
+        and `<variable_name>` is the name of the LKF variable in the caller's local scope.
+        Raises:
+            ValueError: If the data type of the A matrix is not supported.
+        """
+
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(lkf.A.dtype.name)
@@ -814,6 +1127,19 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def create_state_and_measurement_function_code(function_name, return_type):
+        """
+        Creates the state and measurement function code from a Python function file.
+        Args:
+            function_name (str): The name of the function to extract code from.
+            return_type (str): The return type of the function, used for type conversion.
+        Returns:
+            tuple: A tuple containing the state function code, input size, and a list of sparse availability flags.
+        This method searches for a Python file containing the specified function name in the current working directory.
+        It extracts the function code using a custom FunctionExtractor class and converts it to C++ code using
+        a FunctionToCppVisitor class. It also retrieves the input size from the function code.
+        If the function is not found, it raises a FileNotFoundError.
+        If the function code cannot be parsed, it raises a SyntaxError.
+        """
         function_file_path = KalmanFilterDeploy.find_file(
             f"{function_name}.py", os.getcwd())
         state_function_U_size = KalmanFilterDeploy.get_input_size_from_function_code(
@@ -837,6 +1163,26 @@ class KalmanFilterDeploy:
 
     @staticmethod
     def generate_UKF_cpp_code(ukf, file_name=None, number_of_delay=0):
+        """
+        Generates C++ code for an Unscented Kalman Filter (UKF) based on the provided UKF object.
+        Args:
+            ukf (UnscentedKalmanFilter): An instance of the UnscentedKalmanFilter class containing the filter parameters.
+            file_name (str, optional): The name of the file to which the generated code will be written. Defaults to None.
+            number_of_delay (int, optional): The number of delays to consider in the filter. Defaults to 0.
+        Returns:
+            list: A list of file names where the generated C++ code is written.
+        This method generates C++ code for an Unscented Kalman Filter by inspecting the provided UKF object.
+        It restricts the data type of the filter, checks the data type of the Q matrix, and generates C++ code
+        for the state space representation of the filter. It also creates a C++ header file containing the
+        necessary includes, namespace definitions, and type definitions for the filter.
+        The generated code includes the initialization of the filter's state space, covariance matrices, and
+        the Kalman gain. It also handles the initialization of the filter's parameters if they are provided.
+        The generated C++ code is written to a file named `<caller_file_name_without_ext>_<variable_name>.hpp`,
+        where `<caller_file_name_without_ext>` is the name of the file from which the function is called,
+        and `<variable_name>` is the name of the UKF variable in the caller's local scope.
+        Raises:
+            ValueError: If the data type of the Q matrix is not supported.
+        """
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ukf.Q.dtype.name)
