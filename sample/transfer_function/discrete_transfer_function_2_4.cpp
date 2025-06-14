@@ -1,3 +1,15 @@
+/**
+ * @file discrete_transfer_function_2_4.cpp
+ * @brief Example program demonstrating the usage of a discrete transfer
+ * function class for simulation and steady-state analysis.
+ *
+ * This program defines a discrete transfer function system using specified
+ * numerator and denominator coefficients, simulates its response to a constant
+ * input, and computes the steady-state input required to achieve a desired
+ * output. The simulation loop updates the system and prints the output at each
+ * step. After simulation, the program calculates the steady-state input and
+ * state vector for a specified steady-state output.
+ */
 #include <iostream>
 
 #include "python_control.hpp"
