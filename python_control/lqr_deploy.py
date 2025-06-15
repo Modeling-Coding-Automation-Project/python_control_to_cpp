@@ -13,7 +13,7 @@ import control
 import inspect
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
-from python_control.control_deploy import ControlDeploy
+from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
 
 
 class LQR_Deploy:
