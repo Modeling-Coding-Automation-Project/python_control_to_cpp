@@ -409,9 +409,13 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         The generated C++ code is appended to the `cpp_code` attribute, and it replaces Python list indexing
         with C++ template syntax for accessing elements.
         """
+        integer_power_replacer = IntegerPowerReplacer()
         assign_code = ""
+
         targets = [astor.to_source(t).strip() for t in node.targets]
         value = astor.to_source(node.value).strip()
+        value = integer_power_replacer.transform_code(value)
+
         assign_code += "    " + self.Value_Type_name + " " + \
             ", ".join(targets) + " = " + value + ";\n"
         assign_code += "\n"
