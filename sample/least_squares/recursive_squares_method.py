@@ -12,7 +12,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 
-from python_control.least_squares import RecursiveLeastSquares
+from external_libraries.MCAP_python_control.python_control.least_squares import RecursiveLeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 

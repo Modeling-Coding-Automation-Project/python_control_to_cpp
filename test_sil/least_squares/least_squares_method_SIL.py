@@ -6,7 +6,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from python_control.least_squares import LeastSquares
+from external_libraries.MCAP_python_control.python_control.least_squares import LeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester

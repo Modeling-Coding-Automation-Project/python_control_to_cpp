@@ -12,7 +12,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-from python_control.least_squares import LeastSquares
+from external_libraries.MCAP_python_control.python_control.least_squares import LeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
 
 # Create data
