@@ -16,8 +16,11 @@ import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 
-from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
+from external_libraries.MCAP_python_control.python_control.kalman_filter import UnscentedKalmanFilter_Basic
+from external_libraries.MCAP_python_control.python_control.kalman_filter import UnscentedKalmanFilter
+from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
+
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 
@@ -61,8 +64,8 @@ def main():
                        [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
 
     # Save functions to separate files
-    KalmanFilterDeploy.write_state_function_code_from_sympy(fxu, X, U)
-    KalmanFilterDeploy.write_measurement_function_code_from_sympy(hx, X)
+    ExpressionDeploy.write_state_function_code_from_sympy(fxu, X, U)
+    ExpressionDeploy.write_measurement_function_code_from_sympy(hx, X)
 
     # %% design EKF
 

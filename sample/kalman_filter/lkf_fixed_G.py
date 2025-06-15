@@ -12,7 +12,7 @@ sys.path.append(os.getcwd())
 
 import numpy as np
 
-from python_control.kalman_filter import LinearKalmanFilter
+from external_libraries.MCAP_python_control.python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 

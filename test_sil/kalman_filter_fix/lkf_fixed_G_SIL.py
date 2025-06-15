@@ -4,7 +4,7 @@ sys.path.append(os.getcwd())
 
 import numpy as np
 
-from python_control.kalman_filter import LinearKalmanFilter
+from external_libraries.MCAP_python_control.python_control.kalman_filter import LinearKalmanFilter
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
