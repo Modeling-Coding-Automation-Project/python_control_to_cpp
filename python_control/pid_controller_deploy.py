@@ -10,7 +10,7 @@ sys.path.append(os.getcwd())
 import inspect
 import numpy as np
 
-from python_control.pid_controller import DiscretePID_Controller
+from external_libraries.MCAP_python_control.python_control.pid_controller import DiscretePID_Controller
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy
 from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
 

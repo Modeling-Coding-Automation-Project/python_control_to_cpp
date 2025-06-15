@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 import numpy as np
 from dataclasses import dataclass
 
-from python_control.pid_controller import DiscretePID_Controller
+from external_libraries.MCAP_python_control.python_control.pid_controller import DiscretePID_Controller
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
 

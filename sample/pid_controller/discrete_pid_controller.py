@@ -20,7 +20,7 @@ import control
 import numpy as np
 import matplotlib.pyplot as plt
 
-from python_control.pid_controller import DiscretePID_Controller
+from external_libraries.MCAP_python_control.python_control.pid_controller import DiscretePID_Controller
 from python_control.pid_controller_deploy import DiscretePID_ControllerDeploy
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 

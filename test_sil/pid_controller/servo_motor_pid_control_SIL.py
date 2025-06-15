@@ -5,7 +5,7 @@ sys.path.append(os.getcwd())
 import numpy as np
 from dataclasses import dataclass
 
-from python_control.pid_controller import DiscretePID_Controller
+from external_libraries.MCAP_python_control.python_control.pid_controller import DiscretePID_Controller
 from python_control.pid_controller_deploy import DiscretePID_ControllerDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester

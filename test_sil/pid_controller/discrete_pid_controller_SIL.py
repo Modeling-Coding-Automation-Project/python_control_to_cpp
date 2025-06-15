@@ -6,7 +6,7 @@ import control
 import numpy as np
 import matplotlib.pyplot as plt
 
-from python_control.pid_controller import DiscretePID_Controller
+from external_libraries.MCAP_python_control.python_control.pid_controller import DiscretePID_Controller
 from python_control.pid_controller_deploy import DiscretePID_ControllerDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
