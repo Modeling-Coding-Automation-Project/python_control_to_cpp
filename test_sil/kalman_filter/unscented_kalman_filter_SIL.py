@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 
-from python_control.kalman_filter import UnscentedKalmanFilter_Basic, UnscentedKalmanFilter
-from python_control.kalman_filter_deploy import KalmanFilterDeploy
+from external_libraries.MCAP_python_control.python_control.kalman_filter import UnscentedKalmanFilter_Basic
+from external_libraries.MCAP_python_control.python_control.kalman_filter import UnscentedKalmanFilter
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
+from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester

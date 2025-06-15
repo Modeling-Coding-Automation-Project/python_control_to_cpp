@@ -16,9 +16,9 @@ import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 
-from python_control.kalman_filter import ExtendedKalmanFilter
-from python_control.kalman_filter_deploy import KalmanFilterDeploy
+from external_libraries.MCAP_python_control.python_control.kalman_filter import ExtendedKalmanFilter
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
+from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
 
