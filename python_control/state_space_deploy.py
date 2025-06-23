@@ -1,7 +1,10 @@
 """
 File: state_space_deploy.py
 
-This module provides functionality to generate C++ header files representing discrete state-space systems defined using the Python `control` library. It automates the conversion of Python-based state-space models (A, B, C, D matrices and sampling time) into C++ code, facilitating deployment in C++ projects.
+This module provides functionality to generate C++ header files
+representing discrete state-space systems defined using the Python `control` library.
+It automates the conversion of Python-based state-space models
+(A, B, C, D matrices and sampling time) into C++ code, facilitating deployment in C++ projects.
 """
 import os
 import sys

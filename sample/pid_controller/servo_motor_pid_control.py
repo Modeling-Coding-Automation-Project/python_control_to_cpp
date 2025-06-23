@@ -1,8 +1,10 @@
 """
 File: servo_motor_pid_control.py
 
-This module provides functions for modeling the state-space representation of a DC servo motor with PID control.
-It defines the state-space matrices (A, B, C, D) for the servo motor system, which are essential for control system analysis and design.
+This module provides functions for modeling the state-space representation
+of a DC servo motor with PID control.
+It defines the state-space matrices (A, B, C, D) for the servo motor system,
+which are essential for control system analysis and design.
 """
 import os
 import sys

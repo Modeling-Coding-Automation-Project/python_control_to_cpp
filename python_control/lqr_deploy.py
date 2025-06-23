@@ -1,7 +1,12 @@
 """
 File: lqr_deploy.py
 
-This module provides utilities for generating C++ header files that implement LQR (Linear Quadratic Regulator) and LQI (Linear Quadratic Integrator) controllers from Python-based system matrices and weighting matrices. The generated C++ code is intended for use with a compatible C++ control library, enabling seamless deployment of control algorithms designed in Python to C++ environments.
+This module provides utilities for generating C++ header files
+that implement LQR (Linear Quadratic Regulator) and
+LQI (Linear Quadratic Integrator) controllers from Python-based
+system matrices and weighting matrices.
+The generated C++ code is intended for use with a compatible C++ control library,
+enabling seamless deployment of control algorithms designed in Python to C++ environments.
 """
 import os
 import sys
