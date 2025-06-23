@@ -1,8 +1,10 @@
 """
 File: discrete_state_space_2.py
 
-This script demonstrates the creation, analysis, and deployment of a state-space model for a dynamic system using Python.
-It defines a continuous-time state-space system, simulates its step response, discretizes the system, and generates C++ header files for deployment.
+This script demonstrates the creation, analysis, and deployment of
+a state-space model for a dynamic system using Python.
+It defines a continuous-time state-space system, simulates its step response,
+discretizes the system, and generates C++ header files for deployment.
 The script also visualizes the step responses for both continuous and discrete systems.
 """
 import os

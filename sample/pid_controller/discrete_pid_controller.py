@@ -1,7 +1,9 @@
 """
 File: discrete_pid_controller.py
 
-This script demonstrates the implementation and comparison of continuous and discrete PID controllers for a given plant model using the Python Control Systems Library. It includes the following main functionalities:
+This script demonstrates the implementation and comparison of continuous and
+discrete PID controllers for a given plant model using the Python Control Systems Library.
+ It includes the following main functionalities:
 
 - Defines a continuous-time plant model and designs a continuous PID controller.
 - Simulates and plots the step response of the closed-loop continuous system.

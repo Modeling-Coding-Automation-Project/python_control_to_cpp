@@ -1,9 +1,12 @@
 """
 File: discrete_transfer_function_4_4.py
 
-This script demonstrates the creation, analysis, and deployment of a discrete transfer function using the `control` library in Python.
-It defines a discrete transfer function, generates corresponding C++ header code for deployment, and visualizes the step response.
-The script also converts the transfer function to a discrete state-space representation and compares the step responses of both forms.
+This script demonstrates the creation, analysis, and deployment of
+a discrete transfer function using the `control` library in Python.
+It defines a discrete transfer function, generates corresponding
+C++ header code for deployment, and visualizes the step response.
+The script also converts the transfer function to a discrete state-space
+representation and compares the step responses of both forms.
 """
 import os
 
