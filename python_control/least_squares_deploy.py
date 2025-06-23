@@ -1,7 +1,11 @@
 """
 File: least_squares_deploy.py
 
-This module provides functionality for generating C++ header files that implement Least Squares (LS) and Recursive Least Squares (RLS) algorithms based on Python model objects. The generated C++ code is tailored to the structure and data types of the provided Python LS or RLS objects, facilitating deployment of Python-based control models into C++ environments.
+This module provides functionality for generating C++ header files
+that implement Least Squares (LS) and Recursive Least Squares (RLS) algorithms
+based on Python model objects. The generated C++ code is tailored to the structure
+and data types of the provided Python LS or RLS objects, facilitating deployment of
+Python-based control models into C++ environments.
 """
 import os
 import sys

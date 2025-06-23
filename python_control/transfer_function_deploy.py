@@ -1,7 +1,11 @@
 """
 File: transfer_function_deploy.py
 
-This module provides functionality to generate C++ header files for discrete transfer functions defined using the `control.TransferFunction` class in Python. The generated C++ code is intended for deployment in environments where transfer function models need to be used in C++ projects, particularly for control and automation applications.
+This module provides functionality to generate C++ header files
+for discrete transfer functions defined using the `control.TransferFunction` class in Python.
+The generated C++ code is intended for deployment in environments
+where transfer function models need to be used in C++ projects,
+particularly for control and automation applications.
 """
 import os
 import sys
