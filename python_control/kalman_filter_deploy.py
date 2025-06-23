@@ -23,60 +23,9 @@ from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import Num
 from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
 from external_libraries.MCAP_python_control.python_control.control_deploy import FunctionExtractor
+from external_libraries.MCAP_python_control.python_control.control_deploy import IntegerPowerReplacer
+from external_libraries.MCAP_python_control.python_control.control_deploy import InputSizeVisitor
 from python_control.state_space_deploy import StateSpaceDeploy
-
-
-class IntegerPowerReplacer(ast.NodeTransformer):
-    """
-    A custom AST NodeTransformer that replaces integer power operations with repeated multiplications.
-
-    This class traverses the abstract syntax tree (AST) of Python code and transforms expressions of the form
-    `a ** n` (where `n` is a positive integer constant) into equivalent repeated multiplication expressions,
-    i.e., `a * a * ... * a` (n times). This can be useful for code generation or translation to languages that
-    do not support the power operator.
-    """
-
-    def visit_BinOp(self, node):
-        """
-        Visits binary operation nodes in the AST.
-        If the operation is a power operation with a positive integer exponent, it transforms it into repeated multiplication.
-        Args:
-            node (ast.BinOp): The binary operation node to visit.
-        Returns:
-            ast.AST: The transformed node, or the original node if no transformation is applied.
-        """
-        self.generic_visit(node)
-        if isinstance(node.op, ast.Pow) and isinstance(node.right, ast.Constant) and isinstance(node.right.value, int) and node.right.value > 0:
-            n = node.right.value
-            result = node.left
-            for _ in range(n - 1):
-                result = ast.BinOp(left=result, op=ast.Mult(), right=node.left)
-            return result
-        return node
-
-    def transform_code(self, source_code):
-        """
-        Transforms the given Python source code by replacing integer power operations with an alternative implementation.
-
-        Args:
-            source_code (str): The Python source code to be transformed.
-
-        Returns:
-            str: The transformed Python source code with integer power operations replaced.
-
-        Raises:
-            SyntaxError: If the provided source code cannot be parsed.
-        """
-        tree = ast.parse(source_code)
-        transformer = IntegerPowerReplacer()
-        transformed_tree = transformer.visit(tree)
-
-        transformed_code = astor.to_source(transformed_tree)
-
-        if transformed_code.endswith("\n"):
-            transformed_code = transformed_code[:-1]
-
-        return transformed_code
 
 
 class NpArrayExtractor:
@@ -193,37 +142,6 @@ class NpArrayExtractor:
         convert_text = convert_text.replace("\n", "));\n")
 
         return convert_text
-
-
-class InputSizeVisitor(ast.NodeVisitor):
-    """
-    A class to visit AST nodes and extract the value of the INPUT_SIZE variable.
-    This class traverses the abstract syntax tree (AST) of Python code to find assignments to the INPUT_SIZE variable
-    and stores its value in the `input_size` attribute. It is used to determine the input size for Kalman filter functions.
-    Attributes:
-        input_size (int or None): The value of the INPUT_SIZE variable if found, otherwise None.
-    """
-
-    def __init__(self):
-        self.input_size = None
-
-    def visit_Assign(self, node):
-        """
-        Visits assignment nodes in the AST and checks for assignments to the INPUT_SIZE variable.
-        Args:
-            node (ast.Assign): The assignment node to visit.
-        If the assignment targets a variable named INPUT_SIZE, it checks the value assigned to it.
-        If the value is a constant or a numeric literal, it stores that value in the `input_size` attribute.
-        If the value is a constant, it retrieves the value directly; if it is a numeric literal (for Python < 3.8),
-        it retrieves the numeric value using the `.n` attribute.
-        """
-
-        for target in node.targets:
-            if isinstance(target, ast.Name) and target.id == 'INPUT_SIZE':
-                if isinstance(node.value, ast.Constant):
-                    self.input_size = node.value.value
-                elif isinstance(node.value, ast.Num):  # For Python < 3.8
-                    self.input_size = node.value.n
 
 
 class FunctionToCppVisitor(ast.NodeVisitor):
