@@ -72,7 +72,10 @@ class NpArrayExtractor:
         elif isinstance(node, ast.UnaryOp):
             operand = NpArrayExtractor.extract_elements(node.operand)
             if isinstance(node.op, ast.USub):
-                return -operand
+                if isinstance(operand, (int, float)):
+                    return -operand
+                elif isinstance(operand, str):
+                    return f"-{operand}"
             return operand
         else:
             return node
