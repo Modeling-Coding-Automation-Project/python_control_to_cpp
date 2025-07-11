@@ -18,6 +18,7 @@ import astor
 import numpy as np
 import sympy as sp
 import control
+from dataclasses import dataclass, fields, is_dataclass
 
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
 from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
@@ -341,7 +342,7 @@ class KalmanFilterDeploy:
         pass
 
     @staticmethod
-    def generate_parameter_cpp_code(parameter_object, value_type_name):
+    def generate_parameter_cpp_code(parameter_object, value_type_name: str):
         """
         Generates C++ code for a parameter class based on a Python object.
         Args:
@@ -356,6 +357,9 @@ class KalmanFilterDeploy:
         The generated C++ code includes a class definition with public member variables initialized to the values
         from the parameter object. It also defines a type alias for the parameter class.
         """
+        if not is_dataclass(parameter_object):
+            raise TypeError("parameter_object must be a dataclass instance")
+
         try:
             value_type_name = python_to_cpp_types[value_type_name]
         except KeyError:
@@ -365,9 +369,10 @@ class KalmanFilterDeploy:
         code_text += "class Parameter {\n"
         code_text += "public:\n"
 
-        elements = parameter_object.__dict__
-        for key, value in elements.items():
-            code_text += f"  {value_type_name} {key} = static_cast<{value_type_name}>({value});\n"
+        name_value_pairs = [(f.name, getattr(parameter_object, f.name))
+                            for f in fields(parameter_object)]
+        for i, name_value in enumerate(name_value_pairs):
+            code_text += f"  {value_type_name} {name_value[0]} = static_cast<{value_type_name}>({name_value[1]});\n"
 
         code_text += "};\n\n"
 
