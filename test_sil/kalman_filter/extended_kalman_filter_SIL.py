@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
+from dataclasses import dataclass
 
 from external_libraries.MCAP_python_control.python_control.kalman_filter import ExtendedKalmanFilter
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
@@ -21,10 +22,21 @@ from python_control.kalman_filter_deploy import KalmanFilterDeploy
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
+
+@dataclass
+class Parameters:
+    delta_time: float
+    wheelbase: float
+    landmark_1_x: float
+    landmark_1_y: float
+    landmark_2_x: float
+    landmark_2_y: float
+
 # %% bicycle model example
 # state X: [x, y, theta]
 # input U: [v, steering_angle]
 # output Y: [r_p, angle_p]
+
 
 delta_time = symbols('delta_time')
 steering_angle = symbols('steering_angle')
@@ -69,18 +81,6 @@ ExpressionDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
 # %% design EKF
 
 landmarks = np.array([[-1.0, 10.0], [-1.0, 10.0]])
-
-
-class Parameters:
-    def __init__(self, delta_time, wheelbase,
-                 landmark_1_x, landmark_1_y, landmark_2_x, landmark_2_y):
-        self.delta_time = delta_time
-        self.wheelbase = wheelbase
-        self.landmark_1_x = landmark_1_x
-        self.landmark_1_y = landmark_1_y
-        self.landmark_2_x = landmark_2_x
-        self.landmark_2_y = landmark_2_y
-
 
 Parameters_ekf = Parameters(
     delta_time=0.1, wheelbase=0.5,
