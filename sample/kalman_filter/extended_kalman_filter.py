@@ -73,7 +73,6 @@ def main():
                          sympy.cos(theta + beta)],
                         [theta + beta]])
     fxu_jacobian = fxu.jacobian(X)
-    print("fxu_jacobian:\n", fxu_jacobian)
 
     hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2)],
                        [sympy.atan2(landmark_1_y - y,
@@ -82,7 +81,6 @@ def main():
                                    (landmark_2_y - y) ** 2)],
                        [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
     hx_jacobian = hx.jacobian(X)
-    print("hx_jacobian:\n", hx_jacobian)
 
     # Save functions to separate files
     fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
