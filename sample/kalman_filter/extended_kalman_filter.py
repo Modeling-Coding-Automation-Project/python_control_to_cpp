@@ -19,7 +19,6 @@ sys.path.append(os.getcwd())
 
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 from dataclasses import dataclass
@@ -251,8 +250,6 @@ def main():
         plotter.plot("EKF for bicycle model results")
 
     run_simulation()
-
-    plt.show()
 
 
 if __name__ == "__main__":
