@@ -10,7 +10,6 @@ sys.path.append(os.getcwd())
 
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 from dataclasses import dataclass
@@ -72,11 +71,17 @@ hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2
 hx_jacobian = hx.jacobian(X)
 
 # Save functions to separate files
-ExpressionDeploy.write_state_function_code_from_sympy(fxu, X, U)
-ExpressionDeploy.write_state_function_code_from_sympy(fxu_jacobian, X, U)
+fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
+    fxu, X, U)
+fxu_jacobian_file_name = \
+    ExpressionDeploy.write_state_function_code_from_sympy(
+        fxu_jacobian, X, U)
 
-ExpressionDeploy.write_measurement_function_code_from_sympy(hx, X)
-ExpressionDeploy.write_measurement_function_code_from_sympy(hx_jacobian, X)
+hx_file_name = ExpressionDeploy.write_measurement_function_code_from_sympy(
+    hx, X)
+hx_jacobian_file_name = \
+    ExpressionDeploy.write_measurement_function_code_from_sympy(
+        hx_jacobian, X)
 
 # %% design EKF
 
@@ -92,12 +97,24 @@ Number_of_Delay = 5
 Q_ekf = np.diag([1.0, 1.0, 1.0])
 R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 10.0
 
-import fxu
-import fxu_jacobian
-import hx
-import hx_jacobian
-ekf = ExtendedKalmanFilter(fxu.function, hx.function,
-                           fxu_jacobian.function, hx_jacobian.function,
+local_vars = {}
+
+exec(f"from {fxu_file_name} import function as fxu_script_function",
+     globals(), local_vars)
+exec(
+    f"from {fxu_jacobian_file_name} import function as fxu_jacobian_script_function", globals(), local_vars)
+exec(f"from {hx_file_name} import function as hx_script_function",
+     globals(), local_vars)
+exec(
+    f"from {hx_jacobian_file_name} import function as hx_jacobian_script_function", globals(), local_vars)
+
+fxu_script_function = local_vars["fxu_script_function"]
+fxu_jacobian_script_function = local_vars["fxu_jacobian_script_function"]
+hx_script_function = local_vars["hx_script_function"]
+hx_jacobian_script_function = local_vars["hx_jacobian_script_function"]
+
+ekf = ExtendedKalmanFilter(fxu_script_function, hx_script_function,
+                           fxu_jacobian_script_function, hx_jacobian_script_function,
                            Q_ekf, R_ekf, Parameters_ekf, Number_of_Delay)
 
 deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(
