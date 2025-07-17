@@ -210,7 +210,7 @@ class FunctionToCppVisitor(ast.NodeVisitor):
                         "attr='")[1].split("'")[0]
                     Value_Type_name = python_to_cpp_types[Value_Type_python_name]
 
-                self.cpp_code += Value_Type_name + " " + arg
+                self.cpp_code += "const " + Value_Type_name + " " + arg
                 if i == len(args) - 1:
                     break
                 else:
@@ -221,19 +221,19 @@ class FunctionToCppVisitor(ast.NodeVisitor):
                     "id='")[1].split("'")[0]
 
                 if arg == "X":
-                    self.cpp_code += f"{type_name} X"
+                    self.cpp_code += f"const {type_name} X"
                     if i == len(args) - 1:
                         break
                     else:
                         self.cpp_code += ", "
                 elif arg == "U":
-                    self.cpp_code += f"{type_name} U"
+                    self.cpp_code += f"const {type_name} U"
                     if i == len(args) - 1:
                         break
                     else:
                         self.cpp_code += ", "
                 elif arg == "Parameters":
-                    self.cpp_code += f"{type_name} Parameters"
+                    self.cpp_code += f"const {type_name} Parameters"
                     if i == len(args) - 1:
                         break
                     else:
@@ -714,7 +714,7 @@ class KalmanFilterDeploy:
         state_function_jacobian_code = ""
         state_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         state_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
-        state_function_jacobian_code += "using U_Type = StateSpaceInput_Type<double, A_Type::ROWS>;\n\n"
+        state_function_jacobian_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
 
         for i, line in enumerate(state_function_jacobian_code_lines):
             state_function_jacobian_code += line + "\n"
@@ -767,8 +767,9 @@ class KalmanFilterDeploy:
 
         # generate measurement function jacobian
         measurement_function_jacobian_code_suffix = ""
+        measurement_function_jacobian_code_suffix += f"#include \"{A_file_name}\"\n"
+        measurement_function_jacobian_code_suffix += f"#include \"{C_file_name}\"\n"
         measurement_function_jacobian_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n"
-        measurement_function_jacobian_code_suffix += f"#include \"{C_file_name}\"\n\n"
 
         measurement_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
 
@@ -780,9 +781,10 @@ class KalmanFilterDeploy:
         measurement_function_jacobian_code_suffix += "using namespace PythonMath;\n\n"
 
         measurement_function_jacobian_code = ""
+        measurement_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_function_jacobian_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, C_Type::COLS>;\n"
-        measurement_function_jacobian_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
+        measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        measurement_function_jacobian_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
 
         for i, line in enumerate(measurement_function_jacobian_code_lines):
             measurement_function_jacobian_code += line + "\n"
@@ -880,14 +882,20 @@ class KalmanFilterDeploy:
         code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
             f"    {state_function_code_file_name_without_ext}::function;\n\n"
 
-        code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> state_function_jacobian_object =\n" + \
-            f"    {state_function_jacobian_code_file_name_without_ext}::function;\n\n"
+        code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> " + \
+            "state_function_jacobian_object =\n" + \
+            "    [](const X_Type& X, const U_Type& U, const Parameter_Type& Parameters) {\n" + \
+            f"      return {state_function_jacobian_code_file_name_without_ext}::function(X, U, Parameters);\n\n"
+        code_text += "    };\n\n"
 
         code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
             f"    {measurement_function_code_file_name_without_ext}::function;\n\n"
 
-        code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> measurement_function_jacobian_object =\n" + \
-            f"    {measurement_function_jacobian_code_file_name_without_ext}::function;\n\n"
+        code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> " + \
+            "measurement_function_jacobian_object =\n" + \
+            "    [](const X_Type& X, const Parameter_Type& Parameters) {\n" + \
+            f"      return {measurement_function_jacobian_code_file_name_without_ext}::function(X, Parameters);\n\n"
+        code_text += "    };\n\n"
 
         code_text += "  return ExtendedKalmanFilter_Type<\n" + \
             "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>(\n" + \
