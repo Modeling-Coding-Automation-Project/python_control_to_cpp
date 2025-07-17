@@ -878,16 +878,19 @@ template <> struct Extended<0> {
    * @param X_hat The initial estimated state vector.
    * @param U_store The input store containing the control inputs.
    * @param parameters Additional parameters for the state function.
+   * @param input_count The number of inputs to consider in the prediction.
    * @return The estimated state vector x_hat.
    */
   template <typename StateFunction_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
   static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
                       const U_Store_Type &U_store,
-                      const Parameter_Type &parameters) -> X_Type {
+                      const Parameter_Type &parameters,
+                      const std::size_t &input_count) -> X_Type {
     static_cast<void>(state_function);
     static_cast<void>(U_store);
     static_cast<void>(parameters);
+    static_cast<void>(input_count);
 
     return X_hat;
   }
@@ -1850,8 +1853,8 @@ public:
    * @param P_in The covariance matrix.
    * @return The calculated sigma points as a Kai_Type matrix.
    */
-  inline auto calculate(const State_Type &X_in, const P_Type &P_in)
-      -> Kai_Type {
+  inline auto calculate(const State_Type &X_in,
+                        const P_Type &P_in) -> Kai_Type {
 
     _P_cholesky_solver = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
     Kai_Type Kai;
@@ -2117,9 +2120,10 @@ public:
             std::move(input._update_sigma_points_calculator)),
         _input_count(std::move(input._input_count)) {}
 
-  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, Number_Of_Delay>
-      &operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                                       Number_Of_Delay> &&input) noexcept {
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                        Number_Of_Delay> &
+  operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                  Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->Q = std::move(input.Q);
       this->R = std::move(input.R);

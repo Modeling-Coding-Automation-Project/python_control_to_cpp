@@ -19,7 +19,6 @@ sys.path.append(os.getcwd())
 
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 from dataclasses import dataclass
@@ -73,7 +72,6 @@ def main():
                          sympy.cos(theta + beta)],
                         [theta + beta]])
     fxu_jacobian = fxu.jacobian(X)
-    print("fxu_jacobian:\n", fxu_jacobian)
 
     hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2)],
                        [sympy.atan2(landmark_1_y - y,
@@ -82,15 +80,19 @@ def main():
                                    (landmark_2_y - y) ** 2)],
                        [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
     hx_jacobian = hx.jacobian(X)
-    print("hx_jacobian:\n", hx_jacobian)
 
     # Save functions to separate files
-    ExpressionDeploy.write_state_function_code_from_sympy(fxu, X, U)
-    ExpressionDeploy.write_state_function_code_from_sympy(fxu_jacobian, X, U)
+    fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
+        fxu, X, U)
+    fxu_jacobian_file_name = \
+        ExpressionDeploy.write_state_function_code_from_sympy(
+            fxu_jacobian, X, U)
 
-    ExpressionDeploy.write_measurement_function_code_from_sympy(hx, X)
-    ExpressionDeploy.write_measurement_function_code_from_sympy(
-        hx_jacobian, X)
+    hx_file_name = ExpressionDeploy.write_measurement_function_code_from_sympy(
+        hx, X)
+    hx_jacobian_file_name = \
+        ExpressionDeploy.write_measurement_function_code_from_sympy(
+            hx_jacobian, X)
 
     # %% design EKF
 
@@ -106,12 +108,24 @@ def main():
     Q_ekf = np.diag([1.0, 1.0, 1.0])
     R_ekf = np.diag([1.0, 1.0, 1.0, 1.0]) * 10.0
 
-    import fxu
-    import fxu_jacobian
-    import hx
-    import hx_jacobian
-    ekf = ExtendedKalmanFilter(fxu.function, hx.function,
-                               fxu_jacobian.function, hx_jacobian.function,
+    local_vars = {}
+
+    exec(f"from {fxu_file_name} import function as fxu_script_function",
+         globals(), local_vars)
+    exec(
+        f"from {fxu_jacobian_file_name} import function as fxu_jacobian_script_function", globals(), local_vars)
+    exec(f"from {hx_file_name} import function as hx_script_function",
+         globals(), local_vars)
+    exec(
+        f"from {hx_jacobian_file_name} import function as hx_jacobian_script_function", globals(), local_vars)
+
+    fxu_script_function = local_vars["fxu_script_function"]
+    fxu_jacobian_script_function = local_vars["fxu_jacobian_script_function"]
+    hx_script_function = local_vars["hx_script_function"]
+    hx_jacobian_script_function = local_vars["hx_jacobian_script_function"]
+
+    ekf = ExtendedKalmanFilter(fxu_script_function, hx_script_function,
+                               fxu_jacobian_script_function, hx_jacobian_script_function,
                                Q_ekf, R_ekf, Parameters_ekf, Number_of_Delay)
 
     # You can create cpp header which can easily define EKF as C++ code
@@ -236,8 +250,6 @@ def main():
         plotter.plot("EKF for bicycle model results")
 
     run_simulation()
-
-    plt.show()
 
 
 if __name__ == "__main__":

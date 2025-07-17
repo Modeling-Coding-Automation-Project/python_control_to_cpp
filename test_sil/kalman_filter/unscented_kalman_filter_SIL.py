@@ -10,7 +10,6 @@ sys.path.append(os.getcwd())
 
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import sympy
 from sympy import symbols
 from dataclasses import dataclass
@@ -71,8 +70,10 @@ hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2
                    [sympy.atan2(landmark_2_y - y, landmark_2_x - x) - theta]])
 
 # Save functions to separate files
-ExpressionDeploy.write_state_function_code_from_sympy(fxu, X, U)
-ExpressionDeploy.write_measurement_function_code_from_sympy(hx, X)
+fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
+    fxu, X, U)
+hx_file_name = ExpressionDeploy.write_measurement_function_code_from_sympy(
+    hx, X)
 
 # %% design EKF
 
@@ -89,13 +90,22 @@ Number_of_Delay = 5
 Q_ukf = np.diag([0.01, 0.01, 0.01])
 R_ukf = np.diag([1.0, 1.0, 1.0, 1.0])
 
-import fxu
-import hx
-# ukf = UnscentedKalmanFilter_Basic(fxu.function, hx.function,
+local_vars = {}
+
+exec(f"from {fxu_file_name} import function as fxu_script_function",
+     globals(), local_vars)
+exec(f"from {hx_file_name} import function as hx_script_function",
+     globals(), local_vars)
+
+fxu_script_function = local_vars["fxu_script_function"]
+hx_script_function = local_vars["hx_script_function"]
+
+
+# ukf = UnscentedKalmanFilter_Basic(fxu_script_function, hx_script_function,
 #                                   Q_ukf, R_ukf, Parameters_ukf,
 #                                   Number_of_Delay, kappa=0.5)
 
-ukf = UnscentedKalmanFilter(fxu.function, hx.function,
+ukf = UnscentedKalmanFilter(fxu_script_function, hx_script_function,
                             Q_ukf, R_ukf, Parameters_ukf,
                             Number_of_Delay)
 
