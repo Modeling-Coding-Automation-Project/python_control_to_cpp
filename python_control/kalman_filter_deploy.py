@@ -20,6 +20,10 @@ import sympy as sp
 import control
 from dataclasses import dataclass, fields, is_dataclass
 
+from external_libraries.MCAP_python_control.python_control.kalman_filter import LinearKalmanFilter
+from external_libraries.MCAP_python_control.python_control.kalman_filter import ExtendedKalmanFilter
+from external_libraries.MCAP_python_control.python_control.kalman_filter import UnscentedKalmanFilter
+
 from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import NumpyDeploy, python_to_cpp_types
 from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
@@ -384,6 +388,27 @@ class KalmanFilterDeploy:
         return code_text
 
     @staticmethod
+    def create_cpp_code_file(file_name_without_ext: str,
+                             code_suffix_text: str,
+                             code_body_text: str):
+        code_text = ""
+
+        code_text += "#ifndef __" + file_name_without_ext.upper() + "_HPP__\n"
+        code_text += "#define __" + file_name_without_ext.upper() + "_HPP__\n\n"
+
+        code_text += code_suffix_text
+
+        code_text += "namespace " + file_name_without_ext + " {\n\n"
+
+        code_text += code_body_text + "\n"
+
+        code_text += "} // namespace " + file_name_without_ext + "\n\n"
+
+        code_text += "#endif // __" + file_name_without_ext.upper() + "_HPP__\n"
+
+        ControlDeploy.write_to_file(code_text, file_name_without_ext + ".hpp")
+
+    @staticmethod
     def generate_LKF_cpp_code(lkf, file_name=None, number_of_delay=0):
         """
         Generates C++ code for a Linear Kalman Filter (LKF) based on the provided LKF object.
@@ -557,7 +582,9 @@ class KalmanFilterDeploy:
         return deployed_file_names
 
     @staticmethod
-    def generate_EKF_cpp_code(ekf, file_name=None, number_of_delay=0):
+    def generate_EKF_cpp_code(
+            ekf: ExtendedKalmanFilter,
+            file_name: str = None, number_of_delay: int = 0):
         deployed_file_names = []
 
         ControlDeploy.restrict_data_type(ekf.A.dtype.name)
@@ -591,28 +618,34 @@ class KalmanFilterDeploy:
         # generate parameter class code
         parameter_code = KalmanFilterDeploy.generate_parameter_cpp_code(
             ekf.Parameters, type_name)
+        parameter_code_file_name_without_ext = code_file_name + "_parameter"
+
+        KalmanFilterDeploy.create_cpp_code_file(
+            parameter_code_file_name_without_ext, "", parameter_code)
 
         # create state and measurement functions
         fxu_name = ekf.state_function.__module__
-        state_function_code, state_function_U_size, _ = \
+        state_function_code_lines, state_function_U_size, _ = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(fxu_name,
                                                                           "X_Type")
 
         fxu_jacobian_name = ekf.state_function_jacobian.__module__
-        state_function_jacobian_code, _, A_SparseAvailable_list = \
+        state_function_jacobian_code_lines, _, A_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(fxu_jacobian_name,
                                                                           "A_Type")
+
         ekf_A = A_SparseAvailable_list[0]
 
         hx_name = ekf.measurement_function.__module__
-        measurement_function_code, _, _ = \
+        measurement_function_code_lines, _, _ = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(hx_name,
                                                                           "Y_Type")
 
         hx_jacobian_name = ekf.measurement_function_jacobian.__module__
-        measurement_function_jacobian_code, _, C_SparseAvailable_list = \
+        measurement_function_jacobian_code_lines, _, C_SparseAvailable_list = \
             KalmanFilterDeploy.create_state_and_measurement_function_code(hx_jacobian_name,
                                                                           "C_Type")
+
         ekf_C = C_SparseAvailable_list[0]
 
         # create A, C matrices
@@ -629,6 +662,128 @@ class KalmanFilterDeploy:
         A_file_name_no_extension = A_file_name.split(".")[0]
         C_file_name_no_extension = C_file_name.split(".")[0]
 
+        # generate state function
+        state_function_code_suffix = ""
+        state_function_code_suffix += f"#include \"{A_file_name}\"\n"
+        state_function_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n\n"
+
+        state_function_code_suffix += "#include \"python_control.hpp\"\n\n"
+
+        state_function_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
+
+        state_function_code_suffix += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
+        state_function_code_suffix += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n\n"
+
+        state_function_code_suffix += "using X_Type = StateSpaceState_Type<double, STATE_SIZE>;\n"
+        state_function_code_suffix += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n\n"
+
+        state_function_code_suffix += "using Parameter_Type = " + \
+            parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
+
+        state_function_code_suffix += "using namespace PythonMath;\n"
+        state_function_code_suffix += "using namespace PythonControl;\n\n"
+
+        state_function_code = ""
+        for i, line in enumerate(state_function_code_lines):
+            state_function_code += line + "\n"
+
+        state_function_code_file_name_without_ext = code_file_name + "_state_function"
+
+        KalmanFilterDeploy.create_cpp_code_file(
+            state_function_code_file_name_without_ext,
+            state_function_code_suffix, state_function_code)
+
+        # generate state function jacobian
+        state_function_jacobian_code_suffix = ""
+        state_function_jacobian_code_suffix += f"#include \"{A_file_name}\"\n"
+        state_function_jacobian_code_suffix += f"#include \"{C_file_name}\"\n"
+        state_function_jacobian_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n\n"
+
+        state_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
+
+        state_function_jacobian_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
+
+        state_function_jacobian_code_suffix += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        state_function_jacobian_code_suffix += "using U_Type = StateSpaceInput_Type<double, A_Type::ROWS>;\n\n"
+
+        state_function_jacobian_code_suffix += "using Parameter_Type = " + \
+            parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
+
+        state_function_jacobian_code_suffix += "using namespace PythonMath;\n"
+        state_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+
+        state_function_jacobian_code = ""
+        for i, line in enumerate(state_function_jacobian_code_lines):
+            state_function_jacobian_code += line + "\n"
+
+        state_function_jacobian_code_file_name_without_ext = code_file_name + \
+            "_state_function_jacobian"
+
+        KalmanFilterDeploy.create_cpp_code_file(
+            state_function_jacobian_code_file_name_without_ext,
+            state_function_jacobian_code_suffix,
+            state_function_jacobian_code)
+
+        # generate measurement function
+        measurement_function_code_suffix = ""
+        measurement_function_code_suffix += f"#include \"{A_file_name}\"\n"
+        measurement_function_code_suffix += f"#include \"{C_file_name}\"\n"
+        measurement_function_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n\n"
+
+        measurement_function_code_suffix += "#include \"python_control.hpp\"\n\n"
+
+        measurement_function_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
+        measurement_function_code_suffix += f"using C_Type = {C_file_name_no_extension}::type;\n"
+        measurement_function_code_suffix += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        measurement_function_code_suffix += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
+
+        measurement_function_code_suffix += "using Parameter_Type = " + \
+            parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
+
+        measurement_function_code_suffix += "using namespace PythonMath;\n"
+        measurement_function_code_suffix += "using namespace PythonControl;\n\n"
+
+        measurement_function_code = ""
+        for i, line in enumerate(measurement_function_code_lines):
+            measurement_function_code += line + "\n"
+
+        measurement_function_code_file_name_without_ext = code_file_name + \
+            "_measurement_function"
+
+        KalmanFilterDeploy.create_cpp_code_file(
+            measurement_function_code_file_name_without_ext,
+            measurement_function_code_suffix,
+            measurement_function_code)
+
+        # generate measurement function jacobian
+        measurement_function_jacobian_code_suffix = ""
+        measurement_function_jacobian_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n"
+        measurement_function_jacobian_code_suffix += f"#include \"{C_file_name}\"\n\n"
+
+        measurement_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
+
+        measurement_function_jacobian_code_suffix += f"using C_Type = {C_file_name_no_extension}::type;\n"
+        measurement_function_jacobian_code_suffix += "using X_Type = StateSpaceState_Type<double, C_Type::COLS>;\n"
+        measurement_function_jacobian_code_suffix += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
+
+        measurement_function_jacobian_code_suffix += "using Parameter_Type = " + \
+            parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
+
+        measurement_function_jacobian_code_suffix += "using namespace PythonMath;\n"
+        measurement_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+
+        measurement_function_jacobian_code = ""
+        for i, line in enumerate(measurement_function_jacobian_code_lines):
+            measurement_function_jacobian_code += line + "\n"
+
+        measurement_function_jacobian_code_file_name_without_ext = code_file_name + \
+            "_measurement_function_jacobian"
+
+        KalmanFilterDeploy.create_cpp_code_file(
+            measurement_function_jacobian_code_file_name_without_ext,
+            measurement_function_jacobian_code_suffix,
+            measurement_function_jacobian_code)
+
         # create cpp code
         code_text = ""
 
@@ -638,9 +793,13 @@ class KalmanFilterDeploy:
         code_text += "#define " + file_header_macro_name + "\n\n"
 
         code_text += f"#include \"{A_file_name}\"\n"
-        code_text += f"#include \"{C_file_name}\"\n\n"
+        code_text += f"#include \"{C_file_name}\"\n"
+        code_text += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n"
+        code_text += f"#include \"{state_function_code_file_name_without_ext}.hpp\"\n"
+        code_text += f"#include \"{state_function_jacobian_code_file_name_without_ext}.hpp\"\n"
+        code_text += f"#include \"{measurement_function_code_file_name_without_ext}.hpp\"\n"
+        code_text += f"#include \"{measurement_function_jacobian_code_file_name_without_ext}.hpp\"\n\n"
 
-        code_text += "#include \"python_math.hpp\"\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
         namespace_name = code_file_name
@@ -664,52 +823,12 @@ class KalmanFilterDeploy:
         code_text += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n"
         code_text += "using Y_Type = StateSpaceOutput_Type<double, OUTPUT_SIZE>;\n\n"
 
-        code_text += parameter_code
-        code_text += "\n"
-
-        code_text += "namespace state_function {\n\n"
-
-        code_text += "using namespace PythonMath;\n\n"
-
-        for code in state_function_code:
-            code_text += code
-            code_text += "\n"
-
-        code_text += "} // namespace state_function\n\n"
-
-        code_text += "namespace state_function_jacobian {\n\n"
-
-        code_text += "using namespace PythonMath;\n\n"
-
-        for code in state_function_jacobian_code:
-            code_text += code
-            code_text += "\n"
-
-        code_text += "} // namespace state_function_jacobian\n\n"
-
-        code_text += "namespace measurement_function {\n\n"
-
-        code_text += "using namespace PythonMath;\n\n"
-
-        for code in measurement_function_code:
-            code_text += code
-            code_text += "\n"
-
-        code_text += "} // namespace measurement_function\n\n"
-
-        code_text += "namespace measurement_function_jacobian {\n\n"
-
-        code_text += "using namespace PythonMath;\n\n"
-
-        for code in measurement_function_jacobian_code:
-            code_text += code
-            code_text += "\n"
-
-        code_text += "} // namespace measurement_function_jacobian\n\n"
-
         code_text += f"using Q_Type = KalmanFilter_Q_Type<{type_name}, STATE_SIZE>;\n\n"
 
         code_text += f"using R_Type = KalmanFilter_R_Type<{type_name}, OUTPUT_SIZE>;\n\n"
+
+        code_text += "using Parameter_Type = " + \
+            parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
         code_text += "using type = ExtendedKalmanFilter_Type<\n" + \
             "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>;\n\n"
@@ -745,16 +864,16 @@ class KalmanFilterDeploy:
         code_text += "  Parameter_Type parameters;\n\n"
 
         code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
-            "    state_function::function;\n\n"
+            f"    {state_function_code_file_name_without_ext}::function;\n\n"
 
         code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> state_function_jacobian_object =\n" + \
-            "    state_function_jacobian::function;\n\n"
+            f"    {state_function_jacobian_code_file_name_without_ext}::function;\n\n"
 
         code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
-            "    measurement_function::function;\n\n"
+            f"    {measurement_function_code_file_name_without_ext}::function;\n\n"
 
         code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> measurement_function_jacobian_object =\n" + \
-            "    measurement_function_jacobian::function;\n\n"
+            f"    {measurement_function_jacobian_code_file_name_without_ext}::function;\n\n"
 
         code_text += "  return ExtendedKalmanFilter_Type<\n" + \
             "    A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>(\n" + \
