@@ -24,7 +24,6 @@ from dataclasses import dataclass
 
 from external_libraries.MCAP_python_control.python_control.kalman_filter import ExtendedKalmanFilter
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
-from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
 from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
