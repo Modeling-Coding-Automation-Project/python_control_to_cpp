@@ -151,6 +151,7 @@ def main():
         R=R_ekf,
         Parameters=parameters_ekf
     )
+    ekf.x_hat = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.5]])
 
     # You can create cpp header which can easily define EKF as C++ code
     deployed_file_names = KalmanFilterDeploy.generate_EKF_cpp_code(ekf)
@@ -164,8 +165,6 @@ def main():
 
     # X: px, py, theta, r, beta, V
     x_true = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [1.0]])
-
-    ekf.x_hat = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.5]])
 
     # U: delta, accel
     u = np.array([[0.0], [0.0]])
@@ -231,7 +230,7 @@ def main():
         x_estimated = ekf.get_x_hat_without_delay()
 
         KalmanFilterSIL.predict_and_update(u, y_measured)
-        x_estimate_cpp = KalmanFilterSIL.get_x_hat()
+        x_estimate_cpp = KalmanFilterSIL.get_x_hat_without_delay()
 
         tester.expect_near(x_estimate_cpp, x_estimated, NEAR_LIMIT,
                            "Extended Kalman Filter SIL, check x_hat.")
