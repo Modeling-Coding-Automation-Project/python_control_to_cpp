@@ -89,7 +89,6 @@ def create_model(delta_time: float):
         [accel],
     ])
     fxu: sp.Matrix = X + fxu_continuous * delta_time
-
     sp.pprint(fxu)
 
     hx = sp.Matrix([[X[0]], [X[1]], [X[2]], [X[3]], [X[5]]])
