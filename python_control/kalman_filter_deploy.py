@@ -880,7 +880,9 @@ class KalmanFilterDeploy:
         code_text += "  Parameter_Type parameters;\n\n"
 
         code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
-            f"    {state_function_code_file_name_without_ext}::function;\n\n"
+            "    [](const X_Type& X, const U_Type& U, const Parameter_Type& Parameters) {\n" + \
+            f"      return {state_function_code_file_name_without_ext}::function(X, U, Parameters);\n\n"
+        code_text += "    };\n\n"
 
         code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> " + \
             "state_function_jacobian_object =\n" + \
@@ -889,7 +891,9 @@ class KalmanFilterDeploy:
         code_text += "    };\n\n"
 
         code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
-            f"    {measurement_function_code_file_name_without_ext}::function;\n\n"
+            "    [](const X_Type& X, const Parameter_Type& Parameters) {\n" + \
+            f"      return {measurement_function_code_file_name_without_ext}::function(X, Parameters);\n\n"
+        code_text += "    };\n\n"
 
         code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> " + \
             "measurement_function_jacobian_object =\n" + \
