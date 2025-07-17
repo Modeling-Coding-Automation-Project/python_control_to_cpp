@@ -1051,6 +1051,8 @@ class KalmanFilterDeploy:
                                                                           "Y_Type")
 
         # generate state function
+        state_size = ukf.Q.shape[0]
+
         state_function_code_suffix = ""
         state_function_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n\n"
 
@@ -1079,7 +1081,6 @@ class KalmanFilterDeploy:
         deployed_file_names.append(
             state_function_code_file_name_without_ext + ".hpp")
 
-        state_size = ukf.Q.shape[0]
         measurement_size = ukf.R.shape[0]
 
         # generate measurement function
@@ -1097,7 +1098,8 @@ class KalmanFilterDeploy:
 
         measurement_function_code = ""
         measurement_function_code += f"using X_Type = StateSpaceState_Type<double, {state_size}>;\n"
-        measurement_function_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
+        measurement_function_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n"
+        measurement_function_code += f"using Y_Type = StateSpaceOutput_Type<double, {measurement_size}>;\n\n"
 
         for i, line in enumerate(measurement_function_code_lines):
             measurement_function_code += line + "\n"
