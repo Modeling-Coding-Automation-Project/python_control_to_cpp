@@ -201,43 +201,44 @@ class FunctionToCppVisitor(ast.NodeVisitor):
         else:
             annotations['return'] = None
 
-        if args[0] != "X":
-            for i, arg in enumerate(args):
-                Value_Type_name = self.Value_Type_name
-                if annotations[arg] is not None:
-                    annotation = annotations[arg]
-                    Value_Type_python_name = annotation.split(
-                        "attr='")[1].split("'")[0]
-                    Value_Type_name = python_to_cpp_types[Value_Type_python_name]
+        if args != []:
+            if args[0] != "X":
+                for i, arg in enumerate(args):
+                    Value_Type_name = self.Value_Type_name
+                    if annotations[arg] is not None:
+                        annotation = annotations[arg]
+                        Value_Type_python_name = annotation.split(
+                            "attr='")[1].split("'")[0]
+                        Value_Type_name = python_to_cpp_types[Value_Type_python_name]
 
-                self.cpp_code += "const " + Value_Type_name + " " + arg
-                if i == len(args) - 1:
-                    break
-                else:
-                    self.cpp_code += ", "
-        else:
-            for i, arg in enumerate(args):
-                type_name = annotations[arg].split(
-                    "id='")[1].split("'")[0]
+                    self.cpp_code += "const " + Value_Type_name + " " + arg
+                    if i == len(args) - 1:
+                        break
+                    else:
+                        self.cpp_code += ", "
+            else:
+                for i, arg in enumerate(args):
+                    type_name = annotations[arg].split(
+                        "id='")[1].split("'")[0]
 
-                if arg == "X":
-                    self.cpp_code += f"const {type_name} X"
-                    if i == len(args) - 1:
-                        break
-                    else:
-                        self.cpp_code += ", "
-                elif arg == "U":
-                    self.cpp_code += f"const {type_name} U"
-                    if i == len(args) - 1:
-                        break
-                    else:
-                        self.cpp_code += ", "
-                elif arg == "Parameters":
-                    self.cpp_code += f"const {type_name} Parameters"
-                    if i == len(args) - 1:
-                        break
-                    else:
-                        self.cpp_code += ", "
+                    if arg == "X":
+                        self.cpp_code += f"const {type_name} X"
+                        if i == len(args) - 1:
+                            break
+                        else:
+                            self.cpp_code += ", "
+                    elif arg == "U":
+                        self.cpp_code += f"const {type_name} U"
+                        if i == len(args) - 1:
+                            break
+                        else:
+                            self.cpp_code += ", "
+                    elif arg == "Parameters":
+                        self.cpp_code += f"const {type_name} Parameters"
+                        if i == len(args) - 1:
+                            break
+                        else:
+                            self.cpp_code += ", "
 
         self.cpp_code += ") -> " + self.Output_Type_name + " {\n\n"
 
