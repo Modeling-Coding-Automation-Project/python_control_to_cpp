@@ -623,6 +623,9 @@ class KalmanFilterDeploy:
         KalmanFilterDeploy.create_cpp_code_file(
             parameter_code_file_name_without_ext, "", parameter_code)
 
+        deployed_file_names.append(
+            parameter_code_file_name_without_ext + ".hpp")
+
         # create state and measurement functions
         fxu_name = ekf.state_function.__module__
         state_function_code_lines, state_function_U_size, _ = \
@@ -669,21 +672,18 @@ class KalmanFilterDeploy:
 
         state_function_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        state_function_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
-
-        state_function_code_suffix += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
-        state_function_code_suffix += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n\n"
-
-        state_function_code_suffix += "using X_Type = StateSpaceState_Type<double, STATE_SIZE>;\n"
-        state_function_code_suffix += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n\n"
+        state_function_code_suffix += "using namespace PythonControl;\n\n"
 
         state_function_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_function_code_suffix += "using namespace PythonMath;\n"
-        state_function_code_suffix += "using namespace PythonControl;\n\n"
+        state_function_code_suffix += "using namespace PythonMath;\n\n"
 
         state_function_code = ""
+        state_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
+        state_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        state_function_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
+
         for i, line in enumerate(state_function_code_lines):
             state_function_code += line + "\n"
 
@@ -693,6 +693,9 @@ class KalmanFilterDeploy:
             state_function_code_file_name_without_ext,
             state_function_code_suffix, state_function_code)
 
+        deployed_file_names.append(
+            state_function_code_file_name_without_ext + ".hpp")
+
         # generate state function jacobian
         state_function_jacobian_code_suffix = ""
         state_function_jacobian_code_suffix += f"#include \"{A_file_name}\"\n"
@@ -701,18 +704,18 @@ class KalmanFilterDeploy:
 
         state_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        state_function_jacobian_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
-
-        state_function_jacobian_code_suffix += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
-        state_function_jacobian_code_suffix += "using U_Type = StateSpaceInput_Type<double, A_Type::ROWS>;\n\n"
+        state_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
 
         state_function_jacobian_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_function_jacobian_code_suffix += "using namespace PythonMath;\n"
-        state_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+        state_function_jacobian_code_suffix += "using namespace PythonMath;\n\n"
 
         state_function_jacobian_code = ""
+        state_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
+        state_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        state_function_jacobian_code += "using U_Type = StateSpaceInput_Type<double, A_Type::ROWS>;\n\n"
+
         for i, line in enumerate(state_function_jacobian_code_lines):
             state_function_jacobian_code += line + "\n"
 
@@ -724,6 +727,9 @@ class KalmanFilterDeploy:
             state_function_jacobian_code_suffix,
             state_function_jacobian_code)
 
+        deployed_file_names.append(
+            state_function_jacobian_code_file_name_without_ext + ".hpp")
+
         # generate measurement function
         measurement_function_code_suffix = ""
         measurement_function_code_suffix += f"#include \"{A_file_name}\"\n"
@@ -732,18 +738,19 @@ class KalmanFilterDeploy:
 
         measurement_function_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        measurement_function_code_suffix += f"using A_Type = {A_file_name_no_extension}::type;\n"
-        measurement_function_code_suffix += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        measurement_function_code_suffix += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
-        measurement_function_code_suffix += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
+        measurement_function_code_suffix += "using namespace PythonControl;\n\n"
 
         measurement_function_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_function_code_suffix += "using namespace PythonMath;\n"
-        measurement_function_code_suffix += "using namespace PythonControl;\n\n"
+        measurement_function_code_suffix += "using namespace PythonMath;\n\n"
 
         measurement_function_code = ""
+        measurement_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
+        measurement_function_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
+        measurement_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        measurement_function_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
+
         for i, line in enumerate(measurement_function_code_lines):
             measurement_function_code += line + "\n"
 
@@ -755,6 +762,9 @@ class KalmanFilterDeploy:
             measurement_function_code_suffix,
             measurement_function_code)
 
+        deployed_file_names.append(
+            measurement_function_code_file_name_without_ext + ".hpp")
+
         # generate measurement function jacobian
         measurement_function_jacobian_code_suffix = ""
         measurement_function_jacobian_code_suffix += f"#include \"{parameter_code_file_name_without_ext}.hpp\"\n"
@@ -762,17 +772,18 @@ class KalmanFilterDeploy:
 
         measurement_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        measurement_function_jacobian_code_suffix += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        measurement_function_jacobian_code_suffix += "using X_Type = StateSpaceState_Type<double, C_Type::COLS>;\n"
-        measurement_function_jacobian_code_suffix += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
+        measurement_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
 
         measurement_function_jacobian_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_function_jacobian_code_suffix += "using namespace PythonMath;\n"
-        measurement_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+        measurement_function_jacobian_code_suffix += "using namespace PythonMath;\n\n"
 
         measurement_function_jacobian_code = ""
+        measurement_function_jacobian_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
+        measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, C_Type::COLS>;\n"
+        measurement_function_jacobian_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
+
         for i, line in enumerate(measurement_function_jacobian_code_lines):
             measurement_function_jacobian_code += line + "\n"
 
@@ -783,6 +794,9 @@ class KalmanFilterDeploy:
             measurement_function_jacobian_code_file_name_without_ext,
             measurement_function_jacobian_code_suffix,
             measurement_function_jacobian_code)
+
+        deployed_file_names.append(
+            measurement_function_jacobian_code_file_name_without_ext + ".hpp")
 
         # create cpp code
         code_text = ""
