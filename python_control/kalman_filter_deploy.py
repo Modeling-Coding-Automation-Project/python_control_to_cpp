@@ -907,10 +907,6 @@ class KalmanFilterDeploy:
 
         code_text += "inline auto make() -> type {\n\n"
 
-        code_text += f"  auto A = {A_file_name_no_extension}::make();\n\n"
-
-        code_text += f"  auto C = {C_file_name_no_extension}::make();\n\n"
-
         code_text += "  auto Q = make_KalmanFilter_Q<STATE_SIZE>(\n"
         for i in range(ekf.Q.shape[0]):
             code_text += "    static_cast<" + \
