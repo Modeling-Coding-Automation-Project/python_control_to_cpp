@@ -77,16 +77,20 @@ class StateSpaceDeploy:
         # create A, B, C, D matrices
         exec(f"{variable_name}_A = state_space.A")
         A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_B = state_space.B")
         B_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_B, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_B, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_C = state_space.C")
         C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_C, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_D = state_space.D")
         D_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_D, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_D, " +
+            "file_name=caller_file_name_without_ext)")
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(B_file_name)

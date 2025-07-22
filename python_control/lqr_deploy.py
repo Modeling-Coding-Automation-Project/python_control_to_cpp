@@ -78,10 +78,12 @@ class LQR_Deploy:
         # create Ac, Bc matrices
         exec(f"{variable_name}_Ac = copy.deepcopy(Ac)")
         Ac_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Ac, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Ac, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_Bc = copy.deepcopy(Bc)")
         Bc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Bc, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Bc, " +
+            "file_name=caller_file_name_without_ext)")
 
         deployed_file_names.append(Ac_file_name)
         deployed_file_names.append(Bc_file_name)
@@ -224,13 +226,16 @@ class LQI_Deploy:
         # create Ac, Bc matrices
         exec(f"{variable_name}_Ac = copy.deepcopy(Ac)")
         Ac_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Ac, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Ac, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_Bc = copy.deepcopy(Bc)")
         Bc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Bc, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Bc, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_Cc = copy.deepcopy(Cc)")
         Cc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_Cc, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Cc, " +
+            "file_name=caller_file_name_without_ext)")
 
         deployed_file_names.append(Ac_file_name)
         deployed_file_names.append(Bc_file_name)
