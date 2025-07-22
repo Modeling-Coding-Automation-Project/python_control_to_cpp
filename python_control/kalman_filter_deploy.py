@@ -710,10 +710,12 @@ class KalmanFilterDeploy:
         # create A, C matrices
         exec(f"{variable_name}_A = ekf_A")
         A_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_A, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
+            "file_name=caller_file_name_without_ext)")
         exec(f"{variable_name}_C = ekf_C")
         C_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code({variable_name}_C, caller_file_name_without_ext)")
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_C, " +
+            "file_name=caller_file_name_without_ext)")
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(C_file_name)
