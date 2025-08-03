@@ -29,7 +29,7 @@
       "detail": "Build the active C++ file"
     },
     {
-      "label": "Build Active C++ File",
+      "label": "Build without Debug Active C++ File",
       "type": "shell",
       "command": "/usr/bin/g++",
       "args": [
@@ -51,7 +51,7 @@
         "isDefault": true
       },
       "problemMatcher": ["$gcc"],
-      "detail": "Build the active C++ file"
+      "detail": "Run the active C++ file without debugging"
     }
  
   ]
