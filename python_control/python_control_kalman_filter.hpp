@@ -2293,6 +2293,37 @@ public:
     this->update(Y);
   }
 
+  /**
+   * @brief Calculates the state function for a given state and input.
+   *
+   * This function computes the next state based on the provided state vector,
+   * input vector, and the state function defined for the Unscented Kalman
+   * filter.
+   *
+   * @param X The current state vector.
+   * @param U The control input vector.
+   * @return The calculated next state vector.
+   */
+  inline auto calculate_state_function(const _State_Type &X,
+                                       const U_Type &U) const -> _State_Type {
+    return this->_state_function(X, U, this->parameters);
+  }
+
+  /**
+   * @brief Calculates the measurement function for a given state.
+   *
+   * This function computes the expected measurement based on the provided
+   * state vector and the measurement function defined for the Unscented Kalman
+   * filter.
+   *
+   * @param X The current state vector.
+   * @return The calculated measurement vector.
+   */
+  inline auto calculate_measurement_function(const _State_Type &X) const
+      -> _Measurement_Type {
+    return this->_measurement_function(X, this->parameters);
+  }
+
   /* Get */
 
   /**
