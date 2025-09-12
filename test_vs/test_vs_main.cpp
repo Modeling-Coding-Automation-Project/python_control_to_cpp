@@ -1514,6 +1514,9 @@ void check_python_control_unscented_kalman_filter(void) {
         static_cast<T>(-8.86169594)
     );
 
+    tester.expect_near(Y_next.matrix.data, Y_next_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check UnscentedKalmanFilter measurement function.");
+
 
     tester.throw_error_if_test_failed();
 }
