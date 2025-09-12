@@ -1179,7 +1179,7 @@ void check_python_control_extended_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     constexpr T NEAR_LIMIT_SOFT = 1.0e-2F;
 
     /* EKF定義準備 */
@@ -1319,6 +1319,40 @@ void check_python_control_extended_kalman_filter(void) {
             "check ExtendedKalmanFilter simulation x estimate.");
     }
 
+    /* 状態方程式を単独実行 */
+    auto X_in = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(4.96398083),
+        static_cast<T>(13.03002439),
+        static_cast<T>(8.32677377)
+    );
+    auto U_in = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(2.0),
+        static_cast<T>(0.1)
+    );
+    auto X_next = ekf.calculate_state_function(X_in, U_in);
+
+    auto X_next_answer = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(4.86935786),
+        static_cast<T>(13.2062093),
+        static_cast<T>(8.36690764)
+    );
+
+    tester.expect_near(X_next.matrix.data, X_next_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check ExtendedKalmanFilter state function.");
+
+    /* 出方程式を単独実行 */
+    auto Y_next = ekf.calculate_measurement_function(X_in);
+
+    auto Y_next_answer = make_StateSpaceOutput<OUTPUT_SIZE>(
+        static_cast<T>(15.24502055),
+        static_cast<T>(-10.29951442),
+        static_cast<T>(5.87728993),
+        static_cast<T>(-8.8684207)
+    );
+
+    tester.expect_near(Y_next.matrix.data, Y_next_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check ExtendedKalmanFilter measurement function.");
+
 
     tester.throw_error_if_test_failed();
 }
@@ -1330,7 +1364,7 @@ void check_python_control_unscented_kalman_filter(void) {
 
     MCAPTester<T> tester;
 
-    //constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
     constexpr T NEAR_LIMIT_SOFT = 1.0e-1F;
 
     /* UKF定義準備 */
@@ -1448,6 +1482,37 @@ void check_python_control_unscented_kalman_filter(void) {
         tester.expect_near(x_true_store[i].matrix.data, x_estimated_store[i].matrix.data, NEAR_LIMIT_SOFT,
             "check UnscentedKalmanFilter simulation x estimate.");
     }
+
+    /* 状態方程式を単独実行 */
+    auto X_in = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(4.97713003),
+        static_cast<T>(12.96271348),
+        static_cast<T>(8.328777)
+    );
+    auto U_in = make_StateSpaceInput<INPUT_SIZE>(
+        static_cast<T>(2.0),
+        static_cast<T>(0.1)
+    );
+    auto X_next = ukf.calculate_state_function(X_in, U_in);
+
+    auto X_next_answer = make_StateSpaceState<STATE_SIZE>(
+        static_cast<T>(4.88215431),
+        static_cast<T>(13.13870849),
+        static_cast<T>(8.36891087)
+    );
+
+    tester.expect_near(X_next.matrix.data, X_next_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check UnscentedKalmanFilter state function.");
+
+    /* 出方程式を単独実行 */
+    auto Y_next = ukf.calculate_measurement_function(X_in);
+
+    auto Y_next_answer = make_StateSpaceOutput<OUTPUT_SIZE>(
+        static_cast<T>(15.18826689),
+        static_cast<T>(-10.30404815),
+        static_cast<T>(5.83154301),
+        static_cast<T>(-8.86169594)
+    );
 
 
     tester.throw_error_if_test_failed();
