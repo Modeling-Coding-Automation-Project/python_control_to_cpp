@@ -935,24 +935,24 @@ class KalmanFilterDeploy:
 
         code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
             "    [](const X_Type& X, const U_Type& U, const Parameter_Type& Parameters) {\n" + \
-            f"      return {state_function_code_file_name_without_ext}::function(X, U, Parameters);\n\n"
+            f"      return {state_function_code_file_name_without_ext}::function(X, U, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  StateFunctionJacobian_Object<A_Type, X_Type, U_Type, Parameter_Type> " + \
             "state_function_jacobian_object =\n" + \
             "    [](const X_Type& X, const U_Type& U, const Parameter_Type& Parameters) {\n" + \
-            f"      return {state_function_jacobian_code_file_name_without_ext}::function(X, U, Parameters);\n\n"
+            f"      return {state_function_jacobian_code_file_name_without_ext}::function(X, U, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
             "    [](const X_Type& X, const Parameter_Type& Parameters) {\n" + \
-            f"      return {measurement_function_code_file_name_without_ext}::function(X, Parameters);\n\n"
+            f"      return {measurement_function_code_file_name_without_ext}::function(X, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  MeasurementFunctionJacobian_Object<C_Type, X_Type, Parameter_Type> " + \
             "measurement_function_jacobian_object =\n" + \
             "    [](const X_Type& X, const Parameter_Type& Parameters) {\n" + \
-            f"      return {measurement_function_jacobian_code_file_name_without_ext}::function(X, Parameters);\n\n"
+            f"      return {measurement_function_jacobian_code_file_name_without_ext}::function(X, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  return ExtendedKalmanFilter_Type<\n" + \
@@ -1183,12 +1183,12 @@ class KalmanFilterDeploy:
 
         code_text += "  StateFunction_Object<X_Type, U_Type, Parameter_Type> state_function_object =\n" + \
             "    [](const X_Type& X, const U_Type& U, const Parameter_Type& Parameters) {\n" + \
-            f"      return {state_function_code_file_name_without_ext}::function(X, U, Parameters);\n\n"
+            f"      return {state_function_code_file_name_without_ext}::function(X, U, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  MeasurementFunction_Object<Y_Type, X_Type, Parameter_Type> measurement_function_object =\n" + \
             "    [](const X_Type& X, const Parameter_Type& Parameters) {\n" + \
-            f"      return {measurement_function_code_file_name_without_ext}::function(X, Parameters);\n\n"
+            f"      return {measurement_function_code_file_name_without_ext}::function(X, Parameters);\n"
         code_text += "    };\n\n"
 
         code_text += "  return UnscentedKalmanFilter_Type<\n" + \
