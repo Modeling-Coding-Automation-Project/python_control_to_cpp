@@ -730,14 +730,15 @@ class KalmanFilterDeploy:
 
         state_function_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        state_function_code_suffix += "using namespace PythonControl;\n\n"
+        state_function_code = ""
 
-        state_function_code_suffix += "using Parameter_Type = " + \
+        state_function_code += "using namespace PythonControl;\n\n"
+
+        state_function_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_function_code_suffix += "using namespace PythonMath;\n\n"
+        state_function_code += "using namespace PythonMath;\n\n"
 
-        state_function_code = ""
         state_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         state_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
         state_function_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
@@ -762,14 +763,15 @@ class KalmanFilterDeploy:
 
         state_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        state_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+        state_function_jacobian_code = ""
 
-        state_function_jacobian_code_suffix += "using Parameter_Type = " + \
+        state_function_jacobian_code += "using namespace PythonControl;\n\n"
+
+        state_function_jacobian_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_function_jacobian_code_suffix += "using namespace PythonMath;\n\n"
+        state_function_jacobian_code += "using namespace PythonMath;\n\n"
 
-        state_function_jacobian_code = ""
         state_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         state_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
         state_function_jacobian_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
@@ -796,14 +798,15 @@ class KalmanFilterDeploy:
 
         measurement_function_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        measurement_function_code_suffix += "using namespace PythonControl;\n\n"
+        measurement_function_code = ""
 
-        measurement_function_code_suffix += "using Parameter_Type = " + \
+        measurement_function_code += "using namespace PythonControl;\n\n"
+
+        measurement_function_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_function_code_suffix += "using namespace PythonMath;\n\n"
+        measurement_function_code += "using namespace PythonMath;\n\n"
 
-        measurement_function_code = ""
         measurement_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_function_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
         measurement_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
@@ -831,14 +834,15 @@ class KalmanFilterDeploy:
 
         measurement_function_jacobian_code_suffix += "#include \"python_control.hpp\"\n\n"
 
-        measurement_function_jacobian_code_suffix += "using namespace PythonControl;\n\n"
+        measurement_function_jacobian_code = ""
 
-        measurement_function_jacobian_code_suffix += "using Parameter_Type = " + \
+        measurement_function_jacobian_code += "using namespace PythonControl;\n\n"
+
+        measurement_function_jacobian_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_function_jacobian_code_suffix += "using namespace PythonMath;\n\n"
+        measurement_function_jacobian_code += "using namespace PythonMath;\n\n"
 
-        measurement_function_jacobian_code = ""
         measurement_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_function_jacobian_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
         measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
