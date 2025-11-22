@@ -75,22 +75,37 @@ class StateSpaceDeploy:
         code_file_name_ext = code_file_name + ".hpp"
 
         # create A, B, C, D matrices
-        exec(f"{variable_name}_A = state_space.A")
+        locals_map = {
+            f"{variable_name}_A": state_space.A,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         A_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_B = state_space.B")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_B": state_space.B,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         B_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_B, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_C = state_space.C")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_C": state_space.C,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         C_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_C, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_D = state_space.D")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_D": state_space.D,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         D_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_D, " +
-            "file_name=caller_file_name_without_ext)")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(B_file_name)
