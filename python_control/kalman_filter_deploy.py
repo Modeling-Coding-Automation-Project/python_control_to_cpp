@@ -69,10 +69,8 @@ class NpArrayExtractor:
             return [NpArrayExtractor.extract_elements(el) for el in node.elts]
         elif isinstance(node, ast.BinOp) or isinstance(node, ast.Call) or isinstance(node, ast.Name):
             return ast.unparse(node)
-        elif isinstance(node, ast.Constant):  # for Python 3.8 or later (numeric)
+        elif isinstance(node, ast.Constant):
             return node.value
-        elif isinstance(node, ast.Num):  # before Python 3.7 (numeric)
-            return node.n
         elif isinstance(node, ast.UnaryOp):
             operand = NpArrayExtractor.extract_elements(node.operand)
             if isinstance(node.op, ast.USub):
@@ -466,9 +464,14 @@ class KalmanFilterDeploy:
         lkf_D = np.zeros((lkf.C.shape[0], lkf.B.shape[1]))
         dt = 1.0  # dt is not used in LinearKalmanFilter calculation.
 
-        exec(f"{variable_name}_ss = control.ss(lkf.A, lkf.B, lkf.C, lkf_D, dt)")
+        locals_map = {
+            f"{variable_name}_ss": control.ss(lkf.A, lkf.B, lkf.C, lkf_D, dt),
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+            "number_of_delay": number_of_delay,
+        }
         ss_file_names = eval(
-            f"StateSpaceDeploy.generate_state_space_cpp_code({variable_name}_ss, caller_file_name_without_ext, number_of_delay={number_of_delay})")
+            f"StateSpaceDeploy.generate_state_space_cpp_code({variable_name}_ss, caller_file_name_without_ext, number_of_delay={number_of_delay})",
+            globals(), locals_map)
 
         deployed_file_names.append(ss_file_names)
         ss_file_name = ss_file_names[-1]
@@ -708,14 +711,21 @@ class KalmanFilterDeploy:
         ekf_C = C_SparseAvailable_list[0]
 
         # create A, C matrices
-        exec(f"{variable_name}_A = ekf_A")
+        locals_map = {
+            f"{variable_name}_A": ekf_A,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         A_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_C = ekf_C")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_C": ekf_C,
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         C_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_C, " +
-            "file_name=caller_file_name_without_ext)")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         deployed_file_names.append(A_file_name)
         deployed_file_names.append(C_file_name)
