@@ -898,6 +898,17 @@ template <> struct Extended<0> {
 
 } // namespace GetXHatWithoutDelayOperation
 
+template <typename X_Type, typename U_Type, typename Y_Type>
+class KalmanFilterInterface {
+public:
+  virtual ~KalmanFilterInterface() = default;
+
+  virtual void predict(const U_Type &U) = 0;
+  virtual void update(const Y_Type &Y) = 0;
+  virtual void predict_and_update(const U_Type &U, const Y_Type &Y) = 0;
+  virtual auto get_x_hat(void) const -> X_Type = 0;
+};
+
 /**
  * @brief Linear Kalman Filter class template.
  *
@@ -912,7 +923,11 @@ template <> struct Extended<0> {
  */
 template <typename DiscreteStateSpace_Type_In, typename Q_Type_In,
           typename R_Type_In>
-class LinearKalmanFilter {
+class LinearKalmanFilter
+    : public KalmanFilterInterface<
+          typename DiscreteStateSpace_Type_In::Original_X_Type,
+          typename DiscreteStateSpace_Type_In::Original_U_Type,
+          typename DiscreteStateSpace_Type_In::Original_Y_Type> {
 public:
   /* Type */
   using DiscreteStateSpace_Type = DiscreteStateSpace_Type_In;
@@ -1031,7 +1046,7 @@ public:
    *
    * @param U The control input to be applied for prediction.
    */
-  inline void predict(const U_Type &U) {
+  inline void predict(const U_Type &U) override {
 
     this->state_space.U.push(U);
 
@@ -1049,7 +1064,7 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void update(const Y_Type &Y) {
+  inline void update(const Y_Type &Y) override {
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
 
@@ -1077,7 +1092,7 @@ public:
    * @param U The control input to be applied for prediction.
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void predict_and_update(const U_Type &U, const Y_Type &Y) {
+  inline void predict_and_update(const U_Type &U, const Y_Type &Y) override {
 
     this->predict(U);
     this->update(Y);
@@ -1208,7 +1223,7 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const -> X_Type {
+  inline auto get_x_hat(void) const -> X_Type override {
     return this->state_space.get_X();
   }
 
