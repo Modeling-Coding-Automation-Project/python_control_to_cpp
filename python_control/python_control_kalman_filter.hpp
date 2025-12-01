@@ -919,19 +919,20 @@ public:
   using Q_Type = Q_Type_In;
   using R_Type = R_Type_In;
 
+  using X_Type = typename DiscreteStateSpace_Type::Original_X_Type;
+  using U_Type = typename DiscreteStateSpace_Type::Original_U_Type;
+  using Y_Type = typename DiscreteStateSpace_Type::Original_Y_Type;
+
 protected:
   /* Type */
-  using _T = typename DiscreteStateSpace_Type::Original_X_Type::Value_Type;
+  using _T = typename X_Type::Value_Type;
   static_assert(std::is_same<_T, double>::value ||
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE =
-      DiscreteStateSpace_Type::Original_X_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE =
-      DiscreteStateSpace_Type::Original_U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE =
-      DiscreteStateSpace_Type::Original_Y_Type::COLS;
+  static constexpr std::size_t _STATE_SIZE = X_Type::COLS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
+  static constexpr std::size_t _OUTPUT_SIZE = Y_Type::COLS;
 
   using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
       PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
@@ -1030,8 +1031,7 @@ public:
    *
    * @param U The control input to be applied for prediction.
    */
-  inline void
-  predict(const typename DiscreteStateSpace_Type::Original_U_Type &U) {
+  inline void predict(const U_Type &U) {
 
     this->state_space.U.push(U);
 
@@ -1049,8 +1049,7 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void
-  update(const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+  inline void update(const Y_Type &Y) {
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
 
@@ -1078,9 +1077,7 @@ public:
    * @param U The control input to be applied for prediction.
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void predict_and_update(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U,
-      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+  inline void predict_and_update(const U_Type &U, const Y_Type &Y) {
 
     this->predict(U);
     this->update(Y);
@@ -1096,8 +1093,7 @@ public:
    *
    * @param U The control input to be applied for prediction.
    */
-  inline void predict_with_fixed_G(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U) {
+  inline void predict_with_fixed_G(const U_Type &U) {
 
     this->state_space.U.push(U);
 
@@ -1135,9 +1131,8 @@ public:
    * @param U The control input to be applied for prediction.
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void predict_and_update_with_fixed_G(
-      const typename DiscreteStateSpace_Type::Original_U_Type &U,
-      const typename DiscreteStateSpace_Type::Original_Y_Type &Y) {
+  inline void predict_and_update_with_fixed_G(const U_Type &U,
+                                              const Y_Type &Y) {
 
     this->predict_with_fixed_G(U);
     this->update_with_fixed_G(Y);
@@ -1213,8 +1208,7 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const ->
-      typename DiscreteStateSpace_Type::Original_X_Type {
+  inline auto get_x_hat(void) const -> X_Type {
     return this->state_space.get_X();
   }
 
@@ -1227,8 +1221,7 @@ public:
    *
    * @return The estimated state vector x_hat without delay.
    */
-  inline auto get_x_hat_without_delay(void) const ->
-      typename DiscreteStateSpace_Type::Original_X_Type {
+  inline auto get_x_hat_without_delay(void) const -> X_Type {
 
     return GetXHatWithoutDelayOperation::Linear<NUMBER_OF_DELAY>::compute(
         this->state_space, this->_input_count);
@@ -1243,10 +1236,7 @@ public:
    *
    * @param x_hat The new estimated state vector to be set.
    */
-  inline void
-  set_x_hat(const typename DiscreteStateSpace_Type::Original_X_Type &x_hat) {
-    this->state_space.X = x_hat;
-  }
+  inline void set_x_hat(const X_Type &x_hat) { this->state_space.X = x_hat; }
 
   /**
    * @brief Sets the covariance matrix P.
