@@ -899,13 +899,45 @@ template <> struct Extended<0> {
 } // namespace GetXHatWithoutDelayOperation
 
 template <typename X_Type, typename U_Type, typename Y_Type>
-class KalmanFilterInterface {
+class KalmanFilterCommon {
 public:
-  virtual ~KalmanFilterInterface() = default;
+  virtual ~KalmanFilterCommon() = default;
 
+  /**
+   * @brief Predicts the next state based on the control input.
+   *
+   * @param U The control input to be applied for prediction.
+   */
   virtual void predict(const U_Type &U) = 0;
+
+  /**
+   * @brief Updates the state estimate based on the measurement.
+   *
+   * @param Y The observed measurement to be used for updating the state.
+   */
   virtual void update(const Y_Type &Y) = 0;
-  virtual void predict_and_update(const U_Type &U, const Y_Type &Y) = 0;
+
+  /**
+   * @brief Predicts the next state and updates the state estimate based on the
+   * measurement.
+   *
+   * This function combines the prediction and update steps of the Unscented
+   * Kalman Filter into a single operation.
+   *
+   * @param U The control input to be applied for prediction.
+   * @param Y The observed measurement to be used for updating the state.
+   */
+  virtual void predict_and_update(const U_Type &U, const Y_Type &Y) {
+
+    this->predict(U);
+    this->update(Y);
+  };
+
+  /**
+   * @brief Retrieves the current estimated state vector.
+   *
+   * @return The estimated state vector.
+   */
   virtual auto get_x_hat(void) const -> X_Type = 0;
 };
 
@@ -924,7 +956,7 @@ public:
 template <typename DiscreteStateSpace_Type_In, typename Q_Type_In,
           typename R_Type_In>
 class LinearKalmanFilter
-    : public KalmanFilterInterface<
+    : public KalmanFilterCommon<
           typename DiscreteStateSpace_Type_In::Original_X_Type,
           typename DiscreteStateSpace_Type_In::Original_U_Type,
           typename DiscreteStateSpace_Type_In::Original_Y_Type> {
@@ -1080,22 +1112,6 @@ public:
     this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
                this->G * this->state_space.C) *
               this->P;
-  }
-
-  /**
-   * @brief Predicts the next state and updates the state estimate based on the
-   * measurement.
-   *
-   * This function combines the prediction and update steps of the Kalman filter
-   * into a single operation.
-   *
-   * @param U The control input to be applied for prediction.
-   * @param Y The observed measurement to be used for updating the state.
-   */
-  inline void predict_and_update(const U_Type &U, const Y_Type &Y) override {
-
-    this->predict(U);
-    this->update(Y);
   }
 
   // If G is known, you can use below "_fixed_G" functions.
@@ -1426,7 +1442,7 @@ template <typename A_Type_In, typename C_Type_In, typename U_Type_In,
           typename Q_Type_In, typename R_Type_In, typename Parameter_Type_In,
           std::size_t Number_Of_Delay = 0>
 class ExtendedKalmanFilter
-    : public KalmanFilterInterface<
+    : public KalmanFilterCommon<
           PythonControl::StateSpaceState_Type<typename A_Type_In::Value_Type,
                                               A_Type_In::COLS>,
           U_Type_In,
@@ -1652,23 +1668,6 @@ public:
     this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
                this->G * this->C) *
               this->P;
-  }
-
-  /**
-   * @brief Predicts the next state and updates the state estimate based on the
-   * measurement.
-   *
-   * This function combines the prediction and update steps of the extended
-   * Kalman filter into a single operation.
-   *
-   * @param U The control input to be applied for prediction.
-   * @param Y The observed measurement to be used for updating the state.
-   */
-  inline void predict_and_update(const U_Type &U,
-                                 const _Measurement_Type &Y) override {
-
-    this->predict(U);
-    this->update(Y);
   }
 
   /**
@@ -1942,7 +1941,13 @@ protected:
  */
 template <typename U_Type_In, typename Q_Type_In, typename R_Type_In,
           typename Parameter_Type_In, std::size_t Number_Of_Delay = 0>
-class UnscentedKalmanFilter {
+class UnscentedKalmanFilter
+    : public KalmanFilterCommon<
+          PythonControl::StateSpaceState_Type<typename U_Type_In::Value_Type,
+                                              Q_Type_In::COLS>,
+          U_Type_In,
+          PythonControl::StateSpaceOutput_Type<typename R_Type_In::Value_Type,
+                                               R_Type_In::COLS>> {
 public:
   /* Type */
   using U_Type = U_Type_In;
@@ -2238,7 +2243,7 @@ public:
    *
    * @param U The control input to be applied for prediction.
    */
-  inline void predict(const U_Type &U) {
+  inline void predict(const U_Type &U) override {
 
     U_store.push(U);
 
@@ -2257,7 +2262,7 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void update(const _Measurement_Type &Y) {
+  inline void update(const _Measurement_Type &Y) override {
 
     auto Kai =
         this->_update_sigma_points_calculator.calculate(this->X_hat, this->P);
@@ -2289,22 +2294,6 @@ public:
 
     this->X_hat = this->X_hat + this->G * (Y - Y_hat_m);
     this->P = this->P - PythonNumpy::A_mul_BTranspose(this->G, P_xy);
-  }
-
-  /**
-   * @brief Predicts the next state and updates the state estimate based on the
-   * measurement.
-   *
-   * This function combines the prediction and update steps of the Unscented
-   * Kalman Filter into a single operation.
-   *
-   * @param U The control input to be applied for prediction.
-   * @param Y The observed measurement to be used for updating the state.
-   */
-  inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
-
-    this->predict(U);
-    this->update(Y);
   }
 
   /**
@@ -2347,7 +2336,9 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+  inline auto get_x_hat(void) const -> _State_Type override {
+    return this->X_hat;
+  }
 
   /**
    * @brief Computes the estimated state vector x_hat without considering
