@@ -1425,7 +1425,13 @@ using MeasurementFunctionJacobian_Object =
 template <typename A_Type_In, typename C_Type_In, typename U_Type_In,
           typename Q_Type_In, typename R_Type_In, typename Parameter_Type_In,
           std::size_t Number_Of_Delay = 0>
-class ExtendedKalmanFilter {
+class ExtendedKalmanFilter
+    : public KalmanFilterInterface<
+          PythonControl::StateSpaceState_Type<typename A_Type_In::Value_Type,
+                                              A_Type_In::COLS>,
+          U_Type_In,
+          PythonControl::StateSpaceOutput_Type<typename C_Type_In::Value_Type,
+                                               C_Type_In::COLS>> {
 public:
   /* Type */
   using A_Type = A_Type_In;
@@ -1609,7 +1615,7 @@ public:
    *
    * @param U The control input to be applied for prediction.
    */
-  inline void predict(const U_Type &U) {
+  inline void predict(const U_Type &U) override {
 
     U_store.push(U);
 
@@ -1628,7 +1634,7 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void update(const _Measurement_Type &Y) {
+  inline void update(const _Measurement_Type &Y) override {
 
     this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
 
@@ -1658,7 +1664,8 @@ public:
    * @param U The control input to be applied for prediction.
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void predict_and_update(const U_Type &U, const _Measurement_Type &Y) {
+  inline void predict_and_update(const U_Type &U,
+                                 const _Measurement_Type &Y) override {
 
     this->predict(U);
     this->update(Y);
@@ -1704,7 +1711,9 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const -> _State_Type { return this->X_hat; }
+  inline auto get_x_hat(void) const -> _State_Type override {
+    return this->X_hat;
+  }
 
   /**
    * @brief Computes the estimated state vector x_hat without considering
