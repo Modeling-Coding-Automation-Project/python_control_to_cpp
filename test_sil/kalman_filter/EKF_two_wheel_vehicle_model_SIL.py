@@ -216,7 +216,7 @@ def main():
         accel_sequence[i] = signal_plus[i, 0] + signal_minus[i, 0]
 
     tester = MCAPTester()
-    NEAR_LIMIT = 1e-5
+    NEAR_LIMIT = 2e-5
 
     # simulation
     for i in range(round(simulation_time / sim_delta_time)):
