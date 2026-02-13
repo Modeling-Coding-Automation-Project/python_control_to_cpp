@@ -13,9 +13,14 @@ as well as configurable system delay. Results are visualized using a plotting ut
 Reference URL:
 https://inzkyk.xyz/kalman_filter/unscented_kalman_filter/#section:10.15
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 import math
 import numpy as np

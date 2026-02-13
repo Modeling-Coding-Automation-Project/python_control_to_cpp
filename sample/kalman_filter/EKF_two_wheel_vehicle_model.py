@@ -2,8 +2,8 @@
 File: EKF_two_wheel_vehicle_model.py
 
 This script implements and simulates an Extended Kalman Filter (EKF)
-for a two-wheel vehicle model. 
-The EKF estimates the vehicle's state (position, orientation, velocity, etc.) 
+for a two-wheel vehicle model.
+The EKF estimates the vehicle's state (position, orientation, velocity, etc.)
 using a nonlinear dynamic model derived symbolically with SymPy.
 The code generates the state and measurement functions, along with their Jacobians,
 and deploys them for use in the EKF.
@@ -11,11 +11,16 @@ It sets up a simulation environment with configurable parameters,
 generates input signals for steering and acceleration,
 and runs the EKF to estimate the vehicle state over time.
 Results are visualized using a custom plotting utility to compare true
-and estimated states, as well as inputs. 
+and estimated states, as well as inputs.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 import math
 import numpy as np
