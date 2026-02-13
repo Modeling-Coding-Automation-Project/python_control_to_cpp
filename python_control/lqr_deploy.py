@@ -235,19 +235,30 @@ class LQI_Deploy:
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
-        # create Ac, Bc matrices
-        exec(f"{variable_name}_Ac = copy.deepcopy(Ac)")
+        # create Ac, Bc, Cc matrices (use locals_map to avoid exec)
+        locals_map = {
+            f"{variable_name}_Ac": copy.deepcopy(Ac),
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         Ac_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Ac, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_Bc = copy.deepcopy(Bc)")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_Bc": copy.deepcopy(Bc),
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         Bc_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Bc, " +
-            "file_name=caller_file_name_without_ext)")
-        exec(f"{variable_name}_Cc = copy.deepcopy(Cc)")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
+
+        locals_map = {
+            f"{variable_name}_Cc": copy.deepcopy(Cc),
+            "caller_file_name_without_ext": caller_file_name_without_ext,
+        }
         Cc_file_name = eval(
             f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Cc, " +
-            "file_name=caller_file_name_without_ext)")
+            "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         deployed_file_names.append(Ac_file_name)
         deployed_file_names.append(Bc_file_name)
