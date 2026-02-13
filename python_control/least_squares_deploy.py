@@ -7,9 +7,13 @@ based on Python model objects. The generated C++ code is tailored to the structu
 and data types of the provided Python LS or RLS objects, facilitating deployment of
 Python-based control models into C++ environments.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import inspect
 import numpy as np

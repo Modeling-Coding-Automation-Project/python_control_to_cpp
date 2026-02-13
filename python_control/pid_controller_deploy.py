@@ -3,9 +3,13 @@ This module provides functionality to generate C++ header files for deploying di
 defined in Python. It automates the translation of Python-based PID controller parameters and configuration
 into C++ code, facilitating integration with C++ projects.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import inspect
 import numpy as np

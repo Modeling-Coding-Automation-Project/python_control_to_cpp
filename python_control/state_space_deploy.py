@@ -6,9 +6,13 @@ representing discrete state-space systems defined using the Python `control` lib
 It automates the conversion of Python-based state-space models
 (A, B, C, D matrices and sampling time) into C++ code, facilitating deployment in C++ projects.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import control
 import inspect
