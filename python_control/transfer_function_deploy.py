@@ -7,9 +7,13 @@ The generated C++ code is intended for deployment in environments
 where transfer function models need to be used in C++ projects,
 particularly for control and automation applications.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import inspect
 import control

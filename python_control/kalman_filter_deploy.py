@@ -7,9 +7,13 @@ The class is designed to facilitate the conversion of symbolic and numerical
 representations of system models and filter parameters into deployable C++ header files,
 supporting rapid prototyping and integration of control and estimation algorithms.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import re
 import inspect

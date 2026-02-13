@@ -8,9 +8,13 @@ system matrices and weighting matrices.
 The generated C++ code is intended for use with a compatible C++ control library,
 enabling seamless deployment of control algorithms designed in Python to C++ environments.
 """
+from __future__ import annotations
+
 import os
 import sys
-sys.path.append(os.getcwd())
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import copy
 import numpy as np
