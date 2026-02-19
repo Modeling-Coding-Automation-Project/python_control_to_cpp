@@ -28,7 +28,7 @@ import control
 import numpy as np
 import scipy.linalg as la
 
-from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter_dash import SimulationPlotterDash
 
 simulation_time = 10.0
 dt = 0.1
@@ -158,7 +158,7 @@ def main_reference_tracking():
     e_y_integral = np.zeros((2, 1))
 
     time = []
-    plotter = SimulationPlotter()
+    plotter = SimulationPlotterDash()
 
     u_offset = 0.1
 

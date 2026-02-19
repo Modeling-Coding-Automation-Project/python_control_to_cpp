@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 from external_libraries.MCAP_python_control.python_control.least_squares import RecursiveLeastSquares
 from python_control.least_squares_deploy import LeastSquaresDeploy
-from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter_dash import SimulationPlotterDash
 
 # Create data
 np.random.seed(42)
@@ -44,7 +44,7 @@ rls = RecursiveLeastSquares(feature_size=X.shape[1], lambda_factor=0.9)
 deployed_file_names = LeastSquaresDeploy.generate_RLS_cpp_code(rls)
 print(deployed_file_names)
 
-plotter = SimulationPlotter()
+plotter = SimulationPlotterDash()
 
 for i in range(n_samples):
     x = X[i].reshape(-1, 1)

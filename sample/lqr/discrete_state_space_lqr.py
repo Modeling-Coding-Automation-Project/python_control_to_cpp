@@ -29,7 +29,7 @@ import numpy as np
 import scipy.linalg as la
 
 from python_control.lqr_deploy import LQR_Deploy
-from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter_dash import SimulationPlotterDash
 
 simulation_time = 10.0
 dt = 0.1
@@ -162,7 +162,7 @@ def main_reference_tracking():
     ])
 
     time = []
-    plotter = SimulationPlotter()
+    plotter = SimulationPlotterDash()
 
     # simulation
     while t <= simulation_time:

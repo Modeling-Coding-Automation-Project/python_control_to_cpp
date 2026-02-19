@@ -34,7 +34,7 @@ from external_libraries.MCAP_python_control.python_control.kalman_filter import 
 from external_libraries.MCAP_python_control.python_control.control_deploy import ExpressionDeploy
 from python_control.kalman_filter_deploy import KalmanFilterDeploy
 
-from sample.simulation_manager.visualize.simulation_plotter import SimulationPlotter
+from sample.simulation_manager.visualize.simulation_plotter_dash import SimulationPlotterDash
 
 
 @dataclass
@@ -183,7 +183,7 @@ def main():
 
         ukf.x_hat = np.array([[0.0], [0.0], [0.0]])  # initial state
 
-        plotter = SimulationPlotter()
+        plotter = SimulationPlotterDash()
 
         time = np.arange(0, simulation_time, sim_delta_time)
 
