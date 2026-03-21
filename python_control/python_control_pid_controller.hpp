@@ -12,8 +12,6 @@
 #ifndef __PYTHON_CONTROL_PID_CONTROLLER_HPP__
 #define __PYTHON_CONTROL_PID_CONTROLLER_HPP__
 
-#include "python_numpy.hpp"
-
 #include <limits>
 #include <type_traits>
 
