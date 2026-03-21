@@ -158,8 +158,8 @@ public:
    * @param R The input cost matrix R.
    * @return The computed gain matrix K.
    */
-  inline K_Type solve(const A_Type &A, const B_Type &B, const Q_Type &Q,
-                      const R_Type &R) {
+  inline auto solve(const A_Type &A, const B_Type &B, const Q_Type &Q,
+                    const R_Type &R) -> K_Type {
 
     this->_R_inv_solver.inv(R);
     auto R_inv = this->_R_inv_solver.get_answer();
@@ -215,14 +215,14 @@ public:
    *
    * @return The gain matrix K.
    */
-  inline K_Type get_K() const { return this->_K; }
+  inline auto get_K() const -> K_Type { return this->_K; }
 
   /**
    * @brief Checks if the eigenvalue solver is ill-posed.
    *
    * @return True if the eigenvalue solver is ill-posed, false otherwise.
    */
-  inline bool get_eigen_solver_is_ill() const {
+  inline auto get_eigen_solver_is_ill() const -> bool {
     return this->_eigen_solver_is_ill;
   }
 
