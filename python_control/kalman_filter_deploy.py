@@ -105,14 +105,14 @@ class NpArrayExtractor:
 
         matrix_list = NpArrayExtractor.extract_elements(tree.body[0].value)
 
-        cols = len(matrix_list)
-        rows = len(matrix_list[0]) if isinstance(
+        rows = len(matrix_list)
+        cols = len(matrix_list[0]) if isinstance(
             matrix_list[0], list) else 1
 
-        SparseAvailable = np.zeros((cols, rows), dtype=np.float64)
+        SparseAvailable = np.zeros((rows, cols), dtype=np.float64)
 
-        for i in range(cols):
-            for j in range(rows):
+        for i in range(rows):
+            for j in range(cols):
                 if isinstance(matrix_list[i][j], (int, float)):
                     extract_text += f"result[{i}, {j}] = {matrix_list[i][j]}\n"
 
@@ -509,9 +509,9 @@ class KalmanFilterDeploy:
 
         code_text += f"using LkfStateSpace_Type = {ss_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = LkfStateSpace_Type::A_Type::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = LkfStateSpace_Type::B_Type::ROWS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = LkfStateSpace_Type::C_Type::COLS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = LkfStateSpace_Type::A_Type::ROWS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = LkfStateSpace_Type::B_Type::COLS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = LkfStateSpace_Type::C_Type::ROWS;\n\n"
 
         code_text += f"using Q_Type = KalmanFilter_Q_Type<{type_name}, STATE_SIZE>;\n\n"
 
@@ -754,7 +754,7 @@ class KalmanFilterDeploy:
         state_function_code += "using namespace PythonMath;\n\n"
 
         state_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
-        state_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        state_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
         state_function_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
 
         for i, line in enumerate(state_function_code_lines):
@@ -787,7 +787,7 @@ class KalmanFilterDeploy:
         state_function_jacobian_code += "using namespace PythonMath;\n\n"
 
         state_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
-        state_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
+        state_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
         state_function_jacobian_code += f"using U_Type = StateSpaceInput_Type<double, {state_function_U_size}>;\n\n"
 
         for i, line in enumerate(state_function_jacobian_code_lines):
@@ -823,8 +823,8 @@ class KalmanFilterDeploy:
 
         measurement_function_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_function_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        measurement_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
-        measurement_function_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
+        measurement_function_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
+        measurement_function_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
 
         for i, line in enumerate(measurement_function_code_lines):
             measurement_function_code += line + "\n"
@@ -859,8 +859,8 @@ class KalmanFilterDeploy:
 
         measurement_function_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_function_jacobian_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
-        measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::COLS>;\n"
-        measurement_function_jacobian_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::COLS>;\n\n"
+        measurement_function_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
+        measurement_function_jacobian_code += "using Y_Type = StateSpaceOutput_Type<double, C_Type::ROWS>;\n\n"
 
         for i, line in enumerate(measurement_function_jacobian_code_lines):
             measurement_function_jacobian_code += line + "\n"
@@ -907,9 +907,9 @@ class KalmanFilterDeploy:
 
         code_text += f"using C_Type = {C_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = A_Type::ROWS;\n"
         code_text += f"constexpr std::size_t INPUT_SIZE = {state_function_U_size};\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::COLS;\n\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::ROWS;\n\n"
 
         code_text += "using X_Type = StateSpaceState_Type<double, STATE_SIZE>;\n"
         code_text += "using U_Type = StateSpaceInput_Type<double, INPUT_SIZE>;\n"

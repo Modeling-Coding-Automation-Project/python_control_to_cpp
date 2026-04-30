@@ -151,9 +151,9 @@ class StateSpaceDeploy:
 
         code_text += f"using D_Type = {D_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t INPUT_SIZE = B_Type::ROWS;\n"
-        code_text += "constexpr std::size_t STATE_SIZE = A_Type::COLS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::COLS;\n\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = B_Type::COLS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = A_Type::ROWS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = C_Type::ROWS;\n\n"
 
         code_text += "using type = DiscreteStateSpace_Type<\n" + \
             "    A_Type, B_Type, C_Type, D_Type, NUMBER_OF_DELAY>;\n\n"
