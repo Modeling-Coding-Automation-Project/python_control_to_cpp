@@ -126,8 +126,8 @@ class LQR_Deploy:
 
         code_text += f"using Bc_Type = {Bc_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = Ac_Type::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = Bc_Type::ROWS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = Ac_Type::ROWS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = Bc_Type::COLS;\n\n"
 
         code_text += f"using Q_Type = DiagMatrix_Type<{type_name}, STATE_SIZE>;\n\n"
 
@@ -295,9 +295,9 @@ class LQI_Deploy:
 
         code_text += f"auto Cc = {Cc_file_name_no_extension}::make();\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(Ac)::COLS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(Bc)::ROWS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(Cc)::COLS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(Ac)::ROWS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(Bc)::COLS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(Cc)::ROWS;\n"
         code_text += "constexpr std::size_t Q_EX_SIZE = STATE_SIZE + OUTPUT_SIZE;\n\n"
 
         code_text += "auto Q_ex = make_DiagMatrix<Q_EX_SIZE>(\n"

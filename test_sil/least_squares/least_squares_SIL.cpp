@@ -30,7 +30,7 @@ void fit(py::array_t<FLOAT> X_in, py::array_t<FLOAT> Y_in) {
   }
   if (X_SIZE != X_info.shape[1]) {
     throw std::runtime_error("X must have " + std::to_string(X_SIZE) +
-                             " columns.");
+                             " rows.");
   }
 
   if (LS_NUMBER_OF_DATA != Y_info.shape[0]) {
@@ -39,7 +39,7 @@ void fit(py::array_t<FLOAT> X_in, py::array_t<FLOAT> Y_in) {
   }
   if (Y_SIZE != Y_info.shape[1]) {
     throw std::runtime_error("Y must have " + std::to_string(Y_SIZE) +
-                             " columns.");
+                             " rows.");
   }
 
   /* substitute */

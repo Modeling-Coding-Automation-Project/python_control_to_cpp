@@ -36,9 +36,9 @@ int main(void) {
 
   auto Dc = make_SparseMatrixEmpty<double, 1, 1>();
 
-  constexpr std::size_t State_Num = decltype(Ac)::COLS;
-  constexpr std::size_t Input_Num = decltype(Bc)::ROWS;
-  constexpr std::size_t Output_Num = decltype(Cc)::COLS;
+  constexpr std::size_t State_Num = decltype(Ac)::ROWS;
+  constexpr std::size_t Input_Num = decltype(Bc)::COLS;
+  constexpr std::size_t Output_Num = decltype(Cc)::ROWS;
 
   /* Discretize plant model */
   auto Ad = make_DiagMatrixIdentity<double, State_Num>() + Ac * dt;

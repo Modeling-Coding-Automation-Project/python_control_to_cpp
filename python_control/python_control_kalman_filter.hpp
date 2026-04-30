@@ -149,14 +149,14 @@ struct SetRestOfW_Loop<T, W_Type, Index, 0> {
  */
 template <typename T, typename W_Type, std::size_t Start_Index>
 using SetRestOfW =
-    SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::COLS - 1 - Start_Index)>;
+    SetRestOfW_Loop<T, W_Type, Start_Index, (W_Type::ROWS - 1 - Start_Index)>;
 
 /* update sigma point matrix */
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type,
           std::size_t Index, std::size_t End_Index>
 struct UpdateSigmaPointMatrix_Loop {
   /**
-   * @brief Updates the sigma point matrix Kai by setting the rows based on the
+   * @brief Updates the sigma point matrix Kai by setting the cols based on the
    * state vector X and the sigma points SP, scaled by a specified weight.
    *
    * @tparam T         The type of the weight to apply to the sigma points.
@@ -170,7 +170,7 @@ struct UpdateSigmaPointMatrix_Loop {
    * @param SP         The sigma points matrix used for updating.
    * @param sigma_point_weight The weight applied to the sigma points.
    *
-   * This function uses template recursion to set two rows in the Kai matrix
+   * This function uses template recursion to set two cols in the Kai matrix
    * for each sigma point, one for the positive and one for the negative
    * weighted sigma point, and continues until all indices are processed.
    */
@@ -179,7 +179,7 @@ struct UpdateSigmaPointMatrix_Loop {
 
     PythonNumpy::set_row<(Index + 1)>(
         Kai, X + sigma_point_weight * PythonNumpy::get_row<Index>(SP));
-    PythonNumpy::set_row<(Index + X_Type::COLS + 1)>(
+    PythonNumpy::set_row<(Index + X_Type::ROWS + 1)>(
         Kai, X - sigma_point_weight * PythonNumpy::get_row<Index>(SP));
 
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, (Index + 1),
@@ -221,7 +221,7 @@ struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
  * the sigma points SP, scaled by a specified weight.
  *
  * This alias template simplifies the process of updating the sigma point
- * matrix Kai, setting rows for both positive and negative weighted sigma
+ * matrix Kai, setting cols for both positive and negative weighted sigma
  * points.
  *
  * @tparam T         The type of the weight to apply to the sigma points.
@@ -231,7 +231,7 @@ struct UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, Index, 0> {
  */
 template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
 using UpdateSigmaPointMatrix =
-    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::COLS>;
+    UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::ROWS>;
 
 /* calc state function with each sigma points */
 
@@ -299,7 +299,7 @@ struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
 
 /**
  * @brief Computes the state function for each sigma point in the Kai matrix
- * and updates the corresponding rows.
+ * and updates the corresponding cols.
  *
  * This alias template simplifies the process of computing the state function
  * for each sigma point, iterating through all indices in the Kai matrix.
@@ -313,7 +313,7 @@ template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
           typename Parameter_Type>
 using StateFunctionEachSigmaPoints =
     StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
-                                      Parameter_Type, (Kai_Type::ROWS - 1)>;
+                                      Parameter_Type, (Kai_Type::COLS - 1)>;
 
 /* average sigma points */
 template <typename X_Type, typename W_Type, typename Kai_Type,
@@ -403,7 +403,7 @@ struct AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, 0> {
  */
 template <typename X_Type, typename W_Type, typename Kai_Type>
 using AverageSigmaPoints =
-    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::ROWS - 1)>;
+    AverageSigmaPoints_Loop<X_Type, W_Type, Kai_Type, (Kai_Type::COLS - 1)>;
 
 /* calc covariance matrix */
 template <typename Kai_Type, typename X_Type, std::size_t Index>
@@ -467,7 +467,7 @@ struct SigmaPointsCovariance_Loop<Kai_Type, X_Type, 0> {
  */
 template <typename Kai_Type, typename X_Type>
 using SigmaPointsCovariance =
-    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::ROWS - 1)>;
+    SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::COLS - 1)>;
 
 /* calc measurement function with each sigma points */
 template <typename Nu_Type, typename Kai_Type,
@@ -538,7 +538,7 @@ struct MeasurementFunctionEachSigmaPoints_Loop<
 
 /**
  * @brief Computes the measurement function for each sigma point in the Kai
- * matrix and updates the corresponding rows in the Nu matrix.
+ * matrix and updates the corresponding cols in the Nu matrix.
  *
  * This alias template simplifies the process of computing the measurement
  * function for each sigma point, iterating through all indices in the Kai
@@ -556,7 +556,7 @@ template <typename Nu_Type, typename Kai_Type,
 using MeasurementFunctionEachSigmaPoints =
     MeasurementFunctionEachSigmaPoints_Loop<
         Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
-        (Kai_Type::ROWS - 1)>;
+        (Kai_Type::COLS - 1)>;
 
 } // namespace UKF_Operation
 
@@ -977,9 +977,9 @@ protected:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = X_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE = Y_Type::COLS;
+  static constexpr std::size_t _STATE_SIZE = X_Type::ROWS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
+  static constexpr std::size_t _OUTPUT_SIZE = Y_Type::ROWS;
 
   using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
       PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
@@ -1444,10 +1444,10 @@ template <typename A_Type_In, typename C_Type_In, typename U_Type_In,
 class ExtendedKalmanFilter
     : public KalmanFilterCommon<
           PythonControl::StateSpaceState_Type<typename A_Type_In::Value_Type,
-                                              A_Type_In::COLS>,
+                                              A_Type_In::ROWS>,
           U_Type_In,
           PythonControl::StateSpaceOutput_Type<typename C_Type_In::Value_Type,
-                                               C_Type_In::COLS>> {
+                                               C_Type_In::ROWS>> {
 public:
   /* Type */
   using A_Type = A_Type_In;
@@ -1464,9 +1464,9 @@ protected:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = A_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE = C_Type::COLS;
+  static constexpr std::size_t _STATE_SIZE = A_Type::ROWS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
+  static constexpr std::size_t _OUTPUT_SIZE = C_Type::ROWS;
 
   using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
   using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
@@ -1827,7 +1827,7 @@ protected:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = State_Type::COLS;
+  static constexpr std::size_t _STATE_SIZE = State_Type::ROWS;
 
   using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
       PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
@@ -1944,10 +1944,10 @@ template <typename U_Type_In, typename Q_Type_In, typename R_Type_In,
 class UnscentedKalmanFilter
     : public KalmanFilterCommon<
           PythonControl::StateSpaceState_Type<typename U_Type_In::Value_Type,
-                                              Q_Type_In::COLS>,
+                                              Q_Type_In::ROWS>,
           U_Type_In,
           PythonControl::StateSpaceOutput_Type<typename R_Type_In::Value_Type,
-                                               R_Type_In::COLS>> {
+                                               R_Type_In::ROWS>> {
 public:
   /* Type */
   using U_Type = U_Type_In;
@@ -1962,9 +1962,9 @@ protected:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = Q_Type::COLS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::COLS;
-  static constexpr std::size_t _OUTPUT_SIZE = R_Type::COLS;
+  static constexpr std::size_t _STATE_SIZE = Q_Type::ROWS;
+  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
+  static constexpr std::size_t _OUTPUT_SIZE = R_Type::ROWS;
 
   using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
   using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;

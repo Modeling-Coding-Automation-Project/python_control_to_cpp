@@ -33,13 +33,13 @@ constexpr double TRANSFER_FUNCTION_DIVISION_MIN = 1.0e-10;
  * This type alias defines a transfer function numerator using a sparse matrix
  * type from the PythonNumpy module. The matrix is parameterized by the element
  * type `T` and the number of numerator coefficients `Numerator_Size`. The
- * matrix is constructed with dimensions determined by `Numerator_Size` rows and
+ * matrix is constructed with dimensions determined by `Numerator_Size` cols and
  * 1 column, using the `DenseAvailable` trait to select the appropriate storage
  * format.
  *
  * @tparam T The data type of the matrix elements (e.g., double, float).
  * @tparam Numerator_Size The number of coefficients in the numerator (number of
- * rows).
+ * cols).
  */
 template <typename T, std::size_t Numerator_Size>
 using TransferFunctionNumerator_Type = PythonNumpy::SparseMatrix_Type<
@@ -52,13 +52,13 @@ using TransferFunctionNumerator_Type = PythonNumpy::SparseMatrix_Type<
  * This type alias defines a transfer function denominator using a sparse matrix
  * type from the PythonNumpy module. The matrix is parameterized by the element
  * type `T` and the number of denominator coefficients `Denominator_Size`. The
- * matrix is constructed with dimensions determined by `Denominator_Size` rows
+ * matrix is constructed with dimensions determined by `Denominator_Size` cols
  * and 1 column, using the `DenseAvailable` trait to select the appropriate
  * storage format.
  *
  * @tparam T The data type of the matrix elements (e.g., double, float).
  * @tparam Denominator_Size The number of coefficients in the denominator
- * (number of rows).
+ * (number of columns).
  */
 template <typename T, std::size_t Denominator_Size>
 using TransferFunctionDenominator_Type = PythonNumpy::SparseMatrix_Type<
@@ -70,7 +70,7 @@ namespace MakeNumerator {
  * @brief Assigns values to the numerator matrix of a transfer function.
  *
  * This function recursively assigns values to the numerator matrix, ensuring
- * that the number of arguments does not exceed the number of columns in the
+ * that the number of arguments does not exceed the number of rows in the
  * numerator matrix. It uses static assertions to enforce type consistency and
  * size constraints.
  *
@@ -86,7 +86,7 @@ inline void assign_values(TransferFunctionNumerator_Type &numerator,
                           T value_1) {
 
   static_assert(
-      IndexCount < TransferFunctionNumerator_Type::COLS,
+      IndexCount < TransferFunctionNumerator_Type::ROWS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   numerator.template set<IndexCount, 0>(value_1);
@@ -98,7 +98,7 @@ inline void assign_values(TransferFunctionNumerator_Type &numerator,
  *
  * This function recursively assigns multiple values to the numerator matrix,
  * ensuring that all arguments are of the same type and that the number of
- * arguments does not exceed the number of columns in the numerator matrix. It
+ * arguments does not exceed the number of rows in the numerator matrix. It
  * uses static assertions to enforce type consistency and size constraints.
  *
  * @tparam IndexCount The current index in the numerator matrix being assigned.
@@ -117,7 +117,7 @@ inline void assign_values(TransferFunctionNumerator_Type &numerator, T value_1,
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < TransferFunctionNumerator_Type::COLS,
+      IndexCount < TransferFunctionNumerator_Type::ROWS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   numerator.template set<IndexCount, 0>(value_1);
@@ -133,7 +133,7 @@ namespace MakeDenominator {
  * @brief Assigns values to the denominator matrix of a transfer function.
  *
  * This function recursively assigns values to the denominator matrix,
- * ensuring that the number of arguments does not exceed the number of columns
+ * ensuring that the number of arguments does not exceed the number of rows
  * in the denominator matrix. It uses static assertions to enforce type
  * consistency and size constraints.
  *
@@ -151,7 +151,7 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
                           T value_1) {
 
   static_assert(
-      IndexCount < TransferFunctionDenominator_Type::COLS,
+      IndexCount < TransferFunctionDenominator_Type::ROWS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   denominator.template set<IndexCount, 0>(value_1);
@@ -163,7 +163,7 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
  *
  * This function recursively assigns multiple values to the denominator matrix,
  * ensuring that all arguments are of the same type and that the number of
- * arguments does not exceed the number of columns in the denominator matrix. It
+ * arguments does not exceed the number of rows in the denominator matrix. It
  * uses static assertions to enforce type consistency and size constraints.
  *
  * @tparam IndexCount The current index in the denominator matrix being
@@ -184,7 +184,7 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < TransferFunctionDenominator_Type::COLS,
+      IndexCount < TransferFunctionDenominator_Type::ROWS,
       "Number of arguments must be less than the number of Numerator factor.");
 
   denominator.template set<IndexCount, 0>(value_1);
@@ -204,7 +204,7 @@ inline void assign_values(TransferFunctionDenominator_Type &denominator,
  * variable number of arguments to be passed, which are assigned to the
  * numerator matrix.
  *
- * @tparam M The number of coefficients in the numerator (number of rows).
+ * @tparam M The number of coefficients in the numerator (number of columns).
  * @tparam T The type of the first value to assign.
  * @tparam Args Additional types for subsequent values.
  * @param value_1 The first value to assign to the numerator matrix.
@@ -232,7 +232,7 @@ inline auto make_TransferFunctionNumerator(T value_1, Args... args)
  * variable number of arguments to be passed, which are assigned to the
  * denominator matrix.
  *
- * @tparam M The number of coefficients in the denominator (number of rows).
+ * @tparam M The number of coefficients in the denominator (number of columns).
  * @tparam T The type of the first value to assign.
  * @tparam Args Additional types for subsequent values.
  * @param value_1 The first value to assign to the denominator matrix.
@@ -370,7 +370,7 @@ template <typename T> struct DiscreteStateSpace_D_Type<T, true> {
    * when it is strictly proper.
    *
    * This struct defines the type of the D matrix as a sparse matrix with no
-   * columns, indicating that there is no direct feedthrough from input to
+   * rows, indicating that there is no direct feedthrough from input to
    * output in a strictly proper system.
    *
    * @tparam T The data type of the matrix elements (e.g., double, float).
@@ -626,11 +626,11 @@ struct Set_C_Value<T, DiscreteStateSpace_C_type, Numerator_Type,
             denominator(0),
             static_cast<T>(PythonControl::TRANSFER_FUNCTION_DIVISION_MIN));
     constexpr std::size_t C_INDEX_OFFSET =
-        Denominator_Type::COLS - Numerator_Type::COLS - 1;
+        Denominator_Type::ROWS - Numerator_Type::ROWS - 1;
 
     Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
                         Denominator_Type, C_INDEX_OFFSET, 0,
-                        (Numerator_Type::COLS - 1),
+                        (Numerator_Type::ROWS - 1),
                         true>::set(C, numerator, denominator_0_inv);
   }
 };
@@ -661,7 +661,7 @@ struct Set_C_Value<T, DiscreteStateSpace_C_type, Numerator_Type,
             static_cast<T>(PythonControl::TRANSFER_FUNCTION_DIVISION_MIN));
 
     Set_C_ValueElements<T, DiscreteStateSpace_C_type, Numerator_Type,
-                        Denominator_Type, 0, 1, (Numerator_Type::COLS - 2),
+                        Denominator_Type, 0, 1, (Numerator_Type::ROWS - 2),
                         false>::set(C, numerator, denominator,
                                     denominator_0_inv);
   }
@@ -745,7 +745,7 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, true> {
     T u_steady_state;
 
     auto I_A = PythonNumpy::make_DiagMatrixIdentity<
-                   T, State_Space_Type::Original_X_Type::COLS>() -
+                   T, State_Space_Type::Original_X_Type::ROWS>() -
                state_space.A;
 
     auto solver = PythonNumpy::make_LinalgSolver<decltype(I_A),
@@ -789,7 +789,7 @@ struct SolveSteadyStateAndInput<T, State_Space_Type, false> {
     T u_steady_state;
 
     auto I_A = PythonNumpy::make_DiagMatrixIdentity<
-                   T, State_Space_Type::Original_X_Type::COLS>() -
+                   T, State_Space_Type::Original_X_Type::ROWS>() -
                state_space.A;
 
     // This is a transfer function, so D is scalar.
@@ -846,13 +846,13 @@ protected:
       std::is_same<_T, double>::value || std::is_same<_T, float>::value,
       "Numerator and denominator value data type must be float or double.");
 
-  static_assert(Denominator_Type::COLS > 1,
+  static_assert(Denominator_Type::ROWS > 1,
                 "Denominator must have at least 2 elements.");
   static constexpr std::size_t _DENOMINATOR_DIMENSION =
-      Denominator_Type::COLS - 1;
-  static_assert(Numerator_Type::COLS > 1,
+      Denominator_Type::ROWS - 1;
+  static_assert(Numerator_Type::ROWS > 1,
                 "Numerator must have at least 2 elements.");
-  static constexpr std::size_t _NUMERATOR_DIMENSION = Numerator_Type::COLS - 1;
+  static constexpr std::size_t _NUMERATOR_DIMENSION = Numerator_Type::ROWS - 1;
 
   static constexpr bool _IS_STRICTLY_PROPER =
       _NUMERATOR_DIMENSION < _DENOMINATOR_DIMENSION;
@@ -867,8 +867,8 @@ protected:
 
   using _DiscreteStateSpace_C_type =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_C_Type<
-          _T, Denominator_Type::COLS,
-          (Denominator_Type::COLS - Numerator_Type::COLS)>::type;
+          _T, Denominator_Type::ROWS,
+          (Denominator_Type::ROWS - Numerator_Type::ROWS)>::type;
 
   using _DiscreteStateSpace_D_type =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_D_Type<
@@ -886,7 +886,7 @@ protected:
                 "Data type of denominator must be same type as numerator.");
 
   /* Check Numerator and Denominator length */
-  static_assert(Numerator_Type::COLS <= Denominator_Type::COLS,
+  static_assert(Numerator_Type::ROWS <= Denominator_Type::ROWS,
                 "Transfer function must be proper.");
 
 public:
@@ -1001,7 +1001,7 @@ public:
    * @return The input value.
    */
   void update(const _T &u) {
-    auto input = make_StateSpaceInput<_U_Type::COLS>(u);
+    auto input = make_StateSpaceInput<_U_Type::ROWS>(u);
 
     this->_state_space.update(input);
   }
@@ -1070,7 +1070,7 @@ public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
   static constexpr std::size_t STATE_SIZE =
-      _State_Space_Type::Original_X_Type::COLS;
+      _State_Space_Type::Original_X_Type::ROWS;
 
 protected:
   /* Variable */
