@@ -131,8 +131,8 @@ void check_python_control_state_space(void) {
     DenseMatrix_Type<T, 1, TestData::SIM_SS_STEP_MAX> Y_results;
 
     DenseMatrix_Type<T, TestData::SIM_SS_STEP_MAX, 2> X_results_exmaple_1_answer_Trans;
-    for (std::size_t i = 0; i < X_results_exmaple_1_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < X_results_exmaple_1_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < X_results_exmaple_1_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < X_results_exmaple_1_answer_Trans.cols(); j++) {
 
             X_results_exmaple_1_answer_Trans(i, j) =
                 static_cast<T>(TestData::X_results_exmaple_1_answer(i, j));
@@ -140,8 +140,8 @@ void check_python_control_state_space(void) {
     }
 
     DenseMatrix_Type<T, TestData::SIM_SS_STEP_MAX, 1> Y_results_exmaple_1_answer_Trans;
-    for (std::size_t i = 0; i <  Y_results_exmaple_1_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j <  Y_results_exmaple_1_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i <  Y_results_exmaple_1_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j <  Y_results_exmaple_1_answer_Trans.cols(); j++) {
 
              Y_results_exmaple_1_answer_Trans(i, j) =
                  static_cast<T>(TestData:: Y_results_exmaple_1_answer(i, j));
@@ -293,8 +293,8 @@ void check_python_control_state_space(void) {
     DenseMatrix_Type<T, 2, TestData::DC_MOTOR_SIM_SS_STEP_MAX> DC_motor_Y_results;
 
     DenseMatrix_Type<T, TestData::DC_MOTOR_SIM_SS_STEP_MAX, 2> Y_results_exmaple_2_answer_Trans;
-    for (std::size_t i = 0; i < Y_results_exmaple_2_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < Y_results_exmaple_2_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < Y_results_exmaple_2_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < Y_results_exmaple_2_answer_Trans.cols(); j++) {
 
             Y_results_exmaple_2_answer_Trans(i, j) =
                 static_cast<T>(TestData::Y_results_exmaple_2_answer(i, j));
@@ -367,8 +367,8 @@ void check_python_control_transfer_function(void) {
 
     DenseMatrix_Type<T, 1, TestData::SYSTEM_3_4_STEP_MAX> system_3_4_y;
     DenseMatrix_Type<T, TestData::SYSTEM_3_4_STEP_MAX, 1> system_3_4_y_answer_Trans;
-    for (std::size_t i = 0; i < system_3_4_y_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < system_3_4_y_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < system_3_4_y_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < system_3_4_y_answer_Trans.cols(); j++) {
 
             system_3_4_y_answer_Trans(i, j) =
                 static_cast<T>(TestData::system_3_4_y_answer(i, j));
@@ -473,8 +473,8 @@ void check_python_control_transfer_function(void) {
 
     DenseMatrix_Type<T, 1, TestData::SYSTEM_4_4_STEP_MAX> system_4_4_y;
     DenseMatrix_Type<T, TestData::SYSTEM_4_4_STEP_MAX, 1> system_4_4_y_answer_Trans;
-    for (std::size_t i = 0; i < system_4_4_y_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < system_4_4_y_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < system_4_4_y_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < system_4_4_y_answer_Trans.cols(); j++) {
 
             system_4_4_y_answer_Trans(i, j) =
                 static_cast<T>(TestData::system_4_4_y_answer(i, j));
@@ -534,8 +534,8 @@ void check_python_control_transfer_function(void) {
 
     DenseMatrix_Type<T, 1, TestData::SYSTEM_2_4_STEP_MAX> system_2_4_y;
     DenseMatrix_Type<T, TestData::SYSTEM_2_4_STEP_MAX, 1> system_2_4_y_answer_Trans;
-    for (std::size_t i = 0; i < system_2_4_y_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < system_2_4_y_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < system_2_4_y_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < system_2_4_y_answer_Trans.cols(); j++) {
 
             system_2_4_y_answer_Trans(i, j) =
                 static_cast<T>(TestData::system_2_4_y_answer(i, j));
@@ -616,8 +616,8 @@ void check_python_control_pid_controller(void) {
     /* シミュレーション */
     DenseMatrix_Type<T, 1, TestData::SYSTEM_PID_STEP_MAX> system_PID_y;
     DenseMatrix_Type<T, TestData::SYSTEM_PID_STEP_MAX, 1> system_PID_y_answer_Trans;
-    for (std::size_t i = 0; i < system_PID_y_answer_Trans.cols(); i++) {
-        for (std::size_t j = 0; j < system_PID_y_answer_Trans.rows(); j++) {
+    for (std::size_t i = 0; i < system_PID_y_answer_Trans.rows(); i++) {
+        for (std::size_t j = 0; j < system_PID_y_answer_Trans.cols(); j++) {
 
             system_PID_y_answer_Trans(i, j) =
                 static_cast<T>(TestData::system_PID_y_answer(i, j));
@@ -975,9 +975,9 @@ void check_python_control_linear_kalman_filter(void) {
 
     T dt = static_cast<T>(0.1);
 
-    constexpr std::size_t STATE_SIZE = decltype(A)::COLS;
-    constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;
-    constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;
+    constexpr std::size_t STATE_SIZE = decltype(A)::ROWS;
+    constexpr std::size_t INPUT_SIZE = decltype(B)::COLS;
+    constexpr std::size_t OUTPUT_SIZE = decltype(C)::ROWS;
 
     auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 

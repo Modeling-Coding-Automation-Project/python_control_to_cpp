@@ -121,7 +121,7 @@ template <> struct UpdateRingBufferIndex<0> {
  *
  * This class allows for storing a vector with a specified number of delays,
  * enabling access to previous states of the vector. It is designed to work with
- * vectors of size 1 x N or N x 1, where N is the number of columns.
+ * vectors of size 1 x N or N x 1, where N is the number of rows.
  *
  * @tparam Vector_Type The type of the vector, which must be a matrix type with
  * a single row or column.
@@ -137,7 +137,7 @@ protected:
                 "Matrix value data type must be float or double.");
 
   using _Vector_with_Delay_Type =
-      std::array<PythonNumpy::DenseMatrix_Type<_T, Vector_Type::COLS, 1>,
+      std::array<PythonNumpy::DenseMatrix_Type<_T, Vector_Type::ROWS, 1>,
                  (1 + Number_Of_Delay)>;
 
 public:
@@ -149,9 +149,9 @@ public:
   static_assert(std::is_same<typename Vector_Type::Value_Type, _T>::value,
                 "Data type of vector must be same type as T.");
   /* Check Vector Size */
-  static_assert(Vector_Type::ROWS == 1,
+  static_assert(Vector_Type::COLS == 1,
                 "Vector size must be 1 x N or N x 1 matrix.");
-  static_assert(Vector_Type::COLS > 0, "Vector size must be greater than 0.");
+  static_assert(Vector_Type::ROWS > 0, "Vector size must be greater than 0.");
 
 public:
   /* Constructor */
@@ -205,7 +205,7 @@ public:
 
     ForDelayedVector::SubstituteVectorRingBuffer<
         _T, Vector_Type, _Vector_with_Delay_Type,
-        (Vector_Type::COLS - 1)>::compute(this->_store, vector,
+        (Vector_Type::ROWS - 1)>::compute(this->_store, vector,
                                           this->_delay_ring_buffer_index);
 
     ForDelayedVector::UpdateRingBufferIndex<Number_Of_Delay>::compute(
@@ -279,7 +279,7 @@ public:
    * vector.
    */
   template <std::size_t Index> inline auto access(void) -> _T & {
-    static_assert(Index < Vector_Type::COLS,
+    static_assert(Index < Vector_Type::ROWS,
                   "Index must be less than vector size.");
 
     return this->_store[this->_delay_ring_buffer_index].access(Index, 0);
@@ -300,7 +300,7 @@ public:
 
 public:
   /* Constant */
-  static constexpr std::size_t VECTOR_SIZE = Vector_Type::COLS;
+  static constexpr std::size_t VECTOR_SIZE = Vector_Type::ROWS;
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
 protected:
@@ -337,7 +337,7 @@ template <std::size_t IndexCount, typename StateSpaceVectorType, typename T>
 inline void assign_values(StateSpaceVectorType &input, T value_1) {
 
   static_assert(
-      IndexCount < StateSpaceVectorType::COLS,
+      IndexCount < StateSpaceVectorType::ROWS,
       "Number of arguments must be less than the number of input size.");
 
   input.template set<IndexCount, 0>(value_1);
@@ -368,7 +368,7 @@ inline void assign_values(StateSpaceVectorType &input, T value_1, U value_2,
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < StateSpaceVectorType::COLS,
+      IndexCount < StateSpaceVectorType::ROWS,
       "Number of arguments must be less than the number of input size.");
 
   input.template set<IndexCount, 0>(value_1);
@@ -489,9 +489,9 @@ protected:
                     std::is_same<_T, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _Input_Size = B_Type::ROWS;
-  static constexpr std::size_t _State_Size = A_Type::COLS;
-  static constexpr std::size_t _Output_Size = C_Type::COLS;
+  static constexpr std::size_t _Input_Size = B_Type::COLS;
+  static constexpr std::size_t _State_Size = A_Type::ROWS;
+  static constexpr std::size_t _Output_Size = C_Type::ROWS;
 
 public:
   /* Type */
@@ -513,11 +513,11 @@ public:
                 "Data type of D matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
-  static_assert((A_Type::ROWS == A_Type::COLS) &&
-                    (B_Type::COLS == A_Type::COLS) &&
-                    (C_Type::ROWS == A_Type::COLS) &&
-                    (D_Type::COLS == C_Type::COLS) &&
-                    (D_Type::ROWS == B_Type::ROWS),
+  static_assert((A_Type::COLS == A_Type::ROWS) &&
+                    (B_Type::ROWS == A_Type::ROWS) &&
+                    (C_Type::COLS == A_Type::ROWS) &&
+                    (D_Type::ROWS == C_Type::ROWS) &&
+                    (D_Type::COLS == B_Type::COLS),
                 "A, B, C, D matrix size is not compatible");
 
 public:

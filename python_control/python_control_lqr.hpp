@@ -87,8 +87,8 @@ protected:
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::ROWS;
-  static constexpr std::size_t _State_Size = A_Type::COLS;
+  static constexpr std::size_t _Input_Size = B_Type::COLS;
+  static constexpr std::size_t _State_Size = A_Type::ROWS;
 
 public:
   /* Type */
@@ -344,8 +344,8 @@ protected:
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::ROWS;
-  static constexpr std::size_t _State_Size = A_Type::COLS;
+  static constexpr std::size_t _Input_Size = B_Type::COLS;
+  static constexpr std::size_t _State_Size = A_Type::ROWS;
 
 public:
   /* Type */
@@ -369,12 +369,12 @@ public:
                 "Data type of R matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
-  static_assert((A_Type::ROWS == A_Type::COLS) &&
-                    (B_Type::COLS == A_Type::COLS) &&
-                    (Q_Type::ROWS == Q_Type::COLS) &&
-                    (Q_Type::ROWS == A_Type::COLS) &&
-                    (R_Type::ROWS == R_Type::COLS) &&
-                    (R_Type::ROWS == B_Type::ROWS),
+  static_assert((A_Type::COLS == A_Type::ROWS) &&
+                    (B_Type::ROWS == A_Type::ROWS) &&
+                    (Q_Type::COLS == Q_Type::ROWS) &&
+                    (Q_Type::COLS == A_Type::ROWS) &&
+                    (R_Type::COLS == R_Type::ROWS) &&
+                    (R_Type::COLS == B_Type::COLS),
                 "A, B, Q, R matrix size is not compatible");
 
 public:
@@ -673,21 +673,21 @@ protected:
 
   using _A_EX_Type = PythonNumpy::ConcatenateHorizontally_Type<
       PythonNumpy::ConcatenateVertically_Type<A_Type, C_Type>,
-      PythonNumpy::SparseMatrixEmpty_Type<_T, (A_Type::COLS + C_Type::COLS),
-                                          C_Type::COLS>>;
+      PythonNumpy::SparseMatrixEmpty_Type<_T, (A_Type::ROWS + C_Type::ROWS),
+                                          C_Type::ROWS>>;
 
   using _B_EX_Type = PythonNumpy::ConcatenateVertically_Type<
       B_Type,
-      PythonNumpy::SparseMatrixEmpty_Type<_T, C_Type::COLS, B_Type::ROWS>>;
+      PythonNumpy::SparseMatrixEmpty_Type<_T, C_Type::ROWS, B_Type::COLS>>;
 
   using _Solver_Type =
       LQR_ArimotoPotterSolver<_A_EX_Type, _B_EX_Type, Q_Type, R_Type>;
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::ROWS;
-  static constexpr std::size_t _State_Size = A_Type::COLS;
-  static constexpr std::size_t _Output_Size = C_Type::COLS;
+  static constexpr std::size_t _Input_Size = B_Type::COLS;
+  static constexpr std::size_t _State_Size = A_Type::ROWS;
+  static constexpr std::size_t _Output_Size = C_Type::ROWS;
 
 public:
   /* Type */
@@ -714,13 +714,13 @@ public:
                 "Data type of R matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
-  static_assert((A_Type::ROWS == A_Type::COLS) &&
-                    (B_Type::COLS == A_Type::COLS) &&
-                    (C_Type::ROWS == A_Type::COLS) &&
-                    (Q_Type::ROWS == Q_Type::COLS) &&
-                    (Q_Type::ROWS == (A_Type::COLS + C_Type::COLS)) &&
-                    (R_Type::ROWS == R_Type::COLS) &&
-                    (R_Type::ROWS == B_Type::ROWS),
+  static_assert((A_Type::COLS == A_Type::ROWS) &&
+                    (B_Type::ROWS == A_Type::ROWS) &&
+                    (C_Type::COLS == A_Type::ROWS) &&
+                    (Q_Type::COLS == Q_Type::ROWS) &&
+                    (Q_Type::COLS == (A_Type::ROWS + C_Type::ROWS)) &&
+                    (R_Type::COLS == R_Type::ROWS) &&
+                    (R_Type::COLS == B_Type::COLS),
                 "A, B, C, Q, R matrix size is not compatible");
 
 public:

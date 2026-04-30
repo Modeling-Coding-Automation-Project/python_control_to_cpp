@@ -40,11 +40,11 @@ namespace MakeLeastSquaresInput {
  * This function template assigns the provided value to the element at position
  * (IndexCount, 0) in the input object, and assigns the value 1 (cast to type T)
  * to the element at position (IndexCount + 1, 0). It uses a static assertion to
- * ensure that IndexCount is less than the number of columns in the input type.
+ * ensure that IndexCount is less than the number of rows in the input type.
  *
  * @tparam IndexCount The index at which to assign the first value.
  * @tparam LeastSquaresInputType The type of the input object, which must
- * provide COLS and a set method.
+ * provide ROWS and a set method.
  * @tparam T The type of the value to assign.
  * @param input Reference to the input object to modify.
  * @param value_1 The value to assign at position (IndexCount, 0).
@@ -53,7 +53,7 @@ template <std::size_t IndexCount, typename LeastSquaresInputType, typename T>
 inline void assign_values(LeastSquaresInputType &input, T value_1) {
 
   static_assert(
-      IndexCount < LeastSquaresInputType::COLS,
+      IndexCount < LeastSquaresInputType::ROWS,
       "Number of arguments must be less than the number of input size.");
 
   input.template set<IndexCount, 0>(value_1);
@@ -66,12 +66,12 @@ inline void assign_values(LeastSquaresInputType &input, T value_1) {
  * This function template assigns the first value to the element at position
  * (IndexCount, 0) in the input object, and then recursively calls itself to
  * assign the next value. It uses static assertions to ensure that all values
- * are of the same type and that IndexCount is less than the number of columns
+ * are of the same type and that IndexCount is less than the number of rows
  * in the input type.
  *
  * @tparam IndexCount The current index for assignment.
  * @tparam LeastSquaresInputType The type of the input object, which must
- * provide COLS and a set method.
+ * provide ROWS and a set method.
  * @tparam T The type of the first value to assign.
  * @tparam U The type of the second value to assign.
  * @param input Reference to the input object to modify.
@@ -86,7 +86,7 @@ inline void assign_values(LeastSquaresInputType &input, T value_1, U value_2,
 
   static_assert(std::is_same<T, U>::value, "Arguments must be the same type.");
   static_assert(
-      IndexCount < LeastSquaresInputType::COLS,
+      IndexCount < LeastSquaresInputType::ROWS,
       "Number of arguments must be less than the number of input size.");
 
   input.template set<IndexCount, 0>(value_1);
@@ -132,8 +132,8 @@ inline auto make_LeastSquaresInput(T value_1, Args... args)
  * to data and making predictions. It supports batch learning with a fixed set
  * of input-output pairs.
  *
- * @tparam X_Type_In The type of the input data, which must provide COLS and
- * ROWS.
+ * @tparam X_Type_In The type of the input data, which must provide ROWS and
+ * COLS.
  */
 template <typename X_Type_In> class LeastSquares {
 public:
@@ -147,15 +147,15 @@ protected:
                     std::is_same<_T, float>::value,
                 "Value data type must be float or double.");
 
-  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::ROWS + 1)>;
+  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::COLS + 1)>;
 
   using _LstsqSolver_Type = PythonNumpy::LinalgLstsqSolver_Type<
-      PythonNumpy::DenseMatrix_Type<_T, X_Type::COLS, _Wights_Type::COLS>,
-      PythonNumpy::DenseMatrix_Type<_T, X_Type::COLS, 1>>;
+      PythonNumpy::DenseMatrix_Type<_T, X_Type::ROWS, _Wights_Type::ROWS>,
+      PythonNumpy::DenseMatrix_Type<_T, X_Type::ROWS, 1>>;
 
 public:
   /* Constant */
-  static constexpr std::size_t NUMBER_OF_DATA = X_Type::COLS;
+  static constexpr std::size_t NUMBER_OF_DATA = X_Type::ROWS;
 
 public:
   /* Type */
@@ -202,12 +202,12 @@ public:
    * method based on the provided input (X) and output (Y) data. It adds a bias
    * term to the input data before solving for the weights.
    *
-   * @param X The input data matrix of shape (ROWS, COLS).
-   * @param Y The output data vector of shape (ROWS, 1).
+   * @param X The input data matrix of shape (COLS, ROWS).
+   * @param Y The output data vector of shape (COLS, 1).
    */
   inline void fit(const X_Type &X, const Y_Type &Y) {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::COLS, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::ROWS, 1>();
 
     auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
 
@@ -221,12 +221,12 @@ public:
    * method based on the provided input (X) and a single output value (y_true).
    * It adds a bias term to the input data before solving for the weights.
    *
-   * @param X The input data matrix of shape (ROWS, COLS).
+   * @param X The input data matrix of shape (COLS, ROWS).
    * @param y_true The true output value.
    */
   inline auto predict(const X_Type &X) const -> Y_Type {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::COLS, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::ROWS, 1>();
 
     auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
 
@@ -240,7 +240,7 @@ public:
    * using the learned weights. It adds a bias term to the input vector before
    * making the prediction.
    *
-   * @param X The input vector of shape (1, COLS).
+   * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
   inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }
@@ -284,7 +284,7 @@ protected:
  * settings. It can be used to perform least squares regression and system
  * identification.
  *
- * @tparam X_Type The type of the input data, which must provide COLS and ROWS.
+ * @tparam X_Type The type of the input data, which must provide ROWS and COLS.
  * @return LeastSquares<X_Type> The resulting LeastSquares object.
  */
 template <typename X_Type>
@@ -305,7 +305,7 @@ template <typename X_Type> using LeastSquares_Type = LeastSquares<X_Type>;
  * incremental updates to the model as new data becomes available. It supports
  * online learning scenarios with a focus on adaptive filtering and control.
  *
- * @tparam X_Type_In The type of the input data, which must provide COLS.
+ * @tparam X_Type_In The type of the input data, which must provide ROWS.
  */
 template <typename X_Type_In> class RecursiveLeastSquares {
 public:
@@ -320,14 +320,14 @@ protected:
                 "Value data type must be float or double.");
 
   // plus 1 for bias
-  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::COLS + 1)>;
+  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::ROWS + 1)>;
 
   using _P_Type =
-      PythonNumpy::DenseMatrix_Type<_T, (X_Type::COLS + 1), (X_Type::COLS + 1)>;
+      PythonNumpy::DenseMatrix_Type<_T, (X_Type::ROWS + 1), (X_Type::ROWS + 1)>;
 
 public:
   /* Constant */
-  static constexpr std::size_t RLS_SIZE = X_Type::COLS + 1;
+  static constexpr std::size_t RLS_SIZE = X_Type::ROWS + 1;
 
 public:
   /* Type */
@@ -414,7 +414,7 @@ public:
    * algorithm using the provided input (X) and true output (y_true). It
    * computes the new weights and updates the covariance matrix P.
    *
-   * @param X The input data matrix of shape (ROWS, COLS).
+   * @param X The input data matrix of shape (COLS, ROWS).
    * @param y_true The true output value.
    */
   inline void update(const X_Type &X, const _T &y_true) {
@@ -454,7 +454,7 @@ public:
    * using the learned weights. It adds a bias term to the input vector before
    * making the prediction.
    *
-   * @param X The input vector of shape (1, COLS).
+   * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
   inline auto predict(const X_Type &X) const -> _T {
@@ -475,7 +475,7 @@ public:
    * using the learned weights. It adds a bias term to the input vector before
    * making the prediction.
    *
-   * @param X The input vector of shape (1, COLS).
+   * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
   inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }
@@ -486,7 +486,7 @@ public:
    * This function returns the current covariance matrix P, which is used to
    * compute the Kalman gain and update the weights in the RLS algorithm.
    *
-   * @return The covariance matrix P of shape (COLS + 1, COLS + 1).
+   * @return The covariance matrix P of shape (ROWS + 1, ROWS + 1).
    */
   inline void set_inv_solver_decay_rate(const _T &decay_rate_in) {
     this->_lambda_X_P_Solver.set_decay_rate(decay_rate_in);
@@ -522,7 +522,7 @@ protected:
  * default lambda factor and delta value. It can be used for online regression
  * and system identification.
  *
- * @tparam X_Type The type of the input data, which must provide COLS.
+ * @tparam X_Type The type of the input data, which must provide ROWS.
  * @return RecursiveLeastSquares<X_Type> The resulting RecursiveLeastSquares
  * object.
  */
@@ -538,7 +538,7 @@ inline auto make_RecursiveLeastSquares(void) -> RecursiveLeastSquares<X_Type> {
  * provided lambda factor and the default delta value. It can be used for online
  * regression and system identification.
  *
- * @tparam X_Type The type of the input data, which must provide COLS.
+ * @tparam X_Type The type of the input data, which must provide ROWS.
  * @param lambda_in The lambda factor to be set in the RLS algorithm.
  * @return RecursiveLeastSquares<X_Type> The resulting RecursiveLeastSquares
  * object.
@@ -557,7 +557,7 @@ inline auto make_RecursiveLeastSquares(const T &lambda_in)
  * provided lambda factor and delta value. It can be used for online regression
  * and system identification.
  *
- * @tparam X_Type The type of the input data, which must provide COLS.
+ * @tparam X_Type The type of the input data, which must provide ROWS.
  * @param lambda_in The lambda factor to be set in the RLS algorithm.
  * @param delta_in The delta value to be set in the RLS algorithm.
  * @return RecursiveLeastSquares<X_Type> The resulting RecursiveLeastSquares
