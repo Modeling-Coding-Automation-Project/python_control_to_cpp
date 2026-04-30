@@ -7,14 +7,14 @@
  * for state estimation. The simulation iteratively updates the true system state and
  * the Kalman Filter's estimated state, printing the results at each step.
  */
-include<iostream>
+#include <iostream>
 
 #include "python_control.hpp"
 #include "python_numpy.hpp"
 
 #include <array>
 
-    using namespace PythonNumpy;
+using namespace PythonNumpy;
 using namespace PythonControl;
 
 constexpr std::size_t LKF_SIM_STEP_MAX = 50;
@@ -48,9 +48,9 @@ int main(void) {
 
   double dt = 0.1;
 
-  constexpr std::size_t STATE_SIZE = decltype(A)::COLS;
-  constexpr std::size_t INPUT_SIZE = decltype(B)::ROWS;
-  constexpr std::size_t OUTPUT_SIZE = decltype(C)::COLS;
+  constexpr std::size_t STATE_SIZE = decltype(A)::ROWS;
+  constexpr std::size_t INPUT_SIZE = decltype(B)::COLS;
+  constexpr std::size_t OUTPUT_SIZE = decltype(C)::ROWS;
 
   auto sys = make_DiscreteStateSpace(A, B, C, D, dt);
 
