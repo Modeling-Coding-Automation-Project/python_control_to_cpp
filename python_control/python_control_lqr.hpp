@@ -403,8 +403,7 @@ public:
   }
 
   /* Move Constructor */
-  LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input)
-  noexcept
+  LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
       : _A(std::move(input._A)), _B(std::move(input._B)),
         _Q(std::move(input._Q)), _R(std::move(input._R)),
         _K(std::move(input._K)),
@@ -751,8 +750,7 @@ public:
   }
 
   /* Move Constructor */
-  LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input)
-  noexcept
+  LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept
       : _A(std::move(input._A)), _B(std::move(input._B)),
         _C(std::move(input._C)), _Q(std::move(input._Q)),
         _R(std::move(input._R)), _K(std::move(input._K)),
