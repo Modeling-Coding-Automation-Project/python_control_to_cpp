@@ -1,5 +1,5 @@
-#ifndef __PYTHON_CONTROL_HPP__
-#define __PYTHON_CONTROL_HPP__
+#ifndef PYTHON_CONTROL_HPP_
+#define PYTHON_CONTROL_HPP_
 
 #include "python_control_kalman_filter.hpp"
 #include "python_control_least_squares.hpp"
@@ -8,4 +8,4 @@
 #include "python_control_state_space.hpp"
 #include "python_control_transfer_function.hpp"
 
-#endif // __PYTHON_CONTROL_HPP__
+#endif // PYTHON_CONTROL_HPP_

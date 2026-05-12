@@ -10,8 +10,8 @@
  * for updating, resetting, and solving steady-state responses of discrete
  * transfer functions.
  */
-#ifndef __PYTHON_CONTROL_TRANSFER_FUNCTION_HPP__
-#define __PYTHON_CONTROL_TRANSFER_FUNCTION_HPP__
+#ifndef PYTHON_CONTROL_TRANSFER_FUNCTION_HPP_
+#define PYTHON_CONTROL_TRANSFER_FUNCTION_HPP_
 
 #include "base_utility.hpp"
 #include "python_control_state_space.hpp"
@@ -1145,4 +1145,4 @@ using DiscreteTransferFunction_Type =
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_TRANSFER_FUNCTION_HPP__
+#endif // PYTHON_CONTROL_TRANSFER_FUNCTION_HPP_

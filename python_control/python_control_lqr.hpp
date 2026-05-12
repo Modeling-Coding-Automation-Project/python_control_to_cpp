@@ -9,8 +9,8 @@
  * compile-time matrix size and type checks, and is designed to work with a
  * custom matrix and linear algebra library (PythonNumpy namespace).
  */
-#ifndef __PYTHON_CONTROL_LQR_HPP__
-#define __PYTHON_CONTROL_LQR_HPP__
+#ifndef PYTHON_CONTROL_LQR_HPP_
+#define PYTHON_CONTROL_LQR_HPP_
 
 #include "python_numpy.hpp"
 
@@ -1003,4 +1003,4 @@ using LQI_Type = LQI<A_Type, B_Type, C_Type, Q_Type, R_Type>;
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_LQR_HPP__
+#endif // PYTHON_CONTROL_LQR_HPP_

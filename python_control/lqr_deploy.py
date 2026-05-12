@@ -106,7 +106,7 @@ class LQR_Deploy:
         # create state-space cpp code
         code_text = ""
 
-        file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
+        file_header_macro_name = code_file_name.upper() + "_HPP_"
 
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"
@@ -271,7 +271,7 @@ class LQI_Deploy:
         # create state-space cpp code
         code_text = ""
 
-        file_header_macro_name = "__" + code_file_name.upper() + "_HPP__"
+        file_header_macro_name = code_file_name.upper() + "_HPP_"
 
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"

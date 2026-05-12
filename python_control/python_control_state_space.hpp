@@ -9,8 +9,8 @@
  * the implementation of control algorithms and simulation of dynamic systems,
  * with a focus on type safety and compile-time checks for matrix compatibility.
  */
-#ifndef __PYTHON_CONTROL_STATE_SPACE_HPP__
-#define __PYTHON_CONTROL_STATE_SPACE_HPP__
+#ifndef PYTHON_CONTROL_STATE_SPACE_HPP_
+#define PYTHON_CONTROL_STATE_SPACE_HPP_
 
 #include "python_numpy.hpp"
 
@@ -830,4 +830,4 @@ using DiscreteStateSpace_Type =
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_STATE_SPACE_HPP__
+#endif // PYTHON_CONTROL_STATE_SPACE_HPP_
