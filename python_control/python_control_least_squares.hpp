@@ -10,8 +10,8 @@
  * utilities for efficient numerical operations, including bias handling and
  * regularization.
  */
-#ifndef __PYTHON_CONTROL_LEAST_SQUARES_HPP__
-#define __PYTHON_CONTROL_LEAST_SQUARES_HPP__
+#ifndef PYTHON_CONTROL_LEAST_SQUARES_HPP_
+#define PYTHON_CONTROL_LEAST_SQUARES_HPP_
 
 #include "base_utility.hpp"
 #include "python_numpy.hpp"
@@ -575,4 +575,4 @@ using RecursiveLeastSquares_Type = RecursiveLeastSquares<X_Type>;
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_LEAST_SQUARES_HPP__
+#endif // PYTHON_CONTROL_LEAST_SQUARES_HPP_

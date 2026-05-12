@@ -9,8 +9,8 @@
  * for high flexibility and type safety, leveraging template metaprogramming and
  * static assertions.
  */
-#ifndef __PYTHON_CONTROL_KALMAN_FILTER_HPP__
-#define __PYTHON_CONTROL_KALMAN_FILTER_HPP__
+#ifndef PYTHON_CONTROL_KALMAN_FILTER_HPP_
+#define PYTHON_CONTROL_KALMAN_FILTER_HPP_
 
 #include "python_control_state_space.hpp"
 #include "python_math.hpp"
@@ -2440,4 +2440,4 @@ using UnscentedKalmanFilter_Type =
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_KALMAN_FILTER_HPP__
+#endif // PYTHON_CONTROL_KALMAN_FILTER_HPP_

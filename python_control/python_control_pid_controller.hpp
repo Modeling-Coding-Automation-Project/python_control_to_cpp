@@ -9,8 +9,8 @@
  * designed to be flexible and efficient, supporting both float and double
  * types.
  */
-#ifndef __PYTHON_CONTROL_PID_CONTROLLER_HPP__
-#define __PYTHON_CONTROL_PID_CONTROLLER_HPP__
+#ifndef PYTHON_CONTROL_PID_CONTROLLER_HPP_
+#define PYTHON_CONTROL_PID_CONTROLLER_HPP_
 
 #include <limits>
 #include <type_traits>
@@ -327,4 +327,4 @@ using DiscretePID_Controller_Type = DiscretePID_Controller<T>;
 
 } // namespace PythonControl
 
-#endif // __PYTHON_CONTROL_PID_CONTROLLER__
+#endif // PYTHON_CONTROL_PID_CONTROLLER_
