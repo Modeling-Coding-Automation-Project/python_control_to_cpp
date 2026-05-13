@@ -131,22 +131,22 @@ template <typename Vector_Type, std::size_t Number_Of_Delay>
 class DelayedVectorObject {
 protected:
   /* Type */
-  using _T = typename Vector_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename Vector_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  using _Vector_with_Delay_Type =
-      std::array<PythonNumpy::DenseMatrix_Type<_T, Vector_Type::ROWS, 1>,
+  using Vector_with_Delay_Type_ =
+      std::array<PythonNumpy::DenseMatrix_Type<T_, Vector_Type::ROWS, 1>,
                  (1 + Number_Of_Delay)>;
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
   using Original_Vector_Type = Vector_Type;
 
   /* Check Data Type */
-  static_assert(std::is_same<typename Vector_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Vector_Type::Value_Type, T_>::value,
                 "Data type of vector must be same type as T.");
   /* Check Vector Size */
   static_assert(Vector_Type::COLS == 1,
@@ -204,7 +204,7 @@ public:
   inline void push(const Vector_Type &vector) {
 
     ForDelayedVector::SubstituteVectorRingBuffer<
-        _T, Vector_Type, _Vector_with_Delay_Type,
+        T_, Vector_Type, Vector_with_Delay_Type_,
         (Vector_Type::ROWS - 1)>::compute(this->_store, vector,
                                           this->_delay_ring_buffer_index);
 
@@ -278,7 +278,7 @@ public:
    * @return A reference to the element at the specified index in the latest
    * vector.
    */
-  template <std::size_t Index> inline auto access(void) -> _T & {
+  template <std::size_t Index> inline auto access(void) -> T_ & {
     static_assert(Index < Vector_Type::ROWS,
                   "Index must be less than vector size.");
 
@@ -305,7 +305,7 @@ public:
 
 protected:
   /* Variable */
-  _Vector_with_Delay_Type _store;
+  Vector_with_Delay_Type_ _store;
   std::size_t _delay_ring_buffer_index;
 };
 
@@ -484,32 +484,32 @@ public:
 
 protected:
   /* Type */
-  using _T = typename A_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename A_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _Input_Size = B_Type::COLS;
-  static constexpr std::size_t _State_Size = A_Type::ROWS;
-  static constexpr std::size_t _Output_Size = C_Type::ROWS;
+  static constexpr std::size_t Input_Size_ = B_Type::COLS;
+  static constexpr std::size_t State_Size_ = A_Type::ROWS;
+  static constexpr std::size_t Output_Size_ = C_Type::ROWS;
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using Original_U_Type = PythonControl::StateSpaceInput_Type<_T, _Input_Size>;
-  using Original_X_Type = PythonNumpy::DenseMatrix_Type<_T, _State_Size, 1>;
-  using Original_Y_Type = PythonNumpy::DenseMatrix_Type<_T, _Output_Size, 1>;
+  using Original_U_Type = PythonControl::StateSpaceInput_Type<T_, Input_Size_>;
+  using Original_X_Type = PythonNumpy::DenseMatrix_Type<T_, State_Size_, 1>;
+  using Original_Y_Type = PythonNumpy::DenseMatrix_Type<T_, Output_Size_, 1>;
 
   /* Check Compatibility */
   /* Check Data Type */
-  static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename B_Type::Value_Type, T_>::value,
                 "Data type of B matrix must be same type as A matrix.");
 
-  static_assert(std::is_same<typename C_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename C_Type::Value_Type, T_>::value,
                 "Data type of C matrix must be same type as A matrix.");
 
-  static_assert(std::is_same<typename D_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename D_Type::Value_Type, T_>::value,
                 "Data type of D matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
@@ -524,32 +524,32 @@ public:
   /* Constructor */
   DiscreteStateSpace()
       : A(), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        delta_time(static_cast<T_>(PythonControl::STATE_SPACE_DIVISION_MIN)),
         U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in)
       : A(A_in), B(), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        delta_time(static_cast<T_>(PythonControl::STATE_SPACE_DIVISION_MIN)),
         U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in)
       : A(A_in), B(B_in), C(), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        delta_time(static_cast<T_>(PythonControl::STATE_SPACE_DIVISION_MIN)),
         U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in)
       : A(A_in), B(B_in), C(C_in), D(),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        delta_time(static_cast<T_>(PythonControl::STATE_SPACE_DIVISION_MIN)),
         U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
                      const D_Type &D_in)
       : A(A_in), B(B_in), C(C_in), D(D_in),
-        delta_time(static_cast<_T>(PythonControl::STATE_SPACE_DIVISION_MIN)),
+        delta_time(static_cast<T_>(PythonControl::STATE_SPACE_DIVISION_MIN)),
         U(), X(), X_initial(), Y() {}
 
   DiscreteStateSpace(const A_Type &A_in, const B_Type &B_in, const C_Type &C_in,
-                     const D_Type &D_in, const _T &delta_time)
+                     const D_Type &D_in, const T_ &delta_time)
       : A(A_in), B(B_in), C(C_in), D(D_in), delta_time(delta_time), U(), X(),
         X_initial(), Y() {}
 
@@ -621,7 +621,7 @@ public:
    * This function provides the time step used for simulation in the discrete
    * state-space model.
    *
-   * @return The delta time as a value of type _T.
+   * @return The delta time as a value of type T_.
    */
   inline auto get_X(void) const -> Original_X_Type { return this->X; }
 
@@ -635,8 +635,8 @@ public:
    */
   inline auto get_Y(void) const -> Original_Y_Type { return this->Y; }
 
-  template <std::size_t Index> inline auto access_U(void) -> _T & {
-    static_assert(Index < _Input_Size, "Index must be less than input size.");
+  template <std::size_t Index> inline auto access_U(void) -> T_ & {
+    static_assert(Index < Input_Size_, "Index must be less than input size.");
 
     return this->U.template access<Index>();
   }
@@ -749,7 +749,7 @@ public:
   B_Type B;
   C_Type C;
   D_Type D;
-  _T delta_time;
+  T_ delta_time;
 
   DelayedVectorObject<Original_U_Type, Number_Of_Delay> U;
 

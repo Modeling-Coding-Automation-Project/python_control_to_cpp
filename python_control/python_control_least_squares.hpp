@@ -142,16 +142,16 @@ public:
 
 protected:
   /* Type */
-  using _T = typename X_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename X_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Value data type must be float or double.");
 
-  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::COLS + 1)>;
+  using Wights_Type_ = StateSpaceState_Type<T_, (X_Type::COLS + 1)>;
 
-  using _LstsqSolver_Type = PythonNumpy::LinalgLstsqSolver_Type<
-      PythonNumpy::DenseMatrix_Type<_T, X_Type::ROWS, _Wights_Type::ROWS>,
-      PythonNumpy::DenseMatrix_Type<_T, X_Type::ROWS, 1>>;
+  using LstsqSolver_Type_ = PythonNumpy::LinalgLstsqSolver_Type<
+      PythonNumpy::DenseMatrix_Type<T_, X_Type::ROWS, Wights_Type_::ROWS>,
+      PythonNumpy::DenseMatrix_Type<T_, X_Type::ROWS, 1>>;
 
 public:
   /* Constant */
@@ -159,9 +159,9 @@ public:
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using Y_Type = StateSpaceOutput_Type<_T, NUMBER_OF_DATA>;
+  using Y_Type = StateSpaceOutput_Type<T_, NUMBER_OF_DATA>;
 
 public:
   /* Constructor */
@@ -207,7 +207,7 @@ public:
    */
   inline void fit(const X_Type &X, const Y_Type &Y) {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::ROWS, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, X_Type::ROWS, 1>();
 
     auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
 
@@ -226,7 +226,7 @@ public:
    */
   inline auto predict(const X_Type &X) const -> Y_Type {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, X_Type::ROWS, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, X_Type::ROWS, 1>();
 
     auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
 
@@ -243,7 +243,7 @@ public:
    * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
-  inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }
+  inline auto get_weights(void) const -> Wights_Type_ { return this->_weights; }
 
   /**
    * @brief Sets the decay rate for the least squares solver.
@@ -253,7 +253,7 @@ public:
    *
    * @param decay_rate_in The new decay rate to be set.
    */
-  inline void set_lstsq_solver_decay_rate(const _T &decay_rate_in) {
+  inline void set_lstsq_solver_decay_rate(const T_ &decay_rate_in) {
     this->_lstsq_solver.set_decay_rate(decay_rate_in);
   }
 
@@ -265,14 +265,14 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_lstsq_solver_division_min(const _T &division_min_in) {
+  inline void set_lstsq_solver_division_min(const T_ &division_min_in) {
     this->_lstsq_solver.set_division_min(division_min_in);
   }
 
 protected:
   /* Variables */
-  _Wights_Type _weights;
-  _LstsqSolver_Type _lstsq_solver;
+  Wights_Type_ _weights;
+  LstsqSolver_Type_ _lstsq_solver;
 };
 
 /* make Least Squares */
@@ -314,16 +314,16 @@ public:
 
 protected:
   /* Type */
-  using _T = typename X_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename X_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Value data type must be float or double.");
 
   // plus 1 for bias
-  using _Wights_Type = StateSpaceState_Type<_T, (X_Type::ROWS + 1)>;
+  using Wights_Type_ = StateSpaceState_Type<T_, (X_Type::ROWS + 1)>;
 
-  using _P_Type =
-      PythonNumpy::DenseMatrix_Type<_T, (X_Type::ROWS + 1), (X_Type::ROWS + 1)>;
+  using P_Type_ =
+      PythonNumpy::DenseMatrix_Type<T_, (X_Type::ROWS + 1), (X_Type::ROWS + 1)>;
 
 public:
   /* Constant */
@@ -331,37 +331,37 @@ public:
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
 public:
   /* Constructor */
   RecursiveLeastSquares()
-      : _lambda_factor(static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
+      : _lambda_factor(static_cast<T_>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
         _lambda_factor_inv(
-            static_cast<_T>(1) /
-            static_cast<_T>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
-        _weights(), _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
-                           static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
+            static_cast<T_>(1) /
+            static_cast<T_>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
+        _weights(), P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
+                           static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))
                            .create_dense()) {}
 
-  RecursiveLeastSquares(const _T &lambda_in)
-      : _lambda_factor(static_cast<_T>(lambda_in)),
-        _lambda_factor_inv(static_cast<_T>(1) / static_cast<_T>(lambda_in)),
-        _weights(), _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
-                           static_cast<_T>(LEAST_SQUARES_DELTA_DEFAULT))
+  RecursiveLeastSquares(const T_ &lambda_in)
+      : _lambda_factor(static_cast<T_>(lambda_in)),
+        _lambda_factor_inv(static_cast<T_>(1) / static_cast<T_>(lambda_in)),
+        _weights(), P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
+                           static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))
                            .create_dense()) {}
 
-  RecursiveLeastSquares(const _T &lambda_in, const _T &delta_in)
+  RecursiveLeastSquares(const T_ &lambda_in, const T_ &delta_in)
       : _lambda_factor(lambda_in),
-        _lambda_factor_inv(static_cast<_T>(1) / lambda_in), _weights(),
-        _P(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(delta_in)
+        _lambda_factor_inv(static_cast<T_>(1) / lambda_in), _weights(),
+        P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(delta_in)
                .create_dense()) {}
 
   /* Copy Constructor */
   RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
       : _lambda_factor(input._lambda_factor),
         _lambda_factor_inv(input._lambda_factor_inv), _weights(input._weights),
-        _P(input._P) {}
+        P_(input._P) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(const RecursiveLeastSquares<X_Type> &input) {
@@ -369,7 +369,7 @@ public:
       this->_lambda_factor = input._lambda_factor;
       this->_lambda_factor_inv = input._lambda_factor_inv;
       this->_weights = input._weights;
-      this->_P = input._P;
+      this->P_ = input._P;
     }
     return *this;
   }
@@ -378,7 +378,7 @@ public:
   RecursiveLeastSquares(RecursiveLeastSquares<X_Type> &&input) noexcept
       : _lambda_factor(std::move(input._lambda_factor)),
         _lambda_factor_inv(std::move(input._lambda_factor_inv)),
-        _weights(std::move(input._weights)), _P(std::move(input._P)) {}
+        _weights(std::move(input._weights)), P_(std::move(input._P)) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(RecursiveLeastSquares<X_Type> &&input) noexcept {
@@ -386,7 +386,7 @@ public:
       this->_lambda_factor = std::move(input._lambda_factor);
       this->_lambda_factor_inv = std::move(input._lambda_factor_inv);
       this->_weights = std::move(input._weights);
-      this->_P = std::move(input._P);
+      this->P_ = std::move(input._P);
     }
     return *this;
   }
@@ -402,9 +402,9 @@ public:
    *
    * @param lambda_in The new lambda factor to be set.
    */
-  inline void set_lambda(const _T &lambda_in) {
+  inline void set_lambda(const T_ &lambda_in) {
     this->_lambda_factor = lambda_in;
-    this->_lambda_factor_inv = static_cast<_T>(1) / lambda_in;
+    this->_lambda_factor_inv = static_cast<T_>(1) / lambda_in;
   }
 
   /**
@@ -417,9 +417,9 @@ public:
    * @param X The input data matrix of shape (COLS, ROWS).
    * @param y_true The true output value.
    */
-  inline void update(const X_Type &X, const _T &y_true) {
+  inline void update(const X_Type &X, const T_ &y_true) {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, 1, 1>();
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
@@ -427,23 +427,23 @@ public:
 
     auto y_dif = y_true - y.template get<0, 0>();
 
-    auto P_x = this->_P * X_ex;
+    auto P_x = this->P_ * X_ex;
 
     // lambda_X_P is scalar
-    _T lambda_X_P =
+    T_ lambda_X_P =
         this->_lambda_factor +
         PythonNumpy::ATranspose_mul_B(X_ex, P_x).template get<0, 0>();
 
     auto lambda_X_P_inv =
-        static_cast<_T>(1) /
+        static_cast<T_>(1) /
         Base::Utility::avoid_zero_divide(
-            lambda_X_P, static_cast<_T>(LEAST_SQUARES_DIVISION_MIN));
+            lambda_X_P, static_cast<T_>(LEAST_SQUARES_DIVISION_MIN));
 
     auto K = P_x * lambda_X_P_inv;
 
     this->_weights = this->_weights + K * y_dif;
 
-    this->_P = (this->_P - K * PythonNumpy::ATranspose_mul_B(X_ex, this->_P)) *
+    this->P_ = (this->P_ - K * PythonNumpy::ATranspose_mul_B(X_ex, this->P_)) *
                this->_lambda_factor_inv;
   }
 
@@ -457,9 +457,9 @@ public:
    * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
-  inline auto predict(const X_Type &X) const -> _T {
+  inline auto predict(const X_Type &X) const -> T_ {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<_T, 1, 1>();
+    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, 1, 1>();
 
     auto X_ex = PythonNumpy::concatenate_vertically(X, bias_vector);
 
@@ -478,7 +478,7 @@ public:
    * @param X The input vector of shape (1, ROWS).
    * @return The predicted output value.
    */
-  inline auto get_weights(void) const -> _Wights_Type { return this->_weights; }
+  inline auto get_weights(void) const -> Wights_Type_ { return this->_weights; }
 
   /**
    * @brief Retrieves the covariance matrix P used in the RLS algorithm.
@@ -488,7 +488,7 @@ public:
    *
    * @return The covariance matrix P of shape (ROWS + 1, ROWS + 1).
    */
-  inline void set_inv_solver_decay_rate(const _T &decay_rate_in) {
+  inline void set_inv_solver_decay_rate(const T_ &decay_rate_in) {
     this->_lambda_X_P_Solver.set_decay_rate(decay_rate_in);
   }
 
@@ -501,16 +501,16 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_inv_solver_division_min(const _T &division_min_in) {
+  inline void set_inv_solver_division_min(const T_ &division_min_in) {
     this->_lambda_X_P_Solver.set_division_min(division_min_in);
   }
 
 protected:
   /* Variables */
-  _T _lambda_factor;
-  _T _lambda_factor_inv;
-  _Wights_Type _weights;
-  _P_Type _P;
+  T_ _lambda_factor;
+  T_ _lambda_factor_inv;
+  Wights_Type_ _weights;
+  P_Type_ P_;
 };
 
 /* make Recursive Least Squares */
