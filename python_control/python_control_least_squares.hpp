@@ -361,7 +361,7 @@ public:
   RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
       : _lambda_factor(input._lambda_factor),
         _lambda_factor_inv(input._lambda_factor_inv), _weights(input._weights),
-        P_(input._P) {}
+        P_(input.P_) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(const RecursiveLeastSquares<X_Type> &input) {
@@ -369,7 +369,7 @@ public:
       this->_lambda_factor = input._lambda_factor;
       this->_lambda_factor_inv = input._lambda_factor_inv;
       this->_weights = input._weights;
-      this->P_ = input._P;
+      this->P_ = input.P_;
     }
     return *this;
   }
@@ -378,7 +378,7 @@ public:
   RecursiveLeastSquares(RecursiveLeastSquares<X_Type> &&input) noexcept
       : _lambda_factor(std::move(input._lambda_factor)),
         _lambda_factor_inv(std::move(input._lambda_factor_inv)),
-        _weights(std::move(input._weights)), P_(std::move(input._P)) {}
+        _weights(std::move(input._weights)), P_(std::move(input.P_)) {}
 
   RecursiveLeastSquares<X_Type> &
   operator=(RecursiveLeastSquares<X_Type> &&input) noexcept {
@@ -386,7 +386,7 @@ public:
       this->_lambda_factor = std::move(input._lambda_factor);
       this->_lambda_factor_inv = std::move(input._lambda_factor_inv);
       this->_weights = std::move(input._weights);
-      this->P_ = std::move(input._P);
+      this->P_ = std::move(input.P_);
     }
     return *this;
   }

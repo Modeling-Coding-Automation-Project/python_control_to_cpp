@@ -105,7 +105,7 @@ public:
         maximum_output(input.maximum_output),
         _integration_store(input._integration_store),
         _differentiation_store(input._differentiation_store),
-        PID_output_(input._PID_output),
+        PID_output_(input.PID_output_),
         _saturated_PID_output(input._saturated_PID_output) {}
 
   DiscretePID_Controller<T> &operator=(const DiscretePID_Controller<T> &input) {
@@ -120,7 +120,7 @@ public:
       this->maximum_output = input.maximum_output;
       this->_integration_store = input._integration_store;
       this->_differentiation_store = input._differentiation_store;
-      this->PID_output_ = input._PID_output;
+      this->PID_output_ = input.PID_output_;
       this->_saturated_PID_output = input._saturated_PID_output;
     }
     return *this;
@@ -135,7 +135,7 @@ public:
         maximum_output(std::move(input.maximum_output)),
         _integration_store(std::move(input._integration_store)),
         _differentiation_store(std::move(input._differentiation_store)),
-        PID_output_(std::move(input._PID_output)),
+        PID_output_(std::move(input.PID_output_)),
         _saturated_PID_output(std::move(input._saturated_PID_output)) {}
 
   DiscretePID_Controller<T> &
@@ -151,7 +151,7 @@ public:
       this->maximum_output = std::move(input.maximum_output);
       this->_integration_store = std::move(input._integration_store);
       this->_differentiation_store = std::move(input._differentiation_store);
-      this->PID_output_ = std::move(input._PID_output);
+      this->PID_output_ = std::move(input.PID_output_);
       this->_saturated_PID_output = std::move(input._saturated_PID_output);
     }
     return *this;

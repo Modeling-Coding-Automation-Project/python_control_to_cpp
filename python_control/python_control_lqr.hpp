@@ -105,16 +105,16 @@ public:
   /* Copy Constructor */
   LQR_ArimotoPotterSolver(
       const LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &input)
-      : K_(input._K), R_inv_solver_(input._R_inv_solver),
-        V1_inv_solver_(input._V1_inv_solver), _eig_solver(input._eig_solver),
+      : K_(input.K_), R_inv_solver_(input.R_inv_solver_),
+        V1_inv_solver_(input.V1_inv_solver_), _eig_solver(input._eig_solver),
         _eigen_solver_is_ill(input._eigen_solver_is_ill) {}
 
   LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &operator=(
       const LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->K_ = input._K;
-      this->R_inv_solver_ = input._R_inv_solver;
-      this->V1_inv_solver_ = input._V1_inv_solver;
+      this->K_ = input.K_;
+      this->R_inv_solver_ = input.R_inv_solver_;
+      this->V1_inv_solver_ = input.V1_inv_solver_;
       this->_eig_solver = input._eig_solver;
       this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
@@ -124,8 +124,8 @@ public:
   /* Move Constructor */
   LQR_ArimotoPotterSolver(
       LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
-      : K_(std::move(input._K)), R_inv_solver_(std::move(input._R_inv_solver)),
-        V1_inv_solver_(std::move(input._V1_inv_solver)),
+      : K_(std::move(input.K_)), R_inv_solver_(std::move(input.R_inv_solver_)),
+        V1_inv_solver_(std::move(input.V1_inv_solver_)),
         _eig_solver(std::move(input._eig_solver)),
         _eigen_solver_is_ill(std::move(input._eigen_solver_is_ill)) {}
 
@@ -133,9 +133,9 @@ public:
   operator=(LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>
                 &&input) noexcept {
     if (this != &input) {
-      this->K_ = std::move(input._K);
-      this->R_inv_solver_ = std::move(input._R_inv_solver);
-      this->V1_inv_solver_ = std::move(input._V1_inv_solver);
+      this->K_ = std::move(input.K_);
+      this->R_inv_solver_ = std::move(input.R_inv_solver_);
+      this->V1_inv_solver_ = std::move(input.V1_inv_solver_);
       this->_eig_solver = std::move(input._eig_solver);
       this->_eigen_solver_is_ill = std::move(input._eigen_solver_is_ill);
     }
@@ -386,17 +386,17 @@ public:
 
   /* Copy Constructor */
   LQR(const LQR<A_Type, B_Type, Q_Type, R_Type> &input)
-      : A_(input._A), B_(input._B), Q_(input._Q), R_(input._R), K_(input._K),
+      : A_(input.A_), B_(input.B_), Q_(input.Q_), R_(input.R_), K_(input.K_),
         _arimoto_potter_solver(input._arimoto_potter_solver) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(const LQR<A_Type, B_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->A_ = input._A;
-      this->B_ = input._B;
-      this->Q_ = input._Q;
-      this->R_ = input._R;
-      this->K_ = input._K;
+      this->A_ = input.A_;
+      this->B_ = input.B_;
+      this->Q_ = input.Q_;
+      this->R_ = input.R_;
+      this->K_ = input.K_;
       this->_arimoto_potter_solver = input._arimoto_potter_solver;
     }
     return *this;
@@ -404,19 +404,19 @@ public:
 
   /* Move Constructor */
   LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
-      : A_(std::move(input._A)), B_(std::move(input._B)),
-        Q_(std::move(input._Q)), R_(std::move(input._R)),
-        K_(std::move(input._K)),
+      : A_(std::move(input.A_)), B_(std::move(input.B_)),
+        Q_(std::move(input.Q_)), R_(std::move(input.R_)),
+        K_(std::move(input.K_)),
         _arimoto_potter_solver(std::move(input._arimoto_potter_solver)) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept {
     if (this != &input) {
-      this->A_ = std::move(input._A);
-      this->B_ = std::move(input._B);
-      this->Q_ = std::move(input._Q);
-      this->R_ = std::move(input._R);
-      this->K_ = std::move(input._K);
+      this->A_ = std::move(input.A_);
+      this->B_ = std::move(input.B_);
+      this->Q_ = std::move(input.Q_);
+      this->R_ = std::move(input.R_);
+      this->K_ = std::move(input.K_);
       this->_arimoto_potter_solver = std::move(input._arimoto_potter_solver);
     }
     return *this;
@@ -732,18 +732,18 @@ public:
 
   /* Copy Constructor */
   LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input)
-      : A_(input._A), B_(input._B), C_(input._C), Q_(input._Q), R_(input._R),
-        K_(input._K), _arimoto_potter_solver(input._arimoto_potter_solver) {}
+      : A_(input.A_), B_(input.B_), C_(input.C_), Q_(input.Q_), R_(input.R_),
+        K_(input.K_), _arimoto_potter_solver(input._arimoto_potter_solver) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->A_ = input._A;
-      this->B_ = input._B;
-      this->C_ = input._C;
-      this->Q_ = input._Q;
-      this->R_ = input._R;
-      this->K_ = input._K;
+      this->A_ = input.A_;
+      this->B_ = input.B_;
+      this->C_ = input.C_;
+      this->Q_ = input.Q_;
+      this->R_ = input.R_;
+      this->K_ = input.K_;
       this->_arimoto_potter_solver = input._arimoto_potter_solver;
     }
     return *this;
@@ -751,20 +751,20 @@ public:
 
   /* Move Constructor */
   LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept
-      : A_(std::move(input._A)), B_(std::move(input._B)),
-        C_(std::move(input._C)), Q_(std::move(input._Q)),
-        R_(std::move(input._R)), K_(std::move(input._K)),
+      : A_(std::move(input.A_)), B_(std::move(input.B_)),
+        C_(std::move(input.C_)), Q_(std::move(input.Q_)),
+        R_(std::move(input.R_)), K_(std::move(input.K_)),
         _arimoto_potter_solver(std::move(input._arimoto_potter_solver)) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept {
     if (this != &input) {
-      this->A_ = std::move(input._A);
-      this->B_ = std::move(input._B);
-      this->C_ = std::move(input._C);
-      this->Q_ = std::move(input._Q);
-      this->R_ = std::move(input._R);
-      this->K_ = std::move(input._K);
+      this->A_ = std::move(input.A_);
+      this->B_ = std::move(input.B_);
+      this->C_ = std::move(input.C_);
+      this->Q_ = std::move(input.Q_);
+      this->R_ = std::move(input.R_);
+      this->K_ = std::move(input.K_);
       this->_arimoto_potter_solver = std::move(input._arimoto_potter_solver);
     }
     return *this;

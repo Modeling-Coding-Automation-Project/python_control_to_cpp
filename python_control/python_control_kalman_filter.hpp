@@ -1026,7 +1026,7 @@ public:
   LinearKalmanFilter(
       const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
       : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
-        G(input.G), C_P_CT_R_inv_solver_(input._C_P_CT_R_inv_solver),
+        G(input.G), C_P_CT_R_inv_solver_(input.C_P_CT_R_inv_solver_),
         _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
@@ -1038,7 +1038,7 @@ public:
       this->R = input.R;
       this->P = input.P;
       this->G = input.G;
-      this->C_P_CT_R_inv_solver_ = input._C_P_CT_R_inv_solver;
+      this->C_P_CT_R_inv_solver_ = input.C_P_CT_R_inv_solver_;
       this->_input_count = input._input_count;
     }
     return *this;
@@ -1049,7 +1049,7 @@ public:
                          &&input) noexcept
       : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        C_P_CT_R_inv_solver_(std::move(input._C_P_CT_R_inv_solver)),
+        C_P_CT_R_inv_solver_(std::move(input.C_P_CT_R_inv_solver_)),
         _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
@@ -1061,7 +1061,7 @@ public:
       this->R = std::move(input.R);
       this->P = std::move(input.P);
       this->G = std::move(input.G);
-      this->C_P_CT_R_inv_solver_ = std::move(input._C_P_CT_R_inv_solver);
+      this->C_P_CT_R_inv_solver_ = std::move(input.C_P_CT_R_inv_solver_);
       this->_input_count = input._input_count;
     }
     return *this;
@@ -1545,7 +1545,7 @@ public:
       : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
         X_hat(input.X_hat), U_store(input.U_store),
         parameters(input.parameters),
-        C_P_CT_R_inv_solver_(input._C_P_CT_R_inv_solver),
+        C_P_CT_R_inv_solver_(input.C_P_CT_R_inv_solver_),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
@@ -1567,7 +1567,7 @@ public:
       this->X_hat = input.X_hat;
       this->U_store = input.U_store;
       this->parameters = input.parameters;
-      this->C_P_CT_R_inv_solver_ = input._C_P_CT_R_inv_solver;
+      this->C_P_CT_R_inv_solver_ = input.C_P_CT_R_inv_solver_;
       this->_state_function = input._state_function;
       this->_state_function_jacobian = input._state_function_jacobian;
       this->_measurement_function = input._measurement_function;
@@ -1586,7 +1586,7 @@ public:
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         X_hat(std::move(input.X_hat)), U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
-        C_P_CT_R_inv_solver_(std::move(input._C_P_CT_R_inv_solver)),
+        C_P_CT_R_inv_solver_(std::move(input.C_P_CT_R_inv_solver_)),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
@@ -1608,7 +1608,7 @@ public:
       this->X_hat = std::move(input.X_hat);
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
-      this->C_P_CT_R_inv_solver_ = std::move(input._C_P_CT_R_inv_solver);
+      this->C_P_CT_R_inv_solver_ = std::move(input.C_P_CT_R_inv_solver_);
       this->_state_function = std::move(input._state_function);
       this->_state_function_jacobian =
           std::move(input._state_function_jacobian);
@@ -1844,13 +1844,13 @@ public:
   /* Copy Constructor */
   SigmaPointsCalculator(const SigmaPointsCalculator<State_Type, P_Type> &input)
       : sigma_point_weight(input.sigma_point_weight),
-        P_cholesky_solver_(input._P_cholesky_solver) {}
+        P_cholesky_solver_(input.P_cholesky_solver_) {}
 
   SigmaPointsCalculator<State_Type, P_Type> &
   operator=(const SigmaPointsCalculator<State_Type, P_Type> &input) {
     if (this != &input) {
       this->sigma_point_weight = input.sigma_point_weight;
-      this->P_cholesky_solver_ = input._P_cholesky_solver;
+      this->P_cholesky_solver_ = input.P_cholesky_solver_;
     }
     return *this;
   }
@@ -1859,13 +1859,13 @@ public:
   SigmaPointsCalculator(
       SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept
       : sigma_point_weight(std::move(input.sigma_point_weight)),
-        P_cholesky_solver_(std::move(input._P_cholesky_solver)) {}
+        P_cholesky_solver_(std::move(input.P_cholesky_solver_)) {}
 
   SigmaPointsCalculator<State_Type, P_Type> &
   operator=(SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept {
     if (this != &input) {
       this->sigma_point_weight = std::move(input.sigma_point_weight);
-      this->P_cholesky_solver_ = std::move(input._P_cholesky_solver);
+      this->P_cholesky_solver_ = std::move(input.P_cholesky_solver_);
     }
     return *this;
   }
@@ -2112,7 +2112,7 @@ public:
         alpha(input.alpha), beta(input.beta), w_m(input.w_m), W(input.W),
         X_hat(input.X_hat), X_d(input.X_d), U_store(input.U_store),
         parameters(input.parameters),
-        P_YY_R_inv_solver_(input._P_YY_R_inv_solver),
+        P_YY_R_inv_solver_(input.P_YY_R_inv_solver_),
         _state_function(input._state_function),
         _measurement_function(input._measurement_function),
         _predict_sigma_points_calculator(
@@ -2138,7 +2138,7 @@ public:
       this->X_d = input.X_d;
       this->U_store = input.U_store;
       this->parameters = input.parameters;
-      this->P_YY_R_inv_solver_ = input._P_YY_R_inv_solver;
+      this->P_YY_R_inv_solver_ = input.P_YY_R_inv_solver_;
       this->_state_function = input._state_function;
       this->_measurement_function = input._measurement_function;
       this->_predict_sigma_points_calculator =
@@ -2161,7 +2161,7 @@ public:
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
         U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
-        P_YY_R_inv_solver_(std::move(input._P_YY_R_inv_solver)),
+        P_YY_R_inv_solver_(std::move(input.P_YY_R_inv_solver_)),
         _state_function(std::move(input._state_function)),
         _measurement_function(std::move(input._measurement_function)),
         _predict_sigma_points_calculator(
@@ -2188,7 +2188,7 @@ public:
       this->X_d = std::move(input.X_d);
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
-      this->P_YY_R_inv_solver_ = std::move(input._P_YY_R_inv_solver);
+      this->P_YY_R_inv_solver_ = std::move(input.P_YY_R_inv_solver_);
       this->_state_function = std::move(input._state_function);
       this->_measurement_function = std::move(input._measurement_function);
       this->_predict_sigma_points_calculator =
