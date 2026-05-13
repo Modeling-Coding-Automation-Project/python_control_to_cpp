@@ -66,37 +66,37 @@ inline T saturation(const T &value, const T &min, const T &max) {
 template <typename T> class DiscretePID_Controller {
 protected:
   /* Type */
-  using _T = T;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = T;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Value data type must be float or double.");
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
 public:
   /* Constructor */
   DiscretePID_Controller()
-      : delta_time(static_cast<_T>(0)), Kp(static_cast<_T>(0)),
-        Ki(static_cast<_T>(0)), Kd(static_cast<_T>(0)), N(static_cast<_T>(100)),
-        Kb(static_cast<_T>(0)),
-        minimum_output(static_cast<_T>(PID_CONTROLLER_MINIMUM_OUTPUT_DEFAULT)),
-        maximum_output(static_cast<_T>(PID_CONTROLLER_MAXIMUM_OUTPUT_DEFAULT)),
-        _integration_store(static_cast<_T>(0)),
-        _differentiation_store(static_cast<_T>(0)),
-        _PID_output(static_cast<_T>(0)),
-        _saturated_PID_output(static_cast<_T>(0)) {}
+      : delta_time(static_cast<T_>(0)), Kp(static_cast<T_>(0)),
+        Ki(static_cast<T_>(0)), Kd(static_cast<T_>(0)), N(static_cast<T_>(100)),
+        Kb(static_cast<T_>(0)),
+        minimum_output(static_cast<T_>(PID_CONTROLLER_MINIMUM_OUTPUT_DEFAULT)),
+        maximum_output(static_cast<T_>(PID_CONTROLLER_MAXIMUM_OUTPUT_DEFAULT)),
+        _integration_store(static_cast<T_>(0)),
+        _differentiation_store(static_cast<T_>(0)),
+        PID_output_(static_cast<T_>(0)),
+        _saturated_PID_output(static_cast<T_>(0)) {}
 
-  DiscretePID_Controller(const _T &delta_time, const _T &Kp, const _T &Ki,
-                         const _T &Kd, const _T &N, const _T &Kb,
-                         const _T &minimum_output, const _T &maximum_output)
+  DiscretePID_Controller(const T_ &delta_time, const T_ &Kp, const T_ &Ki,
+                         const T_ &Kd, const T_ &N, const T_ &Kb,
+                         const T_ &minimum_output, const T_ &maximum_output)
       : delta_time(delta_time), Kp(Kp), Ki(Ki), Kd(Kd), N(N), Kb(Kb),
         minimum_output(minimum_output), maximum_output(maximum_output),
-        _integration_store(static_cast<_T>(0)),
-        _differentiation_store(static_cast<_T>(0)),
-        _PID_output(static_cast<_T>(0)),
-        _saturated_PID_output(static_cast<_T>(0)) {}
+        _integration_store(static_cast<T_>(0)),
+        _differentiation_store(static_cast<T_>(0)),
+        PID_output_(static_cast<T_>(0)),
+        _saturated_PID_output(static_cast<T_>(0)) {}
 
   /* Copy Constructor */
   DiscretePID_Controller(const DiscretePID_Controller<T> &input)
@@ -105,7 +105,7 @@ public:
         maximum_output(input.maximum_output),
         _integration_store(input._integration_store),
         _differentiation_store(input._differentiation_store),
-        _PID_output(input._PID_output),
+        PID_output_(input.PID_output_),
         _saturated_PID_output(input._saturated_PID_output) {}
 
   DiscretePID_Controller<T> &operator=(const DiscretePID_Controller<T> &input) {
@@ -120,7 +120,7 @@ public:
       this->maximum_output = input.maximum_output;
       this->_integration_store = input._integration_store;
       this->_differentiation_store = input._differentiation_store;
-      this->_PID_output = input._PID_output;
+      this->PID_output_ = input.PID_output_;
       this->_saturated_PID_output = input._saturated_PID_output;
     }
     return *this;
@@ -135,7 +135,7 @@ public:
         maximum_output(std::move(input.maximum_output)),
         _integration_store(std::move(input._integration_store)),
         _differentiation_store(std::move(input._differentiation_store)),
-        _PID_output(std::move(input._PID_output)),
+        PID_output_(std::move(input.PID_output_)),
         _saturated_PID_output(std::move(input._saturated_PID_output)) {}
 
   DiscretePID_Controller<T> &
@@ -151,7 +151,7 @@ public:
       this->maximum_output = std::move(input.maximum_output);
       this->_integration_store = std::move(input._integration_store);
       this->_differentiation_store = std::move(input._differentiation_store);
-      this->_PID_output = std::move(input._PID_output);
+      this->PID_output_ = std::move(input.PID_output_);
       this->_saturated_PID_output = std::move(input._saturated_PID_output);
     }
     return *this;
@@ -170,13 +170,13 @@ public:
    * @param error The error value to be processed by the PID controller.
    * @return The saturated PID output.
    */
-  _T update(const _T &error) {
-    this->_PID_output = this->_calculate_P_term(error) +
+  T_ update(const T_ &error) {
+    this->PID_output_ = this->_calculate_P_term(error) +
                         this->_calculate_I_term(error) +
                         this->_calculate_D_term(error);
 
-    this->_saturated_PID_output = PythonControl::saturation<_T>(
-        this->_PID_output, this->minimum_output, this->maximum_output);
+    this->_saturated_PID_output = PythonControl::saturation<T_>(
+        this->PID_output_, this->minimum_output, this->maximum_output);
 
     return this->_saturated_PID_output;
   }
@@ -188,8 +188,8 @@ public:
    * effectively resetting the controller to its initial state.
    */
   void reset(void) {
-    this->_integration_store = static_cast<_T>(0);
-    this->_differentiation_store = static_cast<_T>(0);
+    this->_integration_store = static_cast<T_>(0);
+    this->_differentiation_store = static_cast<T_>(0);
   }
 
   /**
@@ -226,9 +226,9 @@ protected:
    * @param error The error value to be processed.
    * @return The computed back calculation for the integral term.
    */
-  inline _T _back_calculation_for_I_term(const _T &error) {
+  inline T_ _back_calculation_for_I_term(const T_ &error) {
     return this->Ki * error +
-           this->Kb * (this->_saturated_PID_output - this->_PID_output);
+           this->Kb * (this->_saturated_PID_output - this->PID_output_);
   }
 
   /**
@@ -240,7 +240,7 @@ protected:
    * @param error The error value to be processed.
    * @return The computed proportional term.
    */
-  inline _T _calculate_P_term(const _T &error) { return this->Kp * error; }
+  inline T_ _calculate_P_term(const T_ &error) { return this->Kp * error; }
 
   /**
    * @brief Calculates the integral term of the PID controller.
@@ -252,7 +252,7 @@ protected:
    * @param error The error value to be processed.
    * @return The computed integral term.
    */
-  inline _T _calculate_I_term(const _T &error) {
+  inline T_ _calculate_I_term(const T_ &error) {
 
     this->_integration_store +=
         this->_back_calculation_for_I_term(error) * this->delta_time;
@@ -269,9 +269,9 @@ protected:
    * @param error The error value to be processed.
    * @return The computed derivative term.
    */
-  inline _T _calculate_D_term(const _T &error) {
+  inline T_ _calculate_D_term(const T_ &error) {
     /* incomplete differentiator */
-    _T output = this->N * ((this->Kd * error) - this->_differentiation_store);
+    T_ output = this->N * ((this->Kd * error) - this->_differentiation_store);
 
     this->_differentiation_store += output * this->delta_time;
 
@@ -280,22 +280,22 @@ protected:
 
 public:
   /* Variables */
-  _T delta_time;
-  _T Kp;
-  _T Ki;
-  _T Kd;
-  _T N;  // Filter coefficient
-  _T Kb; // Back calculation coefficient
+  T_ delta_time;
+  T_ Kp;
+  T_ Ki;
+  T_ Kd;
+  T_ N;  // Filter coefficient
+  T_ Kb; // Back calculation coefficient
 
-  _T minimum_output;
-  _T maximum_output;
+  T_ minimum_output;
+  T_ maximum_output;
 
 protected:
   /* Variables */
-  _T _integration_store;
-  _T _differentiation_store;
-  _T _PID_output;
-  _T _saturated_PID_output;
+  T_ _integration_store;
+  T_ _differentiation_store;
+  T_ PID_output_;
+  T_ _saturated_PID_output;
 };
 
 /* make Discrete PID Controller */

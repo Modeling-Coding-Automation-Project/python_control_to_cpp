@@ -972,25 +972,25 @@ public:
 
 protected:
   /* Type */
-  using _T = typename X_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename X_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = X_Type::ROWS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
-  static constexpr std::size_t _OUTPUT_SIZE = Y_Type::ROWS;
+  static constexpr std::size_t STATE_SIZE_ = X_Type::ROWS;
+  static constexpr std::size_t INPUT_SIZE_ = U_Type::ROWS;
+  static constexpr std::size_t OUTPUT_SIZE_ = Y_Type::ROWS;
 
-  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using C_P_CT_R_Inv_Type_ = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<T_, OUTPUT_SIZE_, OUTPUT_SIZE_>>;
 
 public:
   /* Type  */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+  using P_Type = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, STATE_SIZE_>;
 
-  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+  using G_Type = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, OUTPUT_SIZE_>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -1001,32 +1001,32 @@ public:
 
   /* Check Data Type */
   static_assert(
-      std::is_same<typename Q_Type::Value_Type, _T>::value,
+      std::is_same<typename Q_Type::Value_Type, T_>::value,
       "Data type of Q matrix must be same type as DiscreteStateSpace.");
 
   static_assert(
-      std::is_same<typename R_Type::Value_Type, _T>::value,
+      std::is_same<typename R_Type::Value_Type, T_>::value,
       "Data type of R matrix must be same type as DiscreteStateSpace.");
 
 public:
   /* Constructor */
   LinearKalmanFilter()
-      : state_space(), Q(), R(), P(), G(), _C_P_CT_R_inv_solver(),
+      : state_space(), Q(), R(), P(), G(), C_P_CT_R_inv_solver_(),
         _input_count(static_cast<std::size_t>(0)) {}
 
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
       : state_space(DiscreteStateSpace), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
               .create_dense()),
-        G(), _C_P_CT_R_inv_solver(), _input_count(static_cast<std::size_t>(0)) {
+        G(), C_P_CT_R_inv_solver_(), _input_count(static_cast<std::size_t>(0)) {
   }
 
   /* Copy Constructor */
   LinearKalmanFilter(
       const LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &input)
       : state_space(input.state_space), Q(input.Q), R(input.R), P(input.P),
-        G(input.G), _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        G(input.G), C_P_CT_R_inv_solver_(input.C_P_CT_R_inv_solver_),
         _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
@@ -1038,7 +1038,7 @@ public:
       this->R = input.R;
       this->P = input.P;
       this->G = input.G;
-      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->C_P_CT_R_inv_solver_ = input.C_P_CT_R_inv_solver_;
       this->_input_count = input._input_count;
     }
     return *this;
@@ -1049,7 +1049,7 @@ public:
                          &&input) noexcept
       : state_space(std::move(input.state_space)), Q(std::move(input.Q)),
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        C_P_CT_R_inv_solver_(std::move(input.C_P_CT_R_inv_solver_)),
         _input_count(input._input_count) {}
 
   LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type> &
@@ -1061,7 +1061,7 @@ public:
       this->R = std::move(input.R);
       this->P = std::move(input.P);
       this->G = std::move(input.G);
-      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->C_P_CT_R_inv_solver_ = std::move(input.C_P_CT_R_inv_solver_);
       this->_input_count = input._input_count;
     }
     return *this;
@@ -1101,15 +1101,15 @@ public:
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
 
     auto C_P_CT_R = this->state_space.C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+    this->C_P_CT_R_inv_solver_.inv(C_P_CT_R);
 
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+    this->G = P_CT * this->C_P_CT_R_inv_solver_.get_answer();
 
     this->state_space.X =
         this->state_space.X +
         this->G * (Y - this->state_space.C * this->state_space.X);
 
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>() -
                this->G * this->state_space.C) *
               this->P;
   }
@@ -1184,11 +1184,11 @@ public:
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->state_space.C);
 
     auto C_P_CT_R = this->state_space.C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+    this->C_P_CT_R_inv_solver_.inv(C_P_CT_R);
 
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+    this->G = P_CT * this->C_P_CT_R_inv_solver_.get_answer();
 
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>() -
                this->G * this->state_space.C) *
               this->P;
   }
@@ -1210,8 +1210,8 @@ public:
       auto G_diff = this->G - previous_G;
 
       bool is_converged = true;
-      for (std::size_t i = 0; i < _STATE_SIZE; i++) {
-        for (std::size_t j = 0; j < _OUTPUT_SIZE; j++) {
+      for (std::size_t i = 0; i < STATE_SIZE_; i++) {
+        for (std::size_t j = 0; j < OUTPUT_SIZE_; j++) {
 
           if (PythonMath::abs(this->G.access(i, j)) >
               PythonControl::KALMAN_FILTER_DIVISION_MIN) {
@@ -1276,8 +1276,8 @@ public:
    *
    * @param P_in The new covariance matrix to be set.
    */
-  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
-    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const T_ &decay_rate_in) {
+    this->C_P_CT_R_inv_solver_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -1289,15 +1289,15 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void
-  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
-    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  set_division_min_for_C_P_CT_R_inv_solver(const T_ &division_min_in) {
+    this->C_P_CT_R_inv_solver_.set_division_min(division_min_in);
   }
 
 public:
   /* Constant */
-  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
-  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
-  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+  static constexpr std::size_t STATE_SIZE = STATE_SIZE_;
+  static constexpr std::size_t INPUT_SIZE = INPUT_SIZE_;
+  static constexpr std::size_t OUTPUT_SIZE = OUTPUT_SIZE_;
 
   static constexpr std::size_t NUMBER_OF_DELAY =
       DiscreteStateSpace_Type::NUMBER_OF_DELAY;
@@ -1312,7 +1312,7 @@ public:
 
 protected:
   /* Variable */
-  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
+  C_P_CT_R_Inv_Type_ C_P_CT_R_inv_solver_;
   std::size_t _input_count;
 };
 
@@ -1459,45 +1459,45 @@ public:
 
 protected:
   /* Type */
-  using _T = typename A_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename A_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = A_Type::ROWS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
-  static constexpr std::size_t _OUTPUT_SIZE = C_Type::ROWS;
+  static constexpr std::size_t STATE_SIZE_ = A_Type::ROWS;
+  static constexpr std::size_t INPUT_SIZE_ = U_Type::ROWS;
+  static constexpr std::size_t OUTPUT_SIZE_ = C_Type::ROWS;
 
-  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
-  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
-  using _Measurement_Type =
-      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
+  using Input_Type_ = PythonControl::StateSpaceInput_Type<T_, INPUT_SIZE_>;
+  using State_Type_ = PythonControl::StateSpaceState_Type<T_, STATE_SIZE_>;
+  using Measurement_Type_ =
+      PythonControl::StateSpaceOutput_Type<T_, OUTPUT_SIZE_>;
 
-  using _InputStored_Type =
-      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
+  using InputStored_Type_ =
+      PythonControl::DelayedVectorObject<Input_Type_, Number_Of_Delay>;
 
-  using _StateFunction_Object =
-      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
-  using _StateFunctionJacobian_Object =
-      PythonControl::StateFunctionJacobian_Object<A_Type, _State_Type, U_Type,
+  using StateFunction_Object_ =
+      PythonControl::StateFunction_Object<State_Type_, U_Type, Parameter_Type>;
+  using StateFunctionJacobian_Object_ =
+      PythonControl::StateFunctionJacobian_Object<A_Type, State_Type_, U_Type,
                                                   Parameter_Type>;
-  using _MeasurementFunction_Object =
-      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
+  using MeasurementFunction_Object_ =
+      PythonControl::MeasurementFunction_Object<Measurement_Type_, State_Type_,
                                                 Parameter_Type>;
-  using _MeasurementFunctionJacobian_Object =
-      PythonControl::MeasurementFunctionJacobian_Object<C_Type, _State_Type,
+  using MeasurementFunctionJacobian_Object_ =
+      PythonControl::MeasurementFunctionJacobian_Object<C_Type, State_Type_,
                                                         Parameter_Type>;
 
-  using _C_P_CT_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using C_P_CT_R_Inv_Type_ = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<T_, OUTPUT_SIZE_, OUTPUT_SIZE_>>;
 
 public:
   /* Type  */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+  using P_Type = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, STATE_SIZE_>;
 
-  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+  using G_Type = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, OUTPUT_SIZE_>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -1507,31 +1507,31 @@ public:
                 "R matrix must be diagonal matrix.");
 
   /* Check Data Type */
-  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Q_Type::Value_Type, T_>::value,
                 "Data type of Q matrix must be same type as A.");
 
-  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename R_Type::Value_Type, T_>::value,
                 "Data type of R matrix must be same type as A.");
 
 public:
   /* Constructor */
   ExtendedKalmanFilter()
       : A(), C(), Q(), R(),
-        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
               .create_dense()),
-        G(), X_hat(), U_store(), parameters(), _C_P_CT_R_inv_solver(),
+        G(), X_hat(), U_store(), parameters(), C_P_CT_R_inv_solver_(),
         _input_count(static_cast<std::size_t>(0)) {}
 
   ExtendedKalmanFilter(
-      const Q_Type &Q, const R_Type &R, _StateFunction_Object &state_function,
-      _StateFunctionJacobian_Object &state_function_jacobian,
-      _MeasurementFunction_Object &measurement_function,
-      _MeasurementFunctionJacobian_Object &measurement_function_jacobian,
+      const Q_Type &Q, const R_Type &R, StateFunction_Object_ &state_function,
+      StateFunctionJacobian_Object_ &state_function_jacobian,
+      MeasurementFunction_Object_ &measurement_function,
+      MeasurementFunctionJacobian_Object_ &measurement_function_jacobian,
       const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
               .create_dense()),
-        G(), X_hat(), U_store(), parameters(parameters), _C_P_CT_R_inv_solver(),
+        G(), X_hat(), U_store(), parameters(parameters), C_P_CT_R_inv_solver_(),
         _state_function(state_function),
         _state_function_jacobian(state_function_jacobian),
         _measurement_function(measurement_function),
@@ -1545,7 +1545,7 @@ public:
       : A(input.A), C(input.C), Q(input.Q), R(input.R), P(input.P), G(input.G),
         X_hat(input.X_hat), U_store(input.U_store),
         parameters(input.parameters),
-        _C_P_CT_R_inv_solver(input._C_P_CT_R_inv_solver),
+        C_P_CT_R_inv_solver_(input.C_P_CT_R_inv_solver_),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
@@ -1567,7 +1567,7 @@ public:
       this->X_hat = input.X_hat;
       this->U_store = input.U_store;
       this->parameters = input.parameters;
-      this->_C_P_CT_R_inv_solver = input._C_P_CT_R_inv_solver;
+      this->C_P_CT_R_inv_solver_ = input.C_P_CT_R_inv_solver_;
       this->_state_function = input._state_function;
       this->_state_function_jacobian = input._state_function_jacobian;
       this->_measurement_function = input._measurement_function;
@@ -1586,7 +1586,7 @@ public:
         R(std::move(input.R)), P(std::move(input.P)), G(std::move(input.G)),
         X_hat(std::move(input.X_hat)), U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
-        _C_P_CT_R_inv_solver(std::move(input._C_P_CT_R_inv_solver)),
+        C_P_CT_R_inv_solver_(std::move(input.C_P_CT_R_inv_solver_)),
         _state_function(input._state_function),
         _state_function_jacobian(input._state_function_jacobian),
         _measurement_function(input._measurement_function),
@@ -1608,7 +1608,7 @@ public:
       this->X_hat = std::move(input.X_hat);
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
-      this->_C_P_CT_R_inv_solver = std::move(input._C_P_CT_R_inv_solver);
+      this->C_P_CT_R_inv_solver_ = std::move(input.C_P_CT_R_inv_solver_);
       this->_state_function = std::move(input._state_function);
       this->_state_function_jacobian =
           std::move(input._state_function_jacobian);
@@ -1650,22 +1650,22 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void update(const _Measurement_Type &Y) override {
+  inline void update(const Measurement_Type_ &Y) override {
 
     this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
 
     auto C_P_CT_R = this->C * P_CT + this->R;
-    this->_C_P_CT_R_inv_solver.inv(C_P_CT_R);
+    this->C_P_CT_R_inv_solver_.inv(C_P_CT_R);
 
-    this->G = P_CT * this->_C_P_CT_R_inv_solver.get_answer();
+    this->G = P_CT * this->C_P_CT_R_inv_solver_.get_answer();
 
     this->X_hat =
         this->X_hat +
         this->G * (Y - this->_measurement_function(this->X_hat, parameters));
 
-    this->P = (PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>() -
+    this->P = (PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>() -
                this->G * this->C) *
               this->P;
   }
@@ -1681,8 +1681,8 @@ public:
    * @param U The control input vector.
    * @return The calculated next state vector.
    */
-  inline auto calculate_state_function(const _State_Type &X,
-                                       const U_Type &U) const -> _State_Type {
+  inline auto calculate_state_function(const State_Type_ &X,
+                                       const U_Type &U) const -> State_Type_ {
     return this->_state_function(X, U, this->parameters);
   }
 
@@ -1696,8 +1696,8 @@ public:
    * @param X The current state vector.
    * @return The calculated measurement vector.
    */
-  inline auto calculate_measurement_function(const _State_Type &X) const
-      -> _Measurement_Type {
+  inline auto calculate_measurement_function(const State_Type_ &X) const
+      -> Measurement_Type_ {
     return this->_measurement_function(X, this->parameters);
   }
 
@@ -1710,7 +1710,7 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const -> _State_Type override {
+  inline auto get_x_hat(void) const -> State_Type_ override {
     return this->X_hat;
   }
 
@@ -1724,7 +1724,7 @@ public:
    *
    * @return The estimated state vector x_hat without delay.
    */
-  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+  inline auto get_x_hat_without_delay(void) const -> State_Type_ {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
         this->_state_function, this->X_hat, this->U_store, this->parameters,
@@ -1740,7 +1740,7 @@ public:
    *
    * @param x_hat The new estimated state vector to be set.
    */
-  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
+  inline void set_x_hat(const State_Type_ &x_hat) { this->X_hat = x_hat; }
 
   /**
    * @brief Sets the covariance matrix P.
@@ -1750,8 +1750,8 @@ public:
    *
    * @param P_in The new covariance matrix to be set.
    */
-  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const _T &decay_rate_in) {
-    this->_C_P_CT_R_inv_solver.set_decay_rate(decay_rate_in);
+  inline void set_decay_rate_for_C_P_CT_R_inv_solver(const T_ &decay_rate_in) {
+    this->C_P_CT_R_inv_solver_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -1763,15 +1763,15 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void
-  set_division_min_for_C_P_CT_R_inv_solver(const _T &division_min_in) {
-    this->_C_P_CT_R_inv_solver.set_division_min(division_min_in);
+  set_division_min_for_C_P_CT_R_inv_solver(const T_ &division_min_in) {
+    this->C_P_CT_R_inv_solver_.set_division_min(division_min_in);
   }
 
 public:
   /* Constant */
-  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
-  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
-  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+  static constexpr std::size_t STATE_SIZE = STATE_SIZE_;
+  static constexpr std::size_t INPUT_SIZE = INPUT_SIZE_;
+  static constexpr std::size_t OUTPUT_SIZE = OUTPUT_SIZE_;
 
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
@@ -1784,18 +1784,18 @@ public:
   P_Type P;
   G_Type G;
 
-  _State_Type X_hat;
-  _InputStored_Type U_store;
+  State_Type_ X_hat;
+  InputStored_Type_ U_store;
 
   Parameter_Type parameters;
 
 protected:
   /* Variable */
-  _C_P_CT_R_Inv_Type _C_P_CT_R_inv_solver;
-  _StateFunction_Object _state_function;
-  _StateFunctionJacobian_Object _state_function_jacobian;
-  _MeasurementFunction_Object _measurement_function;
-  _MeasurementFunctionJacobian_Object _measurement_function_jacobian;
+  C_P_CT_R_Inv_Type_ C_P_CT_R_inv_solver_;
+  StateFunction_Object_ _state_function;
+  StateFunctionJacobian_Object_ _state_function_jacobian;
+  MeasurementFunction_Object_ _measurement_function;
+  MeasurementFunctionJacobian_Object_ _measurement_function_jacobian;
   std::size_t _input_count;
 };
 
@@ -1822,20 +1822,20 @@ using ExtendedKalmanFilter_Type =
 template <typename State_Type, typename P_Type> class SigmaPointsCalculator {
 protected:
   /* Type */
-  using _T = typename State_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename State_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = State_Type::ROWS;
+  static constexpr std::size_t STATE_SIZE_ = State_Type::ROWS;
 
-  using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
+  using P_Chol_Solver_Type_ = PythonNumpy::LinalgSolverCholesky_Type<
+      PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, STATE_SIZE_>>;
 
 public:
   /* Type */
   using Kai_Type =
-      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, (2 * _STATE_SIZE + 1)>;
+      PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, (2 * STATE_SIZE_ + 1)>;
 
 public:
   /* Constructor */
@@ -1844,13 +1844,13 @@ public:
   /* Copy Constructor */
   SigmaPointsCalculator(const SigmaPointsCalculator<State_Type, P_Type> &input)
       : sigma_point_weight(input.sigma_point_weight),
-        _P_cholesky_solver(input._P_cholesky_solver) {}
+        P_cholesky_solver_(input.P_cholesky_solver_) {}
 
   SigmaPointsCalculator<State_Type, P_Type> &
   operator=(const SigmaPointsCalculator<State_Type, P_Type> &input) {
     if (this != &input) {
       this->sigma_point_weight = input.sigma_point_weight;
-      this->_P_cholesky_solver = input._P_cholesky_solver;
+      this->P_cholesky_solver_ = input.P_cholesky_solver_;
     }
     return *this;
   }
@@ -1859,13 +1859,13 @@ public:
   SigmaPointsCalculator(
       SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept
       : sigma_point_weight(std::move(input.sigma_point_weight)),
-        _P_cholesky_solver(std::move(input._P_cholesky_solver)) {}
+        P_cholesky_solver_(std::move(input.P_cholesky_solver_)) {}
 
   SigmaPointsCalculator<State_Type, P_Type> &
   operator=(SigmaPointsCalculator<State_Type, P_Type> &&input) noexcept {
     if (this != &input) {
       this->sigma_point_weight = std::move(input.sigma_point_weight);
-      this->_P_cholesky_solver = std::move(input._P_cholesky_solver);
+      this->P_cholesky_solver_ = std::move(input.P_cholesky_solver_);
     }
     return *this;
   }
@@ -1881,7 +1881,7 @@ public:
    *
    * @param sigma_point_weight_in The new sigma point weight to be set.
    */
-  inline void set_weight(const _T &sigma_point_weight_in) {
+  inline void set_weight(const T_ &sigma_point_weight_in) {
     this->sigma_point_weight = sigma_point_weight_in;
   }
 
@@ -1900,14 +1900,14 @@ public:
   inline auto calculate(const State_Type &X_in, const P_Type &P_in)
       -> Kai_Type {
 
-    _P_cholesky_solver = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
+    P_cholesky_solver_ = PythonNumpy::make_LinalgSolverCholesky<P_Type>();
     Kai_Type Kai;
 
-    auto SP = _P_cholesky_solver.solve(P_in);
+    auto SP = P_cholesky_solver_.solve(P_in);
 
     PythonNumpy::set_row<0>(Kai, X_in);
     UKF_Operation::UpdateSigmaPointMatrix<
-        _T, Kai_Type, State_Type, decltype(SP)>::set(Kai, X_in, SP,
+        T_, Kai_Type, State_Type, decltype(SP)>::set(Kai, X_in, SP,
                                                      this->sigma_point_weight);
 
     return Kai;
@@ -1915,11 +1915,11 @@ public:
 
 public:
   /* Variable */
-  _T sigma_point_weight;
+  T_ sigma_point_weight;
 
 protected:
   /* Variable */
-  _P_Chol_Solver_Type _P_cholesky_solver;
+  P_Chol_Solver_Type_ P_cholesky_solver_;
 };
 
 /* Unscented Kalman Filter */
@@ -1957,56 +1957,56 @@ public:
 
 protected:
   /* Type */
-  using _T = typename U_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename U_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  static constexpr std::size_t _STATE_SIZE = Q_Type::ROWS;
-  static constexpr std::size_t _INPUT_SIZE = U_Type::ROWS;
-  static constexpr std::size_t _OUTPUT_SIZE = R_Type::ROWS;
+  static constexpr std::size_t STATE_SIZE_ = Q_Type::ROWS;
+  static constexpr std::size_t INPUT_SIZE_ = U_Type::ROWS;
+  static constexpr std::size_t OUTPUT_SIZE_ = R_Type::ROWS;
 
-  using _Input_Type = PythonControl::StateSpaceInput_Type<_T, _INPUT_SIZE>;
-  using _State_Type = PythonControl::StateSpaceState_Type<_T, _STATE_SIZE>;
-  using _Measurement_Type =
-      PythonControl::StateSpaceOutput_Type<_T, _OUTPUT_SIZE>;
+  using Input_Type_ = PythonControl::StateSpaceInput_Type<T_, INPUT_SIZE_>;
+  using State_Type_ = PythonControl::StateSpaceState_Type<T_, STATE_SIZE_>;
+  using Measurement_Type_ =
+      PythonControl::StateSpaceOutput_Type<T_, OUTPUT_SIZE_>;
 
-  using _InputStored_Type =
-      PythonControl::DelayedVectorObject<_Input_Type, Number_Of_Delay>;
+  using InputStored_Type_ =
+      PythonControl::DelayedVectorObject<Input_Type_, Number_Of_Delay>;
 
-  using _StateFunction_Object =
-      PythonControl::StateFunction_Object<_State_Type, U_Type, Parameter_Type>;
-  using _MeasurementFunction_Object =
-      PythonControl::MeasurementFunction_Object<_Measurement_Type, _State_Type,
+  using StateFunction_Object_ =
+      PythonControl::StateFunction_Object<State_Type_, U_Type, Parameter_Type>;
+  using MeasurementFunction_Object_ =
+      PythonControl::MeasurementFunction_Object<Measurement_Type_, State_Type_,
                                                 Parameter_Type>;
 
-  using _P_Chol_Solver_Type = PythonNumpy::LinalgSolverCholesky_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>>;
+  using P_Chol_Solver_Type_ = PythonNumpy::LinalgSolverCholesky_Type<
+      PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, STATE_SIZE_>>;
 
-  using _P_YY_R_Inv_Type = PythonNumpy::LinalgSolverInv_Type<
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>>;
+  using P_YY_R_Inv_Type_ = PythonNumpy::LinalgSolverInv_Type<
+      PythonNumpy::DenseMatrix_Type<T_, OUTPUT_SIZE_, OUTPUT_SIZE_>>;
 
-  using _W_Type = PythonNumpy::DiagMatrix_Type<_T, (2 * _STATE_SIZE + 1)>;
+  using W_Type_ = PythonNumpy::DiagMatrix_Type<T_, (2 * STATE_SIZE_ + 1)>;
 
-  using _Kai_Type =
-      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, (2 * _STATE_SIZE + 1)>;
+  using Kai_Type_ =
+      PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, (2 * STATE_SIZE_ + 1)>;
 
-  using _P_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _STATE_SIZE>;
+  using P_Type_ = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, STATE_SIZE_>;
 
-  using _SigmaPointsCalculator_Type =
-      SigmaPointsCalculator<_State_Type, _P_Type>;
+  using SigmaPointsCalculator_Type_ =
+      SigmaPointsCalculator<State_Type_, P_Type_>;
 
 public:
   /* Type  */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using P_Type = _P_Type;
+  using P_Type = P_Type_;
   using P_xy_Type =
-      PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+      PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, OUTPUT_SIZE_>;
   using P_yy_Type =
-      PythonNumpy::DenseMatrix_Type<_T, _OUTPUT_SIZE, _OUTPUT_SIZE>;
+      PythonNumpy::DenseMatrix_Type<T_, OUTPUT_SIZE_, OUTPUT_SIZE_>;
 
-  using G_Type = PythonNumpy::DenseMatrix_Type<_T, _STATE_SIZE, _OUTPUT_SIZE>;
+  using G_Type = PythonNumpy::DenseMatrix_Type<T_, STATE_SIZE_, OUTPUT_SIZE_>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -2016,33 +2016,33 @@ public:
                 "R matrix must be diagonal matrix.");
 
   /* Check Data Type */
-  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Q_Type::Value_Type, T_>::value,
                 "Data type of Q matrix must be same type as A.");
 
-  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename R_Type::Value_Type, T_>::value,
                 "Data type of R matrix must be same type as A.");
 
 public:
   /* Constructor */
   UnscentedKalmanFilter()
-      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                         .create_dense()),
-        G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        U_store(), parameters(), _P_YY_R_inv_solver(), _state_function(),
+        G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
+        beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
+        U_store(), parameters(), P_YY_R_inv_solver_(), _state_function(),
         _measurement_function(), _predict_sigma_points_calculator(),
         _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {}
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        _StateFunction_Object &state_function,
-                        _MeasurementFunction_Object &measurement_function,
+                        StateFunction_Object_ &state_function,
+                        MeasurementFunction_Object_ &measurement_function,
                         const Parameter_Type &parameters)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
-        G(), kappa(static_cast<_T>(0)), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
+        beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
+        U_store(), parameters(parameters), P_YY_R_inv_solver_(),
         _state_function(state_function),
         _measurement_function(measurement_function),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
@@ -2052,14 +2052,14 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        _StateFunction_Object &state_function,
-                        _MeasurementFunction_Object &measurement_function,
-                        const Parameter_Type &parameters, _T kappa_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                        StateFunction_Object_ &state_function,
+                        MeasurementFunction_Object_ &measurement_function,
+                        const Parameter_Type &parameters, T_ kappa_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
-        G(), kappa(kappa_in), alpha(static_cast<_T>(0.5)),
-        beta(static_cast<_T>(2)), w_m(static_cast<_T>(0)), W(), X_hat(), X_d(),
-        U_store(), parameters(parameters), _P_YY_R_inv_solver(),
+        G(), kappa(kappa_in), alpha(static_cast<T_>(0.5)),
+        beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
+        U_store(), parameters(parameters), P_YY_R_inv_solver_(),
         _state_function(state_function),
         _measurement_function(measurement_function),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
@@ -2069,15 +2069,15 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        _StateFunction_Object &state_function,
-                        _MeasurementFunction_Object &measurement_function,
-                        const Parameter_Type &parameters, _T kappa_in,
-                        _T alpha_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                        StateFunction_Object_ &state_function,
+                        MeasurementFunction_Object_ &measurement_function,
+                        const Parameter_Type &parameters, T_ kappa_in,
+                        T_ alpha_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
-        G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<_T>(2)),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
-        parameters(parameters), _P_YY_R_inv_solver(),
+        G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<T_>(2)),
+        w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
+        parameters(parameters), P_YY_R_inv_solver_(),
         _state_function(state_function),
         _measurement_function(measurement_function),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
@@ -2087,15 +2087,15 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        _StateFunction_Object &state_function,
-                        _MeasurementFunction_Object &measurement_function,
-                        const Parameter_Type &parameters, _T kappa_in,
-                        _T alpha_in, _T beta_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<_T, _STATE_SIZE>()
+                        StateFunction_Object_ &state_function,
+                        MeasurementFunction_Object_ &measurement_function,
+                        const Parameter_Type &parameters, T_ kappa_in,
+                        T_ alpha_in, T_ beta_in)
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
-        w_m(static_cast<_T>(0)), W(), X_hat(), X_d(), U_store(),
-        parameters(parameters), _P_YY_R_inv_solver(),
+        w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
+        parameters(parameters), P_YY_R_inv_solver_(),
         _state_function(state_function),
         _measurement_function(measurement_function),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
@@ -2112,7 +2112,7 @@ public:
         alpha(input.alpha), beta(input.beta), w_m(input.w_m), W(input.W),
         X_hat(input.X_hat), X_d(input.X_d), U_store(input.U_store),
         parameters(input.parameters),
-        _P_YY_R_inv_solver(input._P_YY_R_inv_solver),
+        P_YY_R_inv_solver_(input.P_YY_R_inv_solver_),
         _state_function(input._state_function),
         _measurement_function(input._measurement_function),
         _predict_sigma_points_calculator(
@@ -2138,7 +2138,7 @@ public:
       this->X_d = input.X_d;
       this->U_store = input.U_store;
       this->parameters = input.parameters;
-      this->_P_YY_R_inv_solver = input._P_YY_R_inv_solver;
+      this->P_YY_R_inv_solver_ = input.P_YY_R_inv_solver_;
       this->_state_function = input._state_function;
       this->_measurement_function = input._measurement_function;
       this->_predict_sigma_points_calculator =
@@ -2161,7 +2161,7 @@ public:
         X_hat(std::move(input.X_hat)), X_d(std::move(input.X_d)),
         U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
-        _P_YY_R_inv_solver(std::move(input._P_YY_R_inv_solver)),
+        P_YY_R_inv_solver_(std::move(input.P_YY_R_inv_solver_)),
         _state_function(std::move(input._state_function)),
         _measurement_function(std::move(input._measurement_function)),
         _predict_sigma_points_calculator(
@@ -2188,7 +2188,7 @@ public:
       this->X_d = std::move(input.X_d);
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
-      this->_P_YY_R_inv_solver = std::move(input._P_YY_R_inv_solver);
+      this->P_YY_R_inv_solver_ = std::move(input.P_YY_R_inv_solver_);
       this->_state_function = std::move(input._state_function);
       this->_measurement_function = std::move(input._measurement_function);
       this->_predict_sigma_points_calculator =
@@ -2214,22 +2214,22 @@ public:
    * (alpha, beta, kappa) and the size of the state vector.
    */
   inline void calculate_weights(void) {
-    _T lambda_weight = this->alpha * this->alpha *
-                           (static_cast<_T>(_STATE_SIZE) + this->kappa) -
-                       static_cast<_T>(_STATE_SIZE);
+    T_ lambda_weight = this->alpha * this->alpha *
+                           (static_cast<T_>(STATE_SIZE_) + this->kappa) -
+                       static_cast<T_>(STATE_SIZE_);
 
-    this->w_m = lambda_weight / (static_cast<_T>(_STATE_SIZE) + lambda_weight);
+    this->w_m = lambda_weight / (static_cast<T_>(STATE_SIZE_) + lambda_weight);
 
-    this->W.template set<0, 0>(this->w_m + static_cast<_T>(1) -
+    this->W.template set<0, 0>(this->w_m + static_cast<T_>(1) -
                                this->alpha * this->alpha + this->beta);
 
-    UKF_Operation::SetRestOfW<_T, _W_Type, 1>::set(
+    UKF_Operation::SetRestOfW<T_, W_Type_, 1>::set(
         this->W,
-        static_cast<_T>(1) / (static_cast<_T>(2) *
-                              (static_cast<_T>(_STATE_SIZE) + lambda_weight)));
+        static_cast<T_>(1) / (static_cast<T_>(2) *
+                              (static_cast<T_>(STATE_SIZE_) + lambda_weight)));
 
-    _T sigma_point_weight =
-        PythonMath::sqrt(static_cast<_T>(_STATE_SIZE) + lambda_weight);
+    T_ sigma_point_weight =
+        PythonMath::sqrt(static_cast<T_>(STATE_SIZE_) + lambda_weight);
 
     this->_predict_sigma_points_calculator.set_weight(sigma_point_weight);
     this->_update_sigma_points_calculator.set_weight(sigma_point_weight);
@@ -2262,35 +2262,35 @@ public:
    *
    * @param Y The observed measurement to be used for updating the state.
    */
-  inline void update(const _Measurement_Type &Y) override {
+  inline void update(const Measurement_Type_ &Y) override {
 
     auto Kai =
         this->_update_sigma_points_calculator.calculate(this->X_hat, this->P);
 
-    auto Y_d = PythonNumpy::make_DenseMatrixZeros<_T, _OUTPUT_SIZE,
-                                                  (2 * _STATE_SIZE + 1)>();
+    auto Y_d = PythonNumpy::make_DenseMatrixZeros<T_, OUTPUT_SIZE_,
+                                                  (2 * STATE_SIZE_ + 1)>();
     using Y_d_Type = decltype(Y_d);
 
     UKF_Operation::MeasurementFunctionEachSigmaPoints<
-        Y_d_Type, _Kai_Type, _MeasurementFunction_Object,
+        Y_d_Type, Kai_Type_, MeasurementFunction_Object_,
         Parameter_Type>::compute(Y_d, Kai, this->_measurement_function,
                                  parameters);
 
-    _Measurement_Type Y_hat_m =
-        PythonNumpy::make_DenseMatrixZeros<_T, _OUTPUT_SIZE, 1>();
+    Measurement_Type_ Y_hat_m =
+        PythonNumpy::make_DenseMatrixZeros<T_, OUTPUT_SIZE_, 1>();
     Y_hat_m = this->w_m * PythonNumpy::get_row<0>(Y_d);
-    UKF_Operation::AverageSigmaPoints<_Measurement_Type, _W_Type,
+    UKF_Operation::AverageSigmaPoints<Measurement_Type_, W_Type_,
                                       Y_d_Type>::compute(Y_hat_m, this->W, Y_d);
 
-    UKF_Operation::SigmaPointsCovariance<Y_d_Type, _Measurement_Type>::compute(
+    UKF_Operation::SigmaPointsCovariance<Y_d_Type, Measurement_Type_>::compute(
         Y_d, Y_d, Y_hat_m);
 
     auto P_yy_R = Y_d * PythonNumpy::A_mul_BTranspose(this->W, Y_d) + this->R;
     auto P_xy = this->X_d * PythonNumpy::A_mul_BTranspose(this->W, Y_d);
 
-    _P_YY_R_inv_solver.inv(P_yy_R);
+    P_YY_R_inv_solver_.inv(P_yy_R);
 
-    this->G = P_xy * this->_P_YY_R_inv_solver.get_answer();
+    this->G = P_xy * this->P_YY_R_inv_solver_.get_answer();
 
     this->X_hat = this->X_hat + this->G * (Y - Y_hat_m);
     this->P = this->P - PythonNumpy::A_mul_BTranspose(this->G, P_xy);
@@ -2307,8 +2307,8 @@ public:
    * @param U The control input vector.
    * @return The calculated next state vector.
    */
-  inline auto calculate_state_function(const _State_Type &X,
-                                       const U_Type &U) const -> _State_Type {
+  inline auto calculate_state_function(const State_Type_ &X,
+                                       const U_Type &U) const -> State_Type_ {
     return this->_state_function(X, U, this->parameters);
   }
 
@@ -2322,8 +2322,8 @@ public:
    * @param X The current state vector.
    * @return The calculated measurement vector.
    */
-  inline auto calculate_measurement_function(const _State_Type &X) const
-      -> _Measurement_Type {
+  inline auto calculate_measurement_function(const State_Type_ &X) const
+      -> Measurement_Type_ {
     return this->_measurement_function(X, this->parameters);
   }
 
@@ -2336,7 +2336,7 @@ public:
    *
    * @return The estimated state vector x_hat.
    */
-  inline auto get_x_hat(void) const -> _State_Type override {
+  inline auto get_x_hat(void) const -> State_Type_ override {
     return this->X_hat;
   }
 
@@ -2350,7 +2350,7 @@ public:
    *
    * @return The estimated state vector x_hat without delay.
    */
-  inline auto get_x_hat_without_delay(void) const -> _State_Type {
+  inline auto get_x_hat_without_delay(void) const -> State_Type_ {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
         this->_state_function, this->X_hat, this->U_store, this->parameters,
@@ -2366,7 +2366,7 @@ public:
    *
    * @param x_hat The new estimated state vector to be set.
    */
-  inline void set_x_hat(const _State_Type &x_hat) { this->X_hat = x_hat; }
+  inline void set_x_hat(const State_Type_ &x_hat) { this->X_hat = x_hat; }
 
   /**
    * @brief Sets the covariance matrix P.
@@ -2376,8 +2376,8 @@ public:
    *
    * @param P_in The new covariance matrix to be set.
    */
-  inline void set_decay_rate_for_P_YY_R_inv_solver(const _T &decay_rate_in) {
-    this->_P_YY_R_inv_solver.set_decay_rate(decay_rate_in);
+  inline void set_decay_rate_for_P_YY_R_inv_solver(const T_ &decay_rate_in) {
+    this->P_YY_R_inv_solver_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -2389,15 +2389,15 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void
-  set_division_min_for_P_YY_R_inv_solver(const _T &division_min_in) {
-    this->_P_YY_R_inv_solver.set_division_min(division_min_in);
+  set_division_min_for_P_YY_R_inv_solver(const T_ &division_min_in) {
+    this->P_YY_R_inv_solver_.set_division_min(division_min_in);
   }
 
 public:
   /* Constant */
-  static constexpr std::size_t STATE_SIZE = _STATE_SIZE;
-  static constexpr std::size_t INPUT_SIZE = _INPUT_SIZE;
-  static constexpr std::size_t OUTPUT_SIZE = _OUTPUT_SIZE;
+  static constexpr std::size_t STATE_SIZE = STATE_SIZE_;
+  static constexpr std::size_t INPUT_SIZE = INPUT_SIZE_;
+  static constexpr std::size_t OUTPUT_SIZE = OUTPUT_SIZE_;
 
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
 
@@ -2408,26 +2408,26 @@ public:
   P_Type P;
   G_Type G;
 
-  _T kappa;
-  _T alpha;
-  _T beta;
-  _T w_m;
-  _W_Type W;
+  T_ kappa;
+  T_ alpha;
+  T_ beta;
+  T_ w_m;
+  W_Type_ W;
 
-  _State_Type X_hat;
-  _Kai_Type X_d;
-  _InputStored_Type U_store;
+  State_Type_ X_hat;
+  Kai_Type_ X_d;
+  InputStored_Type_ U_store;
 
   Parameter_Type parameters;
 
 protected:
   /* Variable */
-  _P_YY_R_Inv_Type _P_YY_R_inv_solver;
-  _StateFunction_Object _state_function;
-  _MeasurementFunction_Object _measurement_function;
+  P_YY_R_Inv_Type_ P_YY_R_inv_solver_;
+  StateFunction_Object_ _state_function;
+  MeasurementFunction_Object_ _measurement_function;
 
-  _SigmaPointsCalculator_Type _predict_sigma_points_calculator;
-  _SigmaPointsCalculator_Type _update_sigma_points_calculator;
+  SigmaPointsCalculator_Type_ _predict_sigma_points_calculator;
+  SigmaPointsCalculator_Type_ _update_sigma_points_calculator;
   std::size_t _input_count;
 };
 

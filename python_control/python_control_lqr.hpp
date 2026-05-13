@@ -80,41 +80,41 @@ template <typename A_Type, typename B_Type, typename Q_Type, typename R_Type>
 class LQR_ArimotoPotterSolver {
 protected:
   /* Type */
-  using _T = typename A_Type::Value_Type;
+  using T_ = typename A_Type::Value_Type;
 
-  using _Hamiltonian_Type =
+  using Hamiltonian_Type_ =
       typename LQR_Operation::Hamiltonian<A_Type, B_Type, Q_Type, R_Type>::Type;
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::COLS;
-  static constexpr std::size_t _State_Size = A_Type::ROWS;
+  static constexpr std::size_t Input_Size_ = B_Type::COLS;
+  static constexpr std::size_t State_Size_ = A_Type::ROWS;
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size, _State_Size>;
+  using K_Type = PythonNumpy::DenseMatrix_Type<T_, Input_Size_, State_Size_>;
 
 public:
   /* Constructor */
   LQR_ArimotoPotterSolver()
-      : _K(), _R_inv_solver(), _V1_inv_solver(), _eig_solver(),
+      : K_(), R_inv_solver_(), V1_inv_solver_(), _eig_solver(),
         _eigen_solver_is_ill(false) {}
 
   /* Copy Constructor */
   LQR_ArimotoPotterSolver(
       const LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &input)
-      : _K(input._K), _R_inv_solver(input._R_inv_solver),
-        _V1_inv_solver(input._V1_inv_solver), _eig_solver(input._eig_solver),
+      : K_(input.K_), R_inv_solver_(input.R_inv_solver_),
+        V1_inv_solver_(input.V1_inv_solver_), _eig_solver(input._eig_solver),
         _eigen_solver_is_ill(input._eigen_solver_is_ill) {}
 
   LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &operator=(
       const LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->_K = input._K;
-      this->_R_inv_solver = input._R_inv_solver;
-      this->_V1_inv_solver = input._V1_inv_solver;
+      this->K_ = input.K_;
+      this->R_inv_solver_ = input.R_inv_solver_;
+      this->V1_inv_solver_ = input.V1_inv_solver_;
       this->_eig_solver = input._eig_solver;
       this->_eigen_solver_is_ill = input._eigen_solver_is_ill;
     }
@@ -124,8 +124,8 @@ public:
   /* Move Constructor */
   LQR_ArimotoPotterSolver(
       LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
-      : _K(std::move(input._K)), _R_inv_solver(std::move(input._R_inv_solver)),
-        _V1_inv_solver(std::move(input._V1_inv_solver)),
+      : K_(std::move(input.K_)), R_inv_solver_(std::move(input.R_inv_solver_)),
+        V1_inv_solver_(std::move(input.V1_inv_solver_)),
         _eig_solver(std::move(input._eig_solver)),
         _eigen_solver_is_ill(std::move(input._eigen_solver_is_ill)) {}
 
@@ -133,9 +133,9 @@ public:
   operator=(LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>
                 &&input) noexcept {
     if (this != &input) {
-      this->_K = std::move(input._K);
-      this->_R_inv_solver = std::move(input._R_inv_solver);
-      this->_V1_inv_solver = std::move(input._V1_inv_solver);
+      this->K_ = std::move(input.K_);
+      this->R_inv_solver_ = std::move(input.R_inv_solver_);
+      this->V1_inv_solver_ = std::move(input.V1_inv_solver_);
       this->_eig_solver = std::move(input._eig_solver);
       this->_eigen_solver_is_ill = std::move(input._eigen_solver_is_ill);
     }
@@ -161,8 +161,8 @@ public:
   inline auto solve(const A_Type &A, const B_Type &B, const Q_Type &Q,
                     const R_Type &R) -> K_Type {
 
-    this->_R_inv_solver.inv(R);
-    auto R_inv = this->_R_inv_solver.get_answer();
+    this->R_inv_solver_.inv(R);
+    auto R_inv = this->R_inv_solver_.get_answer();
 
     auto Hamiltonian =
         PythonNumpy::concatenate_block<LQR_Operation::HAMILTONIAN_COLUMN_SIZE,
@@ -178,36 +178,36 @@ public:
 
     auto eigen_vectors = this->_eig_solver.get_eigen_vectors();
 
-    LQR_Operation::V1_V2_Type<_T, _State_Size> V1;
-    LQR_Operation::V1_V2_Type<_T, _State_Size> V2;
+    LQR_Operation::V1_V2_Type<T_, State_Size_> V1;
+    LQR_Operation::V1_V2_Type<T_, State_Size_> V2;
 
     std::size_t minus_count = 0;
     this->_eigen_solver_is_ill = true;
-    for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * _State_Size);
+    for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * State_Size_);
          i++) {
 
-      if (eigen_values(i, 0).real < static_cast<_T>(0)) {
+      if (eigen_values(i, 0).real < static_cast<T_>(0)) {
 
-        for (std::size_t j = 0; j < _State_Size; j++) {
+        for (std::size_t j = 0; j < State_Size_; j++) {
           V1(j, minus_count) = eigen_vectors(j, i);
-          V2(j, minus_count) = eigen_vectors(j + _State_Size, i);
+          V2(j, minus_count) = eigen_vectors(j + State_Size_, i);
         }
 
         minus_count++;
-        if (_State_Size == minus_count) {
+        if (State_Size_ == minus_count) {
           this->_eigen_solver_is_ill = false;
           break;
         }
       }
     }
 
-    this->_V1_inv_solver.inv(V1);
+    this->V1_inv_solver_.inv(V1);
 
-    auto P = (V2 * this->_V1_inv_solver.get_answer()).real();
+    auto P = (V2 * this->V1_inv_solver_.get_answer()).real();
 
-    this->_K = R_inv * PythonNumpy::ATranspose_mul_B(B, P);
+    this->K_ = R_inv * PythonNumpy::ATranspose_mul_B(B, P);
 
-    return this->_K;
+    return this->K_;
   }
 
   /**
@@ -215,7 +215,7 @@ public:
    *
    * @return The gain matrix K.
    */
-  inline auto get_K() const -> K_Type { return this->_K; }
+  inline auto get_K() const -> K_Type { return this->K_; }
 
   /**
    * @brief Checks if the eigenvalue solver is ill-posed.
@@ -231,8 +231,8 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_R_inv_division_min(const _T &division_min_in) {
-    this->_R_inv_solver.set_division_min(division_min_in);
+  inline void set_R_inv_division_min(const T_ &division_min_in) {
+    this->R_inv_solver_.set_division_min(division_min_in);
   }
 
   /**
@@ -240,8 +240,8 @@ public:
    *
    * @param decay_rate_in The new decay rate to be set.
    */
-  inline void set_V1_inv_decay_rate(const _T &decay_rate_in) {
-    this->_V1_inv_solver.set_decay_rate(decay_rate_in);
+  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
+    this->V1_inv_solver_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -250,8 +250,8 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_V1_inv_division_min(const _T &division_min_in) {
-    this->_V1_inv_solver.set_division_min(division_min_in);
+  inline void set_V1_inv_division_min(const T_ &division_min_in) {
+    this->V1_inv_solver_.set_division_min(division_min_in);
   }
 
   /**
@@ -280,7 +280,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_Eigen_solver_division_min(const _T &division_min_in) {
+  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
     this->_eig_solver.set_division_min(division_min_in);
   }
 
@@ -289,17 +289,17 @@ public:
    *
    * @param small_value_in The new small value to be set.
    */
-  inline void set_Eigen_solver_small_value(const _T &small_value_in) {
+  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
     this->_eig_solver.set_small_value(small_value_in);
   }
 
 protected:
   /* Variable */
-  K_Type _K;
+  K_Type K_;
 
-  PythonNumpy::LinalgSolverInv_Type<R_Type> _R_inv_solver;
-  LQR_Operation::V1_V2_InvSolver_Type<_T, _State_Size> _V1_inv_solver;
-  PythonNumpy::LinalgSolverEig_Type<_Hamiltonian_Type> _eig_solver;
+  PythonNumpy::LinalgSolverInv_Type<R_Type> R_inv_solver_;
+  LQR_Operation::V1_V2_InvSolver_Type<T_, State_Size_> V1_inv_solver_;
+  PythonNumpy::LinalgSolverEig_Type<Hamiltonian_Type_> _eig_solver;
 
   bool _eigen_solver_is_ill;
 };
@@ -335,23 +335,23 @@ public:
 
 protected:
   /* Type */
-  using _T = typename A_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename A_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  using _Solver_Type = LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>;
+  using Solver_Type_ = LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>;
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::COLS;
-  static constexpr std::size_t _State_Size = A_Type::ROWS;
+  static constexpr std::size_t Input_Size_ = B_Type::COLS;
+  static constexpr std::size_t State_Size_ = A_Type::ROWS;
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size, _State_Size>;
+  using K_Type = PythonNumpy::DenseMatrix_Type<T_, Input_Size_, State_Size_>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -361,11 +361,11 @@ public:
                 "R matrix must be diagonal matrix.");
 
   /* Check Data Type */
-  static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename B_Type::Value_Type, T_>::value,
                 "Data type of B matrix must be same type as A matrix.");
-  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Q_Type::Value_Type, T_>::value,
                 "Data type of Q matrix must be same type as A matrix.");
-  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename R_Type::Value_Type, T_>::value,
                 "Data type of R matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
@@ -379,24 +379,24 @@ public:
 
 public:
   /* Constructor */
-  LQR() : _A(), _B(), _Q(), _R(), _K(), _arimoto_potter_solver() {}
+  LQR() : A_(), B_(), Q_(), R_(), K_(), _arimoto_potter_solver() {}
 
   LQR(const A_Type &A, const B_Type &B, const Q_Type &Q, const R_Type &R)
-      : _A(A), _B(B), _Q(Q), _R(R), _K(), _arimoto_potter_solver() {}
+      : A_(A), B_(B), Q_(Q), R_(R), K_(), _arimoto_potter_solver() {}
 
   /* Copy Constructor */
   LQR(const LQR<A_Type, B_Type, Q_Type, R_Type> &input)
-      : _A(input._A), _B(input._B), _Q(input._Q), _R(input._R), _K(input._K),
+      : A_(input.A_), B_(input.B_), Q_(input.Q_), R_(input.R_), K_(input.K_),
         _arimoto_potter_solver(input._arimoto_potter_solver) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(const LQR<A_Type, B_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->_A = input._A;
-      this->_B = input._B;
-      this->_Q = input._Q;
-      this->_R = input._R;
-      this->_K = input._K;
+      this->A_ = input.A_;
+      this->B_ = input.B_;
+      this->Q_ = input.Q_;
+      this->R_ = input.R_;
+      this->K_ = input.K_;
       this->_arimoto_potter_solver = input._arimoto_potter_solver;
     }
     return *this;
@@ -404,19 +404,19 @@ public:
 
   /* Move Constructor */
   LQR(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
-      : _A(std::move(input._A)), _B(std::move(input._B)),
-        _Q(std::move(input._Q)), _R(std::move(input._R)),
-        _K(std::move(input._K)),
+      : A_(std::move(input.A_)), B_(std::move(input.B_)),
+        Q_(std::move(input.Q_)), R_(std::move(input.R_)),
+        K_(std::move(input.K_)),
         _arimoto_potter_solver(std::move(input._arimoto_potter_solver)) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type> &
   operator=(LQR<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept {
     if (this != &input) {
-      this->_A = std::move(input._A);
-      this->_B = std::move(input._B);
-      this->_Q = std::move(input._Q);
-      this->_R = std::move(input._R);
-      this->_K = std::move(input._K);
+      this->A_ = std::move(input.A_);
+      this->B_ = std::move(input.B_);
+      this->Q_ = std::move(input.Q_);
+      this->R_ = std::move(input.R_);
+      this->K_ = std::move(input.K_);
       this->_arimoto_potter_solver = std::move(input._arimoto_potter_solver);
     }
     return *this;
@@ -436,10 +436,10 @@ public:
    */
   inline K_Type solve(void) {
 
-    this->_K = this->_arimoto_potter_solver.solve(this->_A, this->_B, this->_Q,
-                                                  this->_R);
+    this->K_ = this->_arimoto_potter_solver.solve(this->A_, this->B_, this->Q_,
+                                                  this->R_);
 
-    return this->_K;
+    return this->K_;
   }
 
   /**
@@ -451,7 +451,7 @@ public:
    *
    * @return The computed gain matrix K.
    */
-  inline K_Type get_K() const { return this->_K; }
+  inline K_Type get_K() const { return this->K_; }
 
   /**
    * @brief Checks if the eigenvalue solver is ill-posed.
@@ -474,7 +474,7 @@ public:
    *
    * @return The state transition matrix A.
    */
-  inline void set_A(const A_Type &A) { this->_A = A; }
+  inline void set_A(const A_Type &A) { this->A_ = A; }
 
   /**
    * @brief Returns the input matrix B.
@@ -483,7 +483,7 @@ public:
    *
    * @return The input matrix B.
    */
-  inline void set_B(const B_Type &B) { this->_B = B; }
+  inline void set_B(const B_Type &B) { this->B_ = B; }
 
   /**
    * @brief Returns the state cost matrix Q.
@@ -492,7 +492,7 @@ public:
    *
    * @return The state cost matrix Q.
    */
-  inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
+  inline void set_Q(const Q_Type &Q) { this->Q_ = Q; }
 
   /**
    * @brief Returns the input cost matrix R.
@@ -501,7 +501,7 @@ public:
    *
    * @return The input cost matrix R.
    */
-  inline void set_R(const R_Type &R) { this->_R = R; }
+  inline void set_R(const R_Type &R) { this->R_ = R; }
 
   /**
    * @brief Returns the gain matrix K.
@@ -510,7 +510,7 @@ public:
    *
    * @return The gain matrix K.
    */
-  inline void set_R_inv_division_min(const _T &division_min_in) {
+  inline void set_R_inv_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_R_inv_division_min(division_min_in);
   }
 
@@ -522,7 +522,7 @@ public:
    *
    * @return The inverse solver for V1 and V2 matrices.
    */
-  inline void set_V1_inv_decay_rate(const _T &decay_rate_in) {
+  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
     this->_arimoto_potter_solver.set_V1_inv_decay_rate(decay_rate_in);
   }
 
@@ -535,7 +535,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_V1_inv_division_min(const _T &division_min_in) {
+  inline void set_V1_inv_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_V1_inv_division_min(division_min_in);
   }
 
@@ -575,7 +575,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_Eigen_solver_division_min(const _T &division_min_in) {
+  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_Eigen_solver_division_min(division_min_in);
   }
 
@@ -587,19 +587,19 @@ public:
    *
    * @param small_value_in The new small value to be set.
    */
-  inline void set_Eigen_solver_small_value(const _T &small_value_in) {
+  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
     this->_arimoto_potter_solver.set_Eigen_solver_small_value(small_value_in);
   }
 
 protected:
   /* Variable */
-  A_Type _A;
-  B_Type _B;
-  Q_Type _Q;
-  R_Type _R;
-  K_Type _K;
+  A_Type A_;
+  B_Type B_;
+  Q_Type Q_;
+  R_Type R_;
+  K_Type K_;
 
-  _Solver_Type _arimoto_potter_solver;
+  Solver_Type_ _arimoto_potter_solver;
 };
 
 /* Make LQR */
@@ -665,35 +665,35 @@ public:
 
 protected:
   /* Type */
-  using _T = typename A_Type::Value_Type;
-  static_assert(std::is_same<_T, double>::value ||
-                    std::is_same<_T, float>::value,
+  using T_ = typename A_Type::Value_Type;
+  static_assert(std::is_same<T_, double>::value ||
+                    std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  using _A_EX_Type = PythonNumpy::ConcatenateHorizontally_Type<
+  using A_EX_Type_ = PythonNumpy::ConcatenateHorizontally_Type<
       PythonNumpy::ConcatenateVertically_Type<A_Type, C_Type>,
-      PythonNumpy::SparseMatrixEmpty_Type<_T, (A_Type::ROWS + C_Type::ROWS),
+      PythonNumpy::SparseMatrixEmpty_Type<T_, (A_Type::ROWS + C_Type::ROWS),
                                           C_Type::ROWS>>;
 
-  using _B_EX_Type = PythonNumpy::ConcatenateVertically_Type<
+  using B_EX_Type_ = PythonNumpy::ConcatenateVertically_Type<
       B_Type,
-      PythonNumpy::SparseMatrixEmpty_Type<_T, C_Type::ROWS, B_Type::COLS>>;
+      PythonNumpy::SparseMatrixEmpty_Type<T_, C_Type::ROWS, B_Type::COLS>>;
 
-  using _Solver_Type =
-      LQR_ArimotoPotterSolver<_A_EX_Type, _B_EX_Type, Q_Type, R_Type>;
+  using Solver_Type_ =
+      LQR_ArimotoPotterSolver<A_EX_Type_, B_EX_Type_, Q_Type, R_Type>;
 
 protected:
   /* Constant */
-  static constexpr std::size_t _Input_Size = B_Type::COLS;
-  static constexpr std::size_t _State_Size = A_Type::ROWS;
-  static constexpr std::size_t _Output_Size = C_Type::ROWS;
+  static constexpr std::size_t Input_Size_ = B_Type::COLS;
+  static constexpr std::size_t State_Size_ = A_Type::ROWS;
+  static constexpr std::size_t Output_Size_ = C_Type::ROWS;
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
-  using K_Type = PythonNumpy::DenseMatrix_Type<_T, _Input_Size,
-                                               (_State_Size + _Output_Size)>;
+  using K_Type = PythonNumpy::DenseMatrix_Type<T_, Input_Size_,
+                                               (State_Size_ + Output_Size_)>;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -703,13 +703,13 @@ public:
                 "R matrix must be diagonal matrix.");
 
   /* Check Data Type */
-  static_assert(std::is_same<typename B_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename B_Type::Value_Type, T_>::value,
                 "Data type of B matrix must be same type as A matrix.");
-  static_assert(std::is_same<typename C_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename C_Type::Value_Type, T_>::value,
                 "Data type of C matrix must be same type as A matrix.");
-  static_assert(std::is_same<typename Q_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Q_Type::Value_Type, T_>::value,
                 "Data type of Q matrix must be same type as A matrix.");
-  static_assert(std::is_same<typename R_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename R_Type::Value_Type, T_>::value,
                 "Data type of R matrix must be same type as A matrix.");
 
   /* Check Matrix Column and Row length */
@@ -724,26 +724,26 @@ public:
 
 public:
   /* Constructor */
-  LQI() : _A(), _B(), _C(), _Q(), _R(), _K(), _arimoto_potter_solver() {}
+  LQI() : A_(), B_(), C_(), Q_(), R_(), K_(), _arimoto_potter_solver() {}
 
   LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
       const R_Type &R)
-      : _A(A), _B(B), _C(C), _Q(Q), _R(R), _K(), _arimoto_potter_solver() {}
+      : A_(A), B_(B), C_(C), Q_(Q), R_(R), K_(), _arimoto_potter_solver() {}
 
   /* Copy Constructor */
   LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input)
-      : _A(input._A), _B(input._B), _C(input._C), _Q(input._Q), _R(input._R),
-        _K(input._K), _arimoto_potter_solver(input._arimoto_potter_solver) {}
+      : A_(input.A_), B_(input.B_), C_(input.C_), Q_(input.Q_), R_(input.R_),
+        K_(input.K_), _arimoto_potter_solver(input._arimoto_potter_solver) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
-      this->_A = input._A;
-      this->_B = input._B;
-      this->_C = input._C;
-      this->_Q = input._Q;
-      this->_R = input._R;
-      this->_K = input._K;
+      this->A_ = input.A_;
+      this->B_ = input.B_;
+      this->C_ = input.C_;
+      this->Q_ = input.Q_;
+      this->R_ = input.R_;
+      this->K_ = input.K_;
       this->_arimoto_potter_solver = input._arimoto_potter_solver;
     }
     return *this;
@@ -751,20 +751,20 @@ public:
 
   /* Move Constructor */
   LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept
-      : _A(std::move(input._A)), _B(std::move(input._B)),
-        _C(std::move(input._C)), _Q(std::move(input._Q)),
-        _R(std::move(input._R)), _K(std::move(input._K)),
+      : A_(std::move(input.A_)), B_(std::move(input.B_)),
+        C_(std::move(input.C_)), Q_(std::move(input.Q_)),
+        R_(std::move(input.R_)), K_(std::move(input.K_)),
         _arimoto_potter_solver(std::move(input._arimoto_potter_solver)) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &
   operator=(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type> &&input) noexcept {
     if (this != &input) {
-      this->_A = std::move(input._A);
-      this->_B = std::move(input._B);
-      this->_C = std::move(input._C);
-      this->_Q = std::move(input._Q);
-      this->_R = std::move(input._R);
-      this->_K = std::move(input._K);
+      this->A_ = std::move(input.A_);
+      this->B_ = std::move(input.B_);
+      this->C_ = std::move(input.C_);
+      this->Q_ = std::move(input.Q_);
+      this->R_ = std::move(input.R_);
+      this->K_ = std::move(input.K_);
       this->_arimoto_potter_solver = std::move(input._arimoto_potter_solver);
     }
     return *this;
@@ -785,18 +785,18 @@ public:
   inline K_Type solve(void) {
 
     auto A_ex = PythonNumpy::concatenate_horizontally(
-        PythonNumpy::concatenate_vertically(this->_A, this->_C),
-        PythonNumpy::make_SparseMatrixEmpty<_T, (_State_Size + _Output_Size),
-                                            _Output_Size>());
+        PythonNumpy::concatenate_vertically(this->A_, this->C_),
+        PythonNumpy::make_SparseMatrixEmpty<T_, (State_Size_ + Output_Size_),
+                                            Output_Size_>());
 
     auto B_ex = PythonNumpy::concatenate_vertically(
-        this->_B,
-        PythonNumpy::make_SparseMatrixEmpty<_T, _Output_Size, _Input_Size>());
+        this->B_,
+        PythonNumpy::make_SparseMatrixEmpty<T_, Output_Size_, Input_Size_>());
 
-    this->_K =
-        this->_arimoto_potter_solver.solve(A_ex, B_ex, this->_Q, this->_R);
+    this->K_ =
+        this->_arimoto_potter_solver.solve(A_ex, B_ex, this->Q_, this->R_);
 
-    return this->_K;
+    return this->K_;
   }
 
   /**
@@ -808,7 +808,7 @@ public:
    *
    * @return The computed gain matrix K.
    */
-  inline K_Type get_K() const { return this->_K; }
+  inline K_Type get_K() const { return this->K_; }
 
   /**
    * @brief Checks if the eigenvalue solver is ill-posed.
@@ -831,7 +831,7 @@ public:
    *
    * @param A The new state transition matrix to be set.
    */
-  inline void set_A(const A_Type &A) { this->_A = A; }
+  inline void set_A(const A_Type &A) { this->A_ = A; }
 
   /**
    * @brief Sets the input matrix B.
@@ -840,7 +840,7 @@ public:
    *
    * @param B The new input matrix to be set.
    */
-  inline void set_B(const B_Type &B) { this->_B = B; }
+  inline void set_B(const B_Type &B) { this->B_ = B; }
 
   /**
    * @brief Sets the output matrix C.
@@ -849,7 +849,7 @@ public:
    *
    * @param C The new output matrix to be set.
    */
-  inline void set_C(const C_Type &C) { this->_C = C; }
+  inline void set_C(const C_Type &C) { this->C_ = C; }
 
   /**
    * @brief Sets the state cost matrix Q.
@@ -858,7 +858,7 @@ public:
    *
    * @param Q The new state cost matrix to be set.
    */
-  inline void set_Q(const Q_Type &Q) { this->_Q = Q; }
+  inline void set_Q(const Q_Type &Q) { this->Q_ = Q; }
 
   /**
    * @brief Sets the input cost matrix R.
@@ -867,7 +867,7 @@ public:
    *
    * @param R The new input cost matrix to be set.
    */
-  inline void set_R(const R_Type &R) { this->_R = R; }
+  inline void set_R(const R_Type &R) { this->R_ = R; }
 
   /**
    * @brief Sets the division minimum for the inverse solver of R.
@@ -877,7 +877,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_R_inv_division_min(const _T &division_min_in) {
+  inline void set_R_inv_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_R_inv_division_min(division_min_in);
   }
 
@@ -889,7 +889,7 @@ public:
    *
    * @param decay_rate_in The new decay rate to be set.
    */
-  inline void set_V1_inv_decay_rate(const _T &decay_rate_in) {
+  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
     this->_arimoto_potter_solver.set_V1_inv_decay_rate(decay_rate_in);
   }
 
@@ -902,7 +902,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_V1_inv_division_min(const _T &division_min_in) {
+  inline void set_V1_inv_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_V1_inv_division_min(division_min_in);
   }
 
@@ -942,7 +942,7 @@ public:
    *
    * @param division_min_in The new minimum division value to be set.
    */
-  inline void set_Eigen_solver_division_min(const _T &division_min_in) {
+  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
     this->_arimoto_potter_solver.set_Eigen_solver_division_min(division_min_in);
   }
 
@@ -954,20 +954,20 @@ public:
    *
    * @param small_value_in The new small value to be set.
    */
-  inline void set_Eigen_solver_small_value(const _T &small_value_in) {
+  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
     this->_arimoto_potter_solver.set_Eigen_solver_small_value(small_value_in);
   }
 
 protected:
   /* Variable */
-  A_Type _A;
-  B_Type _B;
-  C_Type _C;
-  Q_Type _Q;
-  R_Type _R;
-  K_Type _K;
+  A_Type A_;
+  B_Type B_;
+  C_Type C_;
+  Q_Type Q_;
+  R_Type R_;
+  K_Type K_;
 
-  _Solver_Type _arimoto_potter_solver;
+  Solver_Type_ _arimoto_potter_solver;
 };
 
 /* Make LQI */

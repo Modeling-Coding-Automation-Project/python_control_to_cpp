@@ -841,48 +841,48 @@ public:
 
 protected:
   /* Type */
-  using _T = typename Numerator_Type::Value_Type;
+  using T_ = typename Numerator_Type::Value_Type;
   static_assert(
-      std::is_same<_T, double>::value || std::is_same<_T, float>::value,
+      std::is_same<T_, double>::value || std::is_same<T_, float>::value,
       "Numerator and denominator value data type must be float or double.");
 
   static_assert(Denominator_Type::ROWS > 1,
                 "Denominator must have at least 2 elements.");
-  static constexpr std::size_t _DENOMINATOR_DIMENSION =
+  static constexpr std::size_t DENOMINATOR_DIMENSION_ =
       Denominator_Type::ROWS - 1;
   static_assert(Numerator_Type::ROWS > 1,
                 "Numerator must have at least 2 elements.");
-  static constexpr std::size_t _NUMERATOR_DIMENSION = Numerator_Type::ROWS - 1;
+  static constexpr std::size_t NUMERATOR_DIMENSION_ = Numerator_Type::ROWS - 1;
 
-  static constexpr bool _IS_STRICTLY_PROPER =
-      _NUMERATOR_DIMENSION < _DENOMINATOR_DIMENSION;
+  static constexpr bool IS_STRICTLY_PROPER_ =
+      NUMERATOR_DIMENSION_ < DENOMINATOR_DIMENSION_;
 
-  using _DiscreteStateSpace_A_type =
+  using DiscreteStateSpace_A_type_ =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_A_Type<
-          _T, _DENOMINATOR_DIMENSION>::type;
+          T_, DENOMINATOR_DIMENSION_>::type;
 
-  using _DiscreteStateSpace_B_type =
+  using DiscreteStateSpace_B_type_ =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_B_Type<
-          _T, _DENOMINATOR_DIMENSION>::type;
+          T_, DENOMINATOR_DIMENSION_>::type;
 
-  using _DiscreteStateSpace_C_type =
+  using DiscreteStateSpace_C_type_ =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_C_Type<
-          _T, Denominator_Type::ROWS,
+          T_, Denominator_Type::ROWS,
           (Denominator_Type::ROWS - Numerator_Type::ROWS)>::type;
 
-  using _DiscreteStateSpace_D_type =
+  using DiscreteStateSpace_D_type_ =
       typename ForDiscreteTransferFunction::DiscreteStateSpace_D_Type<
-          _T, _IS_STRICTLY_PROPER>::type;
+          T_, IS_STRICTLY_PROPER_>::type;
 
-  using _U_Type = PythonControl::StateSpaceInput_Type<_T, 1>;
+  using U_Type_ = PythonControl::StateSpaceInput_Type<T_, 1>;
 
-  using _State_Space_Type = PythonControl::DiscreteStateSpace<
-      _DiscreteStateSpace_A_type, _DiscreteStateSpace_B_type,
-      _DiscreteStateSpace_C_type, _DiscreteStateSpace_D_type, Number_Of_Delay>;
+  using State_Space_Type_ = PythonControl::DiscreteStateSpace<
+      DiscreteStateSpace_A_type_, DiscreteStateSpace_B_type_,
+      DiscreteStateSpace_C_type_, DiscreteStateSpace_D_type_, Number_Of_Delay>;
 
   /* Check Compatibility */
   /* Check Data Type */
-  static_assert(std::is_same<typename Denominator_Type::Value_Type, _T>::value,
+  static_assert(std::is_same<typename Denominator_Type::Value_Type, T_>::value,
                 "Data type of denominator must be same type as numerator.");
 
   /* Check Numerator and Denominator length */
@@ -891,35 +891,35 @@ protected:
 
 public:
   /* Type */
-  using Value_Type = _T;
+  using Value_Type = T_;
 
 public:
   /* Constructor */
   DiscreteTransferFunction() {}
 
   DiscreteTransferFunction(const Numerator_Type &numerator,
-                           const Denominator_Type &denominator, _T delta_time) {
+                           const Denominator_Type &denominator, T_ delta_time) {
     /* Set A */
     ForDiscreteTransferFunction::Set_A_Value<
-        _T, _DiscreteStateSpace_A_type, Denominator_Type, 0,
-        (_DENOMINATOR_DIMENSION - 1)>::set(this->_state_space.A, denominator);
+        T_, DiscreteStateSpace_A_type_, Denominator_Type, 0,
+        (DENOMINATOR_DIMENSION_ - 1)>::set(this->_state_space.A, denominator);
 
     ForDiscreteTransferFunction::Set_A_Ones<
-        _T, _DiscreteStateSpace_A_type, _DENOMINATOR_DIMENSION,
-        (2 * (_DENOMINATOR_DIMENSION - 1))>::set(this->_state_space.A);
+        T_, DiscreteStateSpace_A_type_, DENOMINATOR_DIMENSION_,
+        (2 * (DENOMINATOR_DIMENSION_ - 1))>::set(this->_state_space.A);
 
     /* Set B */
-    this->_state_space.B(0) = static_cast<_T>(1);
+    this->_state_space.B(0) = static_cast<T_>(1);
 
     /* Set C */
     ForDiscreteTransferFunction::Set_C_Value<
-        _T, _DiscreteStateSpace_C_type, Numerator_Type, Denominator_Type,
-        _IS_STRICTLY_PROPER>::set(this->_state_space.C, numerator, denominator);
+        T_, DiscreteStateSpace_C_type_, Numerator_Type, Denominator_Type,
+        IS_STRICTLY_PROPER_>::set(this->_state_space.C, numerator, denominator);
 
     /* Set D */
     ForDiscreteTransferFunction::Set_D_Value<
-        _T, _DiscreteStateSpace_D_type, Numerator_Type, Denominator_Type,
-        _IS_STRICTLY_PROPER>::set(this->_state_space.D, numerator, denominator);
+        T_, DiscreteStateSpace_D_type_, Numerator_Type, Denominator_Type,
+        IS_STRICTLY_PROPER_>::set(this->_state_space.D, numerator, denominator);
 
     /* Set delta time */
     this->_state_space.delta_time = delta_time;
@@ -976,7 +976,7 @@ public:
    *
    * @return The state space representation.
    */
-  auto get_X(void) const -> typename _State_Space_Type::Original_X_Type {
+  auto get_X(void) const -> typename State_Space_Type_::Original_X_Type {
     return this->_state_space.X;
   }
 
@@ -988,7 +988,7 @@ public:
    *
    * @return The output value.
    */
-  _T get_y(void) const {
+  T_ get_y(void) const {
     return this->_state_space.get_Y().template get<0, 0>();
   }
 
@@ -1000,8 +1000,8 @@ public:
    *
    * @return The input value.
    */
-  void update(const _T &u) {
-    auto input = make_StateSpaceInput<_U_Type::ROWS>(u);
+  void update(const T_ &u) {
+    auto input = make_StateSpaceInput<U_Type_::ROWS>(u);
 
     this->_state_space.update(input);
   }
@@ -1020,22 +1020,22 @@ public:
                                        const Denominator_Type &denominator) {
     /* Set A */
     ForDiscreteTransferFunction::Set_A_Value<
-        _T, _DiscreteStateSpace_A_type, Denominator_Type, 0,
-        (_DENOMINATOR_DIMENSION - 1)>::set(this->_state_space.A, denominator);
+        T_, DiscreteStateSpace_A_type_, Denominator_Type, 0,
+        (DENOMINATOR_DIMENSION_ - 1)>::set(this->_state_space.A, denominator);
 
     ForDiscreteTransferFunction::Set_A_Ones<
-        _T, _DiscreteStateSpace_A_type, _DENOMINATOR_DIMENSION,
-        (2 * (_DENOMINATOR_DIMENSION - 1))>::set(this->_state_space.A);
+        T_, DiscreteStateSpace_A_type_, DENOMINATOR_DIMENSION_,
+        (2 * (DENOMINATOR_DIMENSION_ - 1))>::set(this->_state_space.A);
 
     /* Set C */
     ForDiscreteTransferFunction::Set_C_Value<
-        _T, _DiscreteStateSpace_C_type, Numerator_Type, Denominator_Type,
-        _IS_STRICTLY_PROPER>::set(this->_state_space.C, numerator, denominator);
+        T_, DiscreteStateSpace_C_type_, Numerator_Type, Denominator_Type,
+        IS_STRICTLY_PROPER_>::set(this->_state_space.C, numerator, denominator);
 
     /* Set D */
     ForDiscreteTransferFunction::Set_D_Value<
-        _T, _DiscreteStateSpace_D_type, Numerator_Type, Denominator_Type,
-        _IS_STRICTLY_PROPER>::set(this->_state_space.D, numerator, denominator);
+        T_, DiscreteStateSpace_D_type_, Numerator_Type, Denominator_Type,
+        IS_STRICTLY_PROPER_>::set(this->_state_space.D, numerator, denominator);
   }
 
   /**
@@ -1057,10 +1057,10 @@ public:
    * @param y_steady_state The desired steady state output.
    * @return The calculated steady state input.
    */
-  _T solve_steady_state_and_input(const _T &y_steady_state) {
+  T_ solve_steady_state_and_input(const T_ &y_steady_state) {
 
-    _T u_steady_state = ForDiscreteTransferFunction::SolveSteadyStateAndInput<
-        _T, _State_Space_Type, _IS_STRICTLY_PROPER>::solve(this->_state_space,
+    T_ u_steady_state = ForDiscreteTransferFunction::SolveSteadyStateAndInput<
+        T_, State_Space_Type_, IS_STRICTLY_PROPER_>::solve(this->_state_space,
                                                            y_steady_state);
 
     return u_steady_state;
@@ -1070,11 +1070,11 @@ public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DELAY = Number_Of_Delay;
   static constexpr std::size_t STATE_SIZE =
-      _State_Space_Type::Original_X_Type::ROWS;
+      State_Space_Type_::Original_X_Type::ROWS;
 
 protected:
   /* Variable */
-  _State_Space_Type _state_space;
+  State_Space_Type_ _state_space;
 };
 
 /* make Discrete Transfer Function */
