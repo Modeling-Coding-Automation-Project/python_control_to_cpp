@@ -39,7 +39,7 @@ jobs:
 
         /opt/venv_py_samples/bin/pip install --upgrade setuptools
 
-        /opt/venv_py_samples/bin/pip install numpy matplotlib scipy control sympy astor
+        /opt/venv_py_samples/bin/pip install numpy matplotlib scipy control sympy astor plotly dash
 
         '
     - name: Run samples
