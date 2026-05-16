@@ -5,7 +5,7 @@
  *
  * This program sets up a plant model using a nonlinear bicycle model,
  * initializes process and measurement noise covariances, and defines the state
- * and measurement functions. It then constructs an Unscented Kalman Filter
+ * and measurement equations. It then constructs an Unscented Kalman Filter
  * (UKF) object and simulates the system over a number of time steps, applying
  * control inputs and updating the filter with delayed measurements. The
  * estimated states and true states are printed for comparison.
@@ -51,13 +51,13 @@ public:
 };
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+auto bicycle_model_state_equation(const StateSpaceState_Type<T, STATE_SIZE> &X,
                                   const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
     -> StateSpaceState_Type<T, STATE_SIZE>;
 
 template <typename T>
-auto bicycle_model_measurement_function(
+auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
     -> StateSpaceOutput_Type<T, OUTPUT_SIZE>;
@@ -81,16 +81,16 @@ int main(void) {
 
   Parameter_Type parameters(0.1, 0.5, -1.0, -1.0, 10.0, 10.0);
 
-  /* state and measurement functions */
-  StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
-      state_function = bicycle_model_state_function<double>;
+  /* state and measurement equations */
+  StateEquation_Object<X_Type, U_Type, BicycleModelParameter<double>>
+      state_equation = bicycle_model_state_equation<double>;
 
-  MeasurementFunction_Object<Y_Type, X_Type, BicycleModelParameter<double>>
-      measurement_function = bicycle_model_measurement_function<double>;
+  MeasurementEquation_Object<Y_Type, X_Type, BicycleModelParameter<double>>
+      measurement_equation = bicycle_model_measurement_equation<double>;
 
   /* define EKF */
   UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
-      ukf(Q, R, state_function, measurement_function, parameters);
+      ukf(Q, R, state_equation, measurement_equation, parameters);
 
   /* simulation */
   auto x_true_initial = make_StateSpaceState<STATE_SIZE>(2.0, 6.0, 0.3);
@@ -109,9 +109,9 @@ int main(void) {
 
   x_true = x_true_initial;
   for (std::size_t i = 0; i < EKF_SIM_STEP_MAX; i++) {
-    x_true = bicycle_model_state_function<double>(x_true, u, parameters);
+    x_true = bicycle_model_state_equation<double>(x_true, u, parameters);
     y_store[delay_index] =
-        bicycle_model_measurement_function<double>(x_true, parameters);
+        bicycle_model_measurement_equation<double>(x_true, parameters);
 
     // system delay
     delay_index++;
@@ -139,7 +139,7 @@ int main(void) {
 }
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+auto bicycle_model_state_equation(const StateSpaceState_Type<T, STATE_SIZE> &X,
                                   const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
     -> StateSpaceState_Type<T, STATE_SIZE> {
@@ -170,7 +170,7 @@ auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
 }
 
 template <typename T>
-auto bicycle_model_measurement_function(
+auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
     -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {

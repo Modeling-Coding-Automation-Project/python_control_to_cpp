@@ -76,16 +76,16 @@ hx = sympy.Matrix([[sympy.sqrt((landmark_1_x - x) ** 2 + (landmark_1_y - y) ** 2
 hx_jacobian = hx.jacobian(X)
 
 # Save functions to separate files
-fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
+fxu_file_name = ExpressionDeploy.write_state_equation_code_from_sympy(
     fxu, X, U)
 fxu_jacobian_file_name = \
-    ExpressionDeploy.write_state_function_code_from_sympy(
+    ExpressionDeploy.write_state_equation_code_from_sympy(
         fxu_jacobian, X, U)
 
-hx_file_name = ExpressionDeploy.write_measurement_function_code_from_sympy(
+hx_file_name = ExpressionDeploy.write_measurement_equation_code_from_sympy(
     hx, X)
 hx_jacobian_file_name = \
-    ExpressionDeploy.write_measurement_function_code_from_sympy(
+    ExpressionDeploy.write_measurement_equation_code_from_sympy(
         hx_jacobian, X)
 
 # %% design EKF

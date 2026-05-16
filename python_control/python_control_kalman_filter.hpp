@@ -233,86 +233,86 @@ template <typename T, typename Kai_Type, typename X_Type, typename SP_Type>
 using UpdateSigmaPointMatrix =
     UpdateSigmaPointMatrix_Loop<T, Kai_Type, X_Type, SP_Type, 0, X_Type::ROWS>;
 
-/* calc state function with each sigma points */
+/* calc state equation with each sigma points */
 
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+template <typename Kai_Type, typename StateEquation_Object, typename U_Type,
           typename Parameter_Type, std::size_t Index>
-struct StateFunctionEachSigmaPoints_Loop {
+struct StateEquationEachSigmaPoints_Loop {
   /**
-   * @brief Computes the state function for each sigma point in the Kai matrix
+   * @brief Computes the state equation for each sigma point in the Kai matrix
    * and updates the corresponding row in the Kai matrix.
    *
    * @tparam Kai_Type The type of the sigma point matrix.
-   * @tparam StateFunction_Object The type of the state function object.
+   * @tparam StateEquation_Object The type of the state equation object.
    * @tparam U_Type The type of the input vector.
-   * @tparam Parameter_Type The type of the parameters for the state function.
+   * @tparam Parameter_Type The type of the parameters for the state equation.
    * @tparam Index The current index in the recursion.
    * @param Kai Reference to the sigma point matrix to modify.
-   * @param state_function The state function object used for computation.
-   * @param U The input vector used in the state function.
-   * @param parameters The parameters for the state function.
+   * @param state_equation The state equation object used for computation.
+   * @param U The input vector used in the state equation.
+   * @param parameters The parameters for the state equation.
    *
-   * This function uses template recursion to compute the state function for
+   * This function uses template recursion to compute the state equation for
    * each sigma point and updates the corresponding row in the Kai matrix,
    * continuing until all indices are processed.
    */
   static inline void compute(Kai_Type &Kai,
-                             const StateFunction_Object &state_function,
+                             const StateEquation_Object &state_equation,
                              const U_Type &U,
                              const Parameter_Type &parameters) {
 
     PythonNumpy::set_row<Index>(
-        Kai, state_function(PythonNumpy::get_row<Index>(Kai), U, parameters));
+        Kai, state_equation(PythonNumpy::get_row<Index>(Kai), U, parameters));
 
-    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+    StateEquationEachSigmaPoints_Loop<Kai_Type, StateEquation_Object, U_Type,
                                       Parameter_Type,
-                                      (Index - 1)>::compute(Kai, state_function,
+                                      (Index - 1)>::compute(Kai, state_equation,
                                                             U, parameters);
   }
 };
 
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+template <typename Kai_Type, typename StateEquation_Object, typename U_Type,
           typename Parameter_Type>
-struct StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+struct StateEquationEachSigmaPoints_Loop<Kai_Type, StateEquation_Object, U_Type,
                                          Parameter_Type, 0> {
   /**
-   * @brief Base case for the recursive computation of the state function for
+   * @brief Base case for the recursive computation of the state equation for
    * each sigma point.
    *
    * @param Kai Reference to the sigma point matrix to modify.
-   * @param state_function The state function object used for computation.
-   * @param U The input vector used in the state function.
-   * @param parameters The parameters for the state function.
+   * @param state_equation The state equation object used for computation.
+   * @param U The input vector used in the state equation.
+   * @param parameters The parameters for the state equation.
    * *
-   * This function computes the state function for the first sigma point and
+   * This function computes the state equation for the first sigma point and
    * updates the corresponding row in the Kai matrix.
    * */
   static inline void compute(Kai_Type &Kai,
-                             const StateFunction_Object &state_function,
+                             const StateEquation_Object &state_equation,
                              const U_Type &U,
                              const Parameter_Type &parameters) {
 
     PythonNumpy::set_row<0>(
-        Kai, state_function(PythonNumpy::get_row<0>(Kai), U, parameters));
+        Kai, state_equation(PythonNumpy::get_row<0>(Kai), U, parameters));
   }
 };
 
 /**
- * @brief Computes the state function for each sigma point in the Kai matrix
+ * @brief Computes the state equation for each sigma point in the Kai matrix
  * and updates the corresponding cols.
  *
- * This alias template simplifies the process of computing the state function
+ * This alias template simplifies the process of computing the state equation
  * for each sigma point, iterating through all indices in the Kai matrix.
  *
  * @tparam Kai_Type The type of the sigma point matrix.
- * @tparam StateFunction_Object The type of the state function object.
+ * @tparam StateEquation_Object The type of the state equation object.
  * @tparam U_Type The type of the input vector.
- * @tparam Parameter_Type The type of the parameters for the state function.
+ * @tparam Parameter_Type The type of the parameters for the state equation.
  */
-template <typename Kai_Type, typename StateFunction_Object, typename U_Type,
+template <typename Kai_Type, typename StateEquation_Object, typename U_Type,
           typename Parameter_Type>
-using StateFunctionEachSigmaPoints =
-    StateFunctionEachSigmaPoints_Loop<Kai_Type, StateFunction_Object, U_Type,
+using StateEquationEachSigmaPoints =
+    StateEquationEachSigmaPoints_Loop<Kai_Type, StateEquation_Object, U_Type,
                                       Parameter_Type, (Kai_Type::COLS - 1)>;
 
 /* average sigma points */
@@ -469,75 +469,75 @@ template <typename Kai_Type, typename X_Type>
 using SigmaPointsCovariance =
     SigmaPointsCovariance_Loop<Kai_Type, X_Type, (Kai_Type::COLS - 1)>;
 
-/* calc measurement function with each sigma points */
+/* calc measurement equation with each sigma points */
 template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type,
+          typename MeasurementEquation_Object, typename Parameter_Type,
           std::size_t Index>
-struct MeasurementFunctionEachSigmaPoints_Loop {
+struct MeasurementEquationEachSigmaPoints_Loop {
   /**
-   * @brief Computes the measurement function for each sigma point in the Kai
+   * @brief Computes the measurement equation for each sigma point in the Kai
    * matrix and updates the corresponding row in the Nu matrix.
    *
    * @tparam Nu_Type The type of the measurement output matrix.
    * @tparam Kai_Type The type of the sigma point matrix.
-   * @tparam MeasurementFunction_Object The type of the measurement function
+   * @tparam MeasurementEquation_Object The type of the measurement equation
    * object.
    * @tparam Parameter_Type The type of the parameters for the measurement
    * function.
    * @tparam Index The current index in the recursion.
    * @param Nu Reference to the measurement output matrix to modify.
    * @param Kai The sigma point matrix containing the sigma points.
-   * @param measurement_function The measurement function object used for
+   * @param measurement_equation The measurement equation object used for
    * computation.
-   * @param parameters The parameters for the measurement function.
+   * @param parameters The parameters for the measurement equation.
    *
-   * This function uses template recursion to compute the measurement function
+   * This function uses template recursion to compute the measurement equation
    * for each sigma point and updates the corresponding row in the Nu matrix,
    * continuing until all indices are processed.
    */
   static inline void
   compute(Nu_Type &Nu, Kai_Type &Kai,
-          const MeasurementFunction_Object &measurement_function,
+          const MeasurementEquation_Object &measurement_equation,
           const Parameter_Type &parameters) {
 
     PythonNumpy::set_row<Index>(
-        Nu, measurement_function(PythonNumpy::get_row<Index>(Kai), parameters));
+        Nu, measurement_equation(PythonNumpy::get_row<Index>(Kai), parameters));
 
-    MeasurementFunctionEachSigmaPoints_Loop<
-        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
-        (Index - 1)>::compute(Nu, Kai, measurement_function, parameters);
+    MeasurementEquationEachSigmaPoints_Loop<
+        Nu_Type, Kai_Type, MeasurementEquation_Object, Parameter_Type,
+        (Index - 1)>::compute(Nu, Kai, measurement_equation, parameters);
   }
 };
 
 template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type>
-struct MeasurementFunctionEachSigmaPoints_Loop<
-    Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type, 0> {
+          typename MeasurementEquation_Object, typename Parameter_Type>
+struct MeasurementEquationEachSigmaPoints_Loop<
+    Nu_Type, Kai_Type, MeasurementEquation_Object, Parameter_Type, 0> {
   /**
    * @brief Base case for the recursive computation of the measurement
    * function for each sigma point.
    *
    * @param Nu Reference to the measurement output matrix to modify.
    * @param Kai The sigma point matrix containing the sigma points.
-   * @param measurement_function The measurement function object used for
+   * @param measurement_equation The measurement equation object used for
    * computation.
-   * @param parameters The parameters for the measurement function.
+   * @param parameters The parameters for the measurement equation.
    * *
-   * This function computes the measurement function for the first sigma
+   * This function computes the measurement equation for the first sigma
    * point and updates the corresponding row in the Nu matrix.
    */
   static inline void
   compute(Nu_Type &Nu, Kai_Type &Kai,
-          const MeasurementFunction_Object &measurement_function,
+          const MeasurementEquation_Object &measurement_equation,
           const Parameter_Type &parameters) {
 
     PythonNumpy::set_row<0>(
-        Nu, measurement_function(PythonNumpy::get_row<0>(Kai), parameters));
+        Nu, measurement_equation(PythonNumpy::get_row<0>(Kai), parameters));
   }
 };
 
 /**
- * @brief Computes the measurement function for each sigma point in the Kai
+ * @brief Computes the measurement equation for each sigma point in the Kai
  * matrix and updates the corresponding cols in the Nu matrix.
  *
  * This alias template simplifies the process of computing the measurement
@@ -546,16 +546,16 @@ struct MeasurementFunctionEachSigmaPoints_Loop<
  *
  * @tparam Nu_Type The type of the measurement output matrix.
  * @tparam Kai_Type The type of the sigma point matrix.
- * @tparam MeasurementFunction_Object The type of the measurement function
+ * @tparam MeasurementEquation_Object The type of the measurement equation
  * object.
  * @tparam Parameter_Type The type of the parameters for the measurement
  * function.
  */
 template <typename Nu_Type, typename Kai_Type,
-          typename MeasurementFunction_Object, typename Parameter_Type>
-using MeasurementFunctionEachSigmaPoints =
-    MeasurementFunctionEachSigmaPoints_Loop<
-        Nu_Type, Kai_Type, MeasurementFunction_Object, Parameter_Type,
+          typename MeasurementEquation_Object, typename Parameter_Type>
+using MeasurementEquationEachSigmaPoints =
+    MeasurementEquationEachSigmaPoints_Loop<
+        Nu_Type, Kai_Type, MeasurementEquation_Object, Parameter_Type,
         (Kai_Type::COLS - 1)>;
 
 } // namespace UKF_Operation
@@ -620,33 +620,33 @@ template <std::size_t NumberOfDelay> struct Extended {
   /**
    * @brief Predicts the next state and updates the covariance matrix for an
    * Extended Kalman Filter.
-   * @param state_function_jacobian The Jacobian of the state function.
-   * @param state_function The state function object.
+   * @param state_equation_jacobian The Jacobian of the state equation.
+   * @param state_equation The state equation object.
    * @param A The Jacobian matrix to be updated.
    * @param P The covariance matrix to be updated.
    * @param Q The process noise covariance matrix.
    * @param U_store The input store containing the control inputs.
    * @param X_hat The estimated state vector to be updated.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The current input count, which determines if the
    * prediction should be executed or delayed.
    */
-  template <typename StateFunction_Object,
-            typename StateFunction_Jacobian_Object, typename A_Type,
+  template <typename StateEquation_Object,
+            typename StateEquation_Jacobian_Object, typename A_Type,
             typename P_Type, typename Q_Type, typename U_Store_Type,
             typename X_Type, typename Parameter_Type>
   static void
-  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
-          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+  execute(const StateEquation_Jacobian_Object &state_equation_jacobian,
+          const StateEquation_Object &state_equation, A_Type &A, P_Type &P,
           const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
           const Parameter_Type parameters, std::size_t &input_count) {
 
     if (input_count < NumberOfDelay) {
       input_count++;
     } else {
-      A = state_function_jacobian(X_hat, U_store.get(), parameters);
+      A = state_equation_jacobian(X_hat, U_store.get(), parameters);
 
-      X_hat = state_function(X_hat, U_store.get(), parameters);
+      X_hat = state_equation(X_hat, U_store.get(), parameters);
       P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
     }
   }
@@ -656,30 +656,30 @@ template <> struct Extended<0> {
   /**
    * @brief Predicts the next state and updates the covariance matrix for an
    * Extended Kalman Filter without delay.
-   * @param state_function_jacobian The Jacobian of the state function.
-   * @param state_function The state function object.
+   * @param state_equation_jacobian The Jacobian of the state equation.
+   * @param state_equation The state equation object.
    * @param A The Jacobian matrix to be updated.
    * @param P The covariance matrix to be updated.
    * @param Q The process noise covariance matrix.
    * @param U_store The input store containing the control inputs.
    * @param X_hat The estimated state vector to be updated.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The current input count, which is ignored in this case.
    */
-  template <typename StateFunction_Object,
-            typename StateFunction_Jacobian_Object, typename A_Type,
+  template <typename StateEquation_Object,
+            typename StateEquation_Jacobian_Object, typename A_Type,
             typename P_Type, typename Q_Type, typename U_Store_Type,
             typename X_Type, typename Parameter_Type>
   static void
-  execute(const StateFunction_Jacobian_Object &state_function_jacobian,
-          const StateFunction_Object &state_function, A_Type &A, P_Type &P,
+  execute(const StateEquation_Jacobian_Object &state_equation_jacobian,
+          const StateEquation_Object &state_equation, A_Type &A, P_Type &P,
           const Q_Type &Q, const U_Store_Type &U_store, X_Type &X_hat,
           const Parameter_Type parameters, std::size_t &input_count) {
     static_cast<void>(input_count);
 
-    A = state_function_jacobian(X_hat, U_store.get(), parameters);
+    A = state_equation_jacobian(X_hat, U_store.get(), parameters);
 
-    X_hat = state_function(X_hat, U_store.get(), parameters);
+    X_hat = state_equation(X_hat, U_store.get(), parameters);
     P = A * PythonNumpy::A_mul_BTranspose(P, A) + Q;
   }
 };
@@ -689,7 +689,7 @@ template <std::size_t NumberOfDelay> struct Unscented {
   /**
    * @brief Predicts the next state and updates the covariance matrix for an
    * Unscented Kalman Filter.
-   * @param state_function The state function object.
+   * @param state_equation The state equation object.
    * @param sigma_points_calculator The sigma points calculator object.
    * @param X_hat The estimated state vector to be updated.
    * @param U_store The input store containing the control inputs.
@@ -698,15 +698,15 @@ template <std::size_t NumberOfDelay> struct Unscented {
    * @param W The weight matrix for the sigma points.
    * @param Q The process noise covariance matrix.
    * @param X_d The output matrix for the sigma points covariance.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The current input count, which determines if the
    * prediction should be executed or delayed.
    */
-  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+  template <typename StateEquation_Object, typename SigmaPointsCalculator_Type,
             typename X_Type, typename U_Store_Type, typename P_Type, typename T,
             typename W_Type, typename Q_Type, typename Kai_Type,
             typename Parameter_Type>
-  static void execute(StateFunction_Object &state_function,
+  static void execute(StateEquation_Object &state_equation,
                       SigmaPointsCalculator_Type &sigma_points_calculator,
                       X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
                       const T &w_m, const W_Type &W, const Q_Type &Q,
@@ -717,10 +717,10 @@ template <std::size_t NumberOfDelay> struct Unscented {
     } else {
       auto Kai = sigma_points_calculator.calculate(X_hat, P);
 
-      UKF_Operation::StateFunctionEachSigmaPoints<
-          Kai_Type, StateFunction_Object,
+      UKF_Operation::StateEquationEachSigmaPoints<
+          Kai_Type, StateEquation_Object,
           typename U_Store_Type::Original_Vector_Type,
-          Parameter_Type>::compute(Kai, state_function, U_store.get(),
+          Parameter_Type>::compute(Kai, state_equation, U_store.get(),
                                    parameters);
 
       X_hat = w_m * PythonNumpy::get_row<0>(Kai);
@@ -739,7 +739,7 @@ template <> struct Unscented<0> {
   /**
    * @brief Predicts the next state and updates the covariance matrix for an
    * Unscented Kalman Filter without delay.
-   * @param state_function The state function object.
+   * @param state_equation The state equation object.
    * @param sigma_points_calculator The sigma points calculator object.
    * @param X_hat The estimated state vector to be updated.
    * @param U_store The input store containing the control inputs.
@@ -748,14 +748,14 @@ template <> struct Unscented<0> {
    * @param W The weight matrix for the sigma points.
    * @param Q The process noise covariance matrix.
    * @param X_d The output matrix for the sigma points covariance.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The current input count, which is ignored in this case.
    */
-  template <typename StateFunction_Object, typename SigmaPointsCalculator_Type,
+  template <typename StateEquation_Object, typename SigmaPointsCalculator_Type,
             typename X_Type, typename U_Store_Type, typename P_Type, typename T,
             typename W_Type, typename Q_Type, typename Kai_Type,
             typename Parameter_Type>
-  static void execute(StateFunction_Object &state_function,
+  static void execute(StateEquation_Object &state_equation,
                       SigmaPointsCalculator_Type &sigma_points_calculator,
                       X_Type &X_hat, const U_Store_Type &U_store, P_Type &P,
                       const T &w_m, const W_Type &W, const Q_Type &Q,
@@ -766,10 +766,10 @@ template <> struct Unscented<0> {
 
     auto Kai = sigma_points_calculator.calculate(X_hat, P);
 
-    UKF_Operation::StateFunctionEachSigmaPoints<
-        Kai_Type, StateFunction_Object,
+    UKF_Operation::StateEquationEachSigmaPoints<
+        Kai_Type, StateEquation_Object,
         typename U_Store_Type::Original_Vector_Type,
-        Parameter_Type>::compute(Kai, state_function, U_store.get(),
+        Parameter_Type>::compute(Kai, state_equation, U_store.get(),
                                  parameters);
 
     X_hat = w_m * PythonNumpy::get_row<0>(Kai);
@@ -839,16 +839,16 @@ template <std::size_t NumberOfDelay> struct Extended {
   /**
    * @brief Computes the estimated state vector x_hat without delay for an
    * Extended Kalman Filter.
-   * @param state_function The state function object.
+   * @param state_equation The state equation object.
    * @param X_hat_in The initial estimated state vector.
    * @param U_store The input store containing the control inputs.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The number of inputs to consider in the prediction.
    * @return The estimated state vector x_hat.
    */
-  template <typename StateFunction_Object, typename X_Type,
+  template <typename StateEquation_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
-  static auto compute(StateFunction_Object &state_function,
+  static auto compute(StateEquation_Object &state_equation,
                       const X_Type &X_hat_in, const U_Store_Type &U_store,
                       const Parameter_Type &parameters,
                       const std::size_t &input_count) -> X_Type {
@@ -863,7 +863,7 @@ template <std::size_t NumberOfDelay> struct Extended {
       }
 
       X_hat =
-          state_function(X_hat, U_store.get_by_index(delay_index), parameters);
+          state_equation(X_hat, U_store.get_by_index(delay_index), parameters);
     }
 
     return X_hat;
@@ -874,20 +874,20 @@ template <> struct Extended<0> {
   /**
    * @brief Computes the estimated state vector x_hat without delay for an
    * Extended Kalman Filter without considering input count.
-   * @param state_function The state function object.
+   * @param state_equation The state equation object.
    * @param X_hat The initial estimated state vector.
    * @param U_store The input store containing the control inputs.
-   * @param parameters Additional parameters for the state function.
+   * @param parameters Additional parameters for the state equation.
    * @param input_count The number of inputs to consider in the prediction.
    * @return The estimated state vector x_hat.
    */
-  template <typename StateFunction_Object, typename X_Type,
+  template <typename StateEquation_Object, typename X_Type,
             typename U_Store_Type, typename Parameter_Type>
-  static auto compute(StateFunction_Object &state_function, const X_Type &X_hat,
+  static auto compute(StateEquation_Object &state_equation, const X_Type &X_hat,
                       const U_Store_Type &U_store,
                       const Parameter_Type &parameters,
                       const std::size_t &input_count) -> X_Type {
-    static_cast<void>(state_function);
+    static_cast<void>(state_equation);
     static_cast<void>(U_store);
     static_cast<void>(parameters);
     static_cast<void>(input_count);
@@ -1356,13 +1356,13 @@ template <typename DiscreteStateSpace_Type, typename Q_Type, typename R_Type>
 using LinearKalmanFilter_Type =
     LinearKalmanFilter<DiscreteStateSpace_Type, Q_Type, R_Type>;
 
-/* state and measurement function alias */
+/* state and measurement equation alias */
 
 /**
- * @brief Type aliases for state and measurement function objects.
+ * @brief Type aliases for state and measurement equation objects.
  *
  * These aliases define the types of function objects used for state and
- * measurement functions in Kalman filters, allowing for flexible function
+ * measurement equations in Kalman filters, allowing for flexible function
  * signatures.
  *
  * @tparam State_Type The type of the state vector.
@@ -1370,11 +1370,11 @@ using LinearKalmanFilter_Type =
  * @tparam Parameter_Type The type of additional parameters for the functions.
  */
 template <typename State_Type, typename Input_Type, typename Parameter_Type>
-using StateFunction_Object = std::function<State_Type(
+using StateEquation_Object = std::function<State_Type(
     const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
 /**
- * @brief Type alias for the Jacobian of the state function.
+ * @brief Type alias for the Jacobian of the state equation.
  *
  * This alias defines the type of the Jacobian function object for the state
  * function, which computes the Jacobian matrix given the state, input, and
@@ -1387,13 +1387,13 @@ using StateFunction_Object = std::function<State_Type(
  */
 template <typename A_Type, typename State_Type, typename Input_Type,
           typename Parameter_Type>
-using StateFunctionJacobian_Object = std::function<A_Type(
+using StateEquationJacobian_Object = std::function<A_Type(
     const State_Type &, const Input_Type &, const Parameter_Type &)>;
 
 /**
- * @brief Type alias for the measurement function object.
+ * @brief Type alias for the measurement equation object.
  *
- * This alias defines the type of the measurement function object, which maps
+ * This alias defines the type of the measurement equation object, which maps
  * the state and parameters to an output vector.
  *
  * @tparam Output_Type The type of the output vector.
@@ -1401,14 +1401,14 @@ using StateFunctionJacobian_Object = std::function<A_Type(
  * @tparam Parameter_Type The type of additional parameters for the function.
  */
 template <typename Output_Type, typename State_Type, typename Parameter_Type>
-using MeasurementFunction_Object =
+using MeasurementEquation_Object =
     std::function<Output_Type(const State_Type &, const Parameter_Type &)>;
 
 /**
- * @brief Type alias for the Jacobian of the measurement function.
+ * @brief Type alias for the Jacobian of the measurement equation.
  *
  * This alias defines the type of the Jacobian function object for the
- * measurement function, which computes the Jacobian matrix given the state and
+ * measurement equation, which computes the Jacobian matrix given the state and
  * parameters.
  *
  * @tparam C_Type The type of the Jacobian matrix.
@@ -1416,7 +1416,7 @@ using MeasurementFunction_Object =
  * @tparam Parameter_Type The type of additional parameters for the function.
  */
 template <typename C_Type, typename State_Type, typename Parameter_Type>
-using MeasurementFunctionJacobian_Object =
+using MeasurementEquationJacobian_Object =
     std::function<C_Type(const State_Type &, const Parameter_Type &)>;
 
 /* Extended Kalman Filter */
@@ -1476,16 +1476,16 @@ protected:
   using InputStored_Type_ =
       PythonControl::DelayedVectorObject<Input_Type_, Number_Of_Delay>;
 
-  using StateFunction_Object_ =
-      PythonControl::StateFunction_Object<State_Type_, U_Type, Parameter_Type>;
-  using StateFunctionJacobian_Object_ =
-      PythonControl::StateFunctionJacobian_Object<A_Type, State_Type_, U_Type,
+  using StateEquation_Object_ =
+      PythonControl::StateEquation_Object<State_Type_, U_Type, Parameter_Type>;
+  using StateEquationJacobian_Object_ =
+      PythonControl::StateEquationJacobian_Object<A_Type, State_Type_, U_Type,
                                                   Parameter_Type>;
-  using MeasurementFunction_Object_ =
-      PythonControl::MeasurementFunction_Object<Measurement_Type_, State_Type_,
+  using MeasurementEquation_Object_ =
+      PythonControl::MeasurementEquation_Object<Measurement_Type_, State_Type_,
                                                 Parameter_Type>;
-  using MeasurementFunctionJacobian_Object_ =
-      PythonControl::MeasurementFunctionJacobian_Object<C_Type, State_Type_,
+  using MeasurementEquationJacobian_Object_ =
+      PythonControl::MeasurementEquationJacobian_Object<C_Type, State_Type_,
                                                         Parameter_Type>;
 
   using C_P_CT_R_Inv_Type_ = PythonNumpy::LinalgSolverInv_Type<
@@ -1523,19 +1523,19 @@ public:
         _input_count(static_cast<std::size_t>(0)) {}
 
   ExtendedKalmanFilter(
-      const Q_Type &Q, const R_Type &R, StateFunction_Object_ &state_function,
-      StateFunctionJacobian_Object_ &state_function_jacobian,
-      MeasurementFunction_Object_ &measurement_function,
-      MeasurementFunctionJacobian_Object_ &measurement_function_jacobian,
+      const Q_Type &Q, const R_Type &R, StateEquation_Object_ &state_equation,
+      StateEquationJacobian_Object_ &state_equation_jacobian,
+      MeasurementEquation_Object_ &measurement_equation,
+      MeasurementEquationJacobian_Object_ &measurement_equation_jacobian,
       const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
         P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
               .create_dense()),
         G(), X_hat(), U_store(), parameters(parameters), C_P_CT_R_inv_solver_(),
-        _state_function(state_function),
-        _state_function_jacobian(state_function_jacobian),
-        _measurement_function(measurement_function),
-        _measurement_function_jacobian(measurement_function_jacobian),
+        _state_equation(state_equation),
+        _state_equation_jacobian(state_equation_jacobian),
+        _measurement_equation(measurement_equation),
+        _measurement_equation_jacobian(measurement_equation_jacobian),
         _input_count(static_cast<std::size_t>(0)) {}
 
   /* Copy Constructor */
@@ -1546,10 +1546,10 @@ public:
         X_hat(input.X_hat), U_store(input.U_store),
         parameters(input.parameters),
         C_P_CT_R_inv_solver_(input.C_P_CT_R_inv_solver_),
-        _state_function(input._state_function),
-        _state_function_jacobian(input._state_function_jacobian),
-        _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _state_equation(input._state_equation),
+        _state_equation_jacobian(input._state_equation_jacobian),
+        _measurement_equation(input._measurement_equation),
+        _measurement_equation_jacobian(input._measurement_equation_jacobian),
         _input_count(input._input_count) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
@@ -1568,11 +1568,11 @@ public:
       this->U_store = input.U_store;
       this->parameters = input.parameters;
       this->C_P_CT_R_inv_solver_ = input.C_P_CT_R_inv_solver_;
-      this->_state_function = input._state_function;
-      this->_state_function_jacobian = input._state_function_jacobian;
-      this->_measurement_function = input._measurement_function;
-      this->_measurement_function_jacobian =
-          input._measurement_function_jacobian;
+      this->_state_equation = input._state_equation;
+      this->_state_equation_jacobian = input._state_equation_jacobian;
+      this->_measurement_equation = input._measurement_equation;
+      this->_measurement_equation_jacobian =
+          input._measurement_equation_jacobian;
       this->_input_count = input._input_count;
     }
     return *this;
@@ -1587,10 +1587,10 @@ public:
         X_hat(std::move(input.X_hat)), U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
         C_P_CT_R_inv_solver_(std::move(input.C_P_CT_R_inv_solver_)),
-        _state_function(input._state_function),
-        _state_function_jacobian(input._state_function_jacobian),
-        _measurement_function(input._measurement_function),
-        _measurement_function_jacobian(input._measurement_function_jacobian),
+        _state_equation(input._state_equation),
+        _state_equation_jacobian(input._state_equation_jacobian),
+        _measurement_equation(input._measurement_equation),
+        _measurement_equation_jacobian(input._measurement_equation_jacobian),
         _input_count(std::move(input._input_count)) {}
 
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
@@ -1609,12 +1609,12 @@ public:
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
       this->C_P_CT_R_inv_solver_ = std::move(input.C_P_CT_R_inv_solver_);
-      this->_state_function = std::move(input._state_function);
-      this->_state_function_jacobian =
-          std::move(input._state_function_jacobian);
-      this->_measurement_function = std::move(input._measurement_function);
-      this->_measurement_function_jacobian =
-          std::move(input._measurement_function_jacobian);
+      this->_state_equation = std::move(input._state_equation);
+      this->_state_equation_jacobian =
+          std::move(input._state_equation_jacobian);
+      this->_measurement_equation = std::move(input._measurement_equation);
+      this->_measurement_equation_jacobian =
+          std::move(input._measurement_equation_jacobian);
       this->_input_count = std::move(input._input_count);
     }
     return *this;
@@ -1636,7 +1636,7 @@ public:
     U_store.push(U);
 
     PredictOperation::Extended<NUMBER_OF_DELAY>::execute(
-        this->_state_function_jacobian, this->_state_function, this->A, this->P,
+        this->_state_equation_jacobian, this->_state_equation, this->A, this->P,
         this->Q, this->U_store, this->X_hat, this->parameters,
         this->_input_count);
   }
@@ -1652,7 +1652,7 @@ public:
    */
   inline void update(const Measurement_Type_ &Y) override {
 
-    this->C = this->_measurement_function_jacobian(this->X_hat, parameters);
+    this->C = this->_measurement_equation_jacobian(this->X_hat, parameters);
 
     auto P_CT = PythonNumpy::A_mul_BTranspose(this->P, this->C);
 
@@ -1663,7 +1663,7 @@ public:
 
     this->X_hat =
         this->X_hat +
-        this->G * (Y - this->_measurement_function(this->X_hat, parameters));
+        this->G * (Y - this->_measurement_equation(this->X_hat, parameters));
 
     this->P = (PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>() -
                this->G * this->C) *
@@ -1671,34 +1671,34 @@ public:
   }
 
   /**
-   * @brief Calculates the state function for a given state and input.
+   * @brief Calculates the state equation for a given state and input.
    *
    * This function computes the next state based on the provided state vector,
-   * input vector, and the state function defined for the extended Kalman
+   * input vector, and the state equation defined for the extended Kalman
    * filter.
    *
    * @param X The current state vector.
    * @param U The control input vector.
    * @return The calculated next state vector.
    */
-  inline auto calculate_state_function(const State_Type_ &X,
+  inline auto calculate_state_equation(const State_Type_ &X,
                                        const U_Type &U) const -> State_Type_ {
-    return this->_state_function(X, U, this->parameters);
+    return this->_state_equation(X, U, this->parameters);
   }
 
   /**
-   * @brief Calculates the measurement function for a given state.
+   * @brief Calculates the measurement equation for a given state.
    *
    * This function computes the expected measurement based on the provided
-   * state vector and the measurement function defined for the extended Kalman
+   * state vector and the measurement equation defined for the extended Kalman
    * filter.
    *
    * @param X The current state vector.
    * @return The calculated measurement vector.
    */
-  inline auto calculate_measurement_function(const State_Type_ &X) const
+  inline auto calculate_measurement_equation(const State_Type_ &X) const
       -> Measurement_Type_ {
-    return this->_measurement_function(X, this->parameters);
+    return this->_measurement_equation(X, this->parameters);
   }
 
   /* Get */
@@ -1719,7 +1719,7 @@ public:
    * delays.
    *
    * This function calculates the estimated state vector based on the current
-   * state function, input store, and parameters, ignoring any delays in the
+   * state equation, input store, and parameters, ignoring any delays in the
    * input.
    *
    * @return The estimated state vector x_hat without delay.
@@ -1727,7 +1727,7 @@ public:
   inline auto get_x_hat_without_delay(void) const -> State_Type_ {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
-        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_state_equation, this->X_hat, this->U_store, this->parameters,
         this->_input_count);
   }
 
@@ -1792,10 +1792,10 @@ public:
 protected:
   /* Variable */
   C_P_CT_R_Inv_Type_ C_P_CT_R_inv_solver_;
-  StateFunction_Object_ _state_function;
-  StateFunctionJacobian_Object_ _state_function_jacobian;
-  MeasurementFunction_Object_ _measurement_function;
-  MeasurementFunctionJacobian_Object_ _measurement_function_jacobian;
+  StateEquation_Object_ _state_equation;
+  StateEquationJacobian_Object_ _state_equation_jacobian;
+  MeasurementEquation_Object_ _measurement_equation;
+  MeasurementEquationJacobian_Object_ _measurement_equation_jacobian;
   std::size_t _input_count;
 };
 
@@ -1974,10 +1974,10 @@ protected:
   using InputStored_Type_ =
       PythonControl::DelayedVectorObject<Input_Type_, Number_Of_Delay>;
 
-  using StateFunction_Object_ =
-      PythonControl::StateFunction_Object<State_Type_, U_Type, Parameter_Type>;
-  using MeasurementFunction_Object_ =
-      PythonControl::MeasurementFunction_Object<Measurement_Type_, State_Type_,
+  using StateEquation_Object_ =
+      PythonControl::StateEquation_Object<State_Type_, U_Type, Parameter_Type>;
+  using MeasurementEquation_Object_ =
+      PythonControl::MeasurementEquation_Object<Measurement_Type_, State_Type_,
                                                 Parameter_Type>;
 
   using P_Chol_Solver_Type_ = PythonNumpy::LinalgSolverCholesky_Type<
@@ -2029,22 +2029,22 @@ public:
                         .create_dense()),
         G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
-        U_store(), parameters(), P_YY_R_inv_solver_(), _state_function(),
-        _measurement_function(), _predict_sigma_points_calculator(),
+        U_store(), parameters(), P_YY_R_inv_solver_(), _state_equation(),
+        _measurement_equation(), _predict_sigma_points_calculator(),
         _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {}
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        StateFunction_Object_ &state_function,
-                        MeasurementFunction_Object_ &measurement_function,
+                        StateEquation_Object_ &state_equation,
+                        MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters)
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
         G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
         U_store(), parameters(parameters), P_YY_R_inv_solver_(),
-        _state_function(state_function),
-        _measurement_function(measurement_function),
+        _state_equation(state_equation),
+        _measurement_equation(measurement_equation),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {
 
@@ -2052,16 +2052,16 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        StateFunction_Object_ &state_function,
-                        MeasurementFunction_Object_ &measurement_function,
+                        StateEquation_Object_ &state_equation,
+                        MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in)
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
                           .create_dense()),
         G(), kappa(kappa_in), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
         U_store(), parameters(parameters), P_YY_R_inv_solver_(),
-        _state_function(state_function),
-        _measurement_function(measurement_function),
+        _state_equation(state_equation),
+        _measurement_equation(measurement_equation),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {
 
@@ -2069,8 +2069,8 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        StateFunction_Object_ &state_function,
-                        MeasurementFunction_Object_ &measurement_function,
+                        StateEquation_Object_ &state_equation,
+                        MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in,
                         T_ alpha_in)
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
@@ -2078,8 +2078,8 @@ public:
         G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<T_>(2)),
         w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), P_YY_R_inv_solver_(),
-        _state_function(state_function),
-        _measurement_function(measurement_function),
+        _state_equation(state_equation),
+        _measurement_equation(measurement_equation),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {
 
@@ -2087,8 +2087,8 @@ public:
   }
 
   UnscentedKalmanFilter(const Q_Type &Q, const R_Type &R,
-                        StateFunction_Object_ &state_function,
-                        MeasurementFunction_Object_ &measurement_function,
+                        StateEquation_Object_ &state_equation,
+                        MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in,
                         T_ alpha_in, T_ beta_in)
       : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
@@ -2096,8 +2096,8 @@ public:
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
         w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), P_YY_R_inv_solver_(),
-        _state_function(state_function),
-        _measurement_function(measurement_function),
+        _state_equation(state_equation),
+        _measurement_equation(measurement_equation),
         _predict_sigma_points_calculator(), _update_sigma_points_calculator(),
         _input_count(static_cast<std::size_t>(0)) {
 
@@ -2113,8 +2113,8 @@ public:
         X_hat(input.X_hat), X_d(input.X_d), U_store(input.U_store),
         parameters(input.parameters),
         P_YY_R_inv_solver_(input.P_YY_R_inv_solver_),
-        _state_function(input._state_function),
-        _measurement_function(input._measurement_function),
+        _state_equation(input._state_equation),
+        _measurement_equation(input._measurement_equation),
         _predict_sigma_points_calculator(
             input._predict_sigma_points_calculator),
         _update_sigma_points_calculator(input._update_sigma_points_calculator),
@@ -2139,8 +2139,8 @@ public:
       this->U_store = input.U_store;
       this->parameters = input.parameters;
       this->P_YY_R_inv_solver_ = input.P_YY_R_inv_solver_;
-      this->_state_function = input._state_function;
-      this->_measurement_function = input._measurement_function;
+      this->_state_equation = input._state_equation;
+      this->_measurement_equation = input._measurement_equation;
       this->_predict_sigma_points_calculator =
           input._predict_sigma_points_calculator;
       this->_update_sigma_points_calculator =
@@ -2162,8 +2162,8 @@ public:
         U_store(std::move(input.U_store)),
         parameters(std::move(input.parameters)),
         P_YY_R_inv_solver_(std::move(input.P_YY_R_inv_solver_)),
-        _state_function(std::move(input._state_function)),
-        _measurement_function(std::move(input._measurement_function)),
+        _state_equation(std::move(input._state_equation)),
+        _measurement_equation(std::move(input._measurement_equation)),
         _predict_sigma_points_calculator(
             std::move(input._predict_sigma_points_calculator)),
         _update_sigma_points_calculator(
@@ -2189,8 +2189,8 @@ public:
       this->U_store = std::move(input.U_store);
       this->parameters = std::move(input.parameters);
       this->P_YY_R_inv_solver_ = std::move(input.P_YY_R_inv_solver_);
-      this->_state_function = std::move(input._state_function);
-      this->_measurement_function = std::move(input._measurement_function);
+      this->_state_equation = std::move(input._state_equation);
+      this->_measurement_equation = std::move(input._measurement_equation);
       this->_predict_sigma_points_calculator =
           std::move(input._predict_sigma_points_calculator);
       this->_update_sigma_points_calculator =
@@ -2248,7 +2248,7 @@ public:
     U_store.push(U);
 
     PredictOperation::Unscented<NUMBER_OF_DELAY>::execute(
-        this->_state_function, this->_predict_sigma_points_calculator,
+        this->_state_equation, this->_predict_sigma_points_calculator,
         this->X_hat, this->U_store, this->P, this->w_m, this->W, this->Q,
         this->X_d, this->parameters, this->_input_count);
   }
@@ -2271,9 +2271,9 @@ public:
                                                   (2 * STATE_SIZE_ + 1)>();
     using Y_d_Type = decltype(Y_d);
 
-    UKF_Operation::MeasurementFunctionEachSigmaPoints<
-        Y_d_Type, Kai_Type_, MeasurementFunction_Object_,
-        Parameter_Type>::compute(Y_d, Kai, this->_measurement_function,
+    UKF_Operation::MeasurementEquationEachSigmaPoints<
+        Y_d_Type, Kai_Type_, MeasurementEquation_Object_,
+        Parameter_Type>::compute(Y_d, Kai, this->_measurement_equation,
                                  parameters);
 
     Measurement_Type_ Y_hat_m =
@@ -2297,34 +2297,34 @@ public:
   }
 
   /**
-   * @brief Calculates the state function for a given state and input.
+   * @brief Calculates the state equation for a given state and input.
    *
    * This function computes the next state based on the provided state vector,
-   * input vector, and the state function defined for the Unscented Kalman
+   * input vector, and the state equation defined for the Unscented Kalman
    * filter.
    *
    * @param X The current state vector.
    * @param U The control input vector.
    * @return The calculated next state vector.
    */
-  inline auto calculate_state_function(const State_Type_ &X,
+  inline auto calculate_state_equation(const State_Type_ &X,
                                        const U_Type &U) const -> State_Type_ {
-    return this->_state_function(X, U, this->parameters);
+    return this->_state_equation(X, U, this->parameters);
   }
 
   /**
-   * @brief Calculates the measurement function for a given state.
+   * @brief Calculates the measurement equation for a given state.
    *
    * This function computes the expected measurement based on the provided
-   * state vector and the measurement function defined for the Unscented Kalman
+   * state vector and the measurement equation defined for the Unscented Kalman
    * filter.
    *
    * @param X The current state vector.
    * @return The calculated measurement vector.
    */
-  inline auto calculate_measurement_function(const State_Type_ &X) const
+  inline auto calculate_measurement_equation(const State_Type_ &X) const
       -> Measurement_Type_ {
-    return this->_measurement_function(X, this->parameters);
+    return this->_measurement_equation(X, this->parameters);
   }
 
   /* Get */
@@ -2345,7 +2345,7 @@ public:
    * delays.
    *
    * This function calculates the estimated state vector based on the current
-   * state function, input store, and parameters, ignoring any delays in the
+   * state equation, input store, and parameters, ignoring any delays in the
    * input.
    *
    * @return The estimated state vector x_hat without delay.
@@ -2353,7 +2353,7 @@ public:
   inline auto get_x_hat_without_delay(void) const -> State_Type_ {
 
     return GetXHatWithoutDelayOperation::Extended<NUMBER_OF_DELAY>::compute(
-        this->_state_function, this->X_hat, this->U_store, this->parameters,
+        this->_state_equation, this->X_hat, this->U_store, this->parameters,
         this->_input_count);
   }
 
@@ -2423,8 +2423,8 @@ public:
 protected:
   /* Variable */
   P_YY_R_Inv_Type_ P_YY_R_inv_solver_;
-  StateFunction_Object_ _state_function;
-  MeasurementFunction_Object_ _measurement_function;
+  StateEquation_Object_ _state_equation;
+  MeasurementEquation_Object_ _measurement_equation;
 
   SigmaPointsCalculator_Type_ _predict_sigma_points_calculator;
   SigmaPointsCalculator_Type_ _update_sigma_points_calculator;
