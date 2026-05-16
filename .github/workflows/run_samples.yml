@@ -38,7 +38,8 @@ jobs:
 
         /opt/venv_py_samples/bin/pip install --upgrade setuptools
 
-        /opt/venv_py_samples/bin/pip install numpy matplotlib scipy control sympy astor plotly dash
+        /opt/venv_py_samples/bin/pip install numpy matplotlib scipy control sympy
+        astor plotly dash
 
         '
     - name: Run samples
@@ -48,21 +49,19 @@ jobs:
 
         /opt/venv_py_samples/bin/python3 ./sample/kalman_filter/extended_kalman_filter.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/kalman_filter/extended_kalman_filter.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/kalman_filter/extended_kalman_filter.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/kalman_filter/linear_kalman_filter.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/kalman_filter/linear_kalman_filter.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/kalman_filter/linear_kalman_filter.cpp
 
         ./sample/app
 
@@ -70,61 +69,55 @@ jobs:
 
         /opt/venv_py_samples/bin/python3 ./sample/kalman_filter/unscented_kalman_filter.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/kalman_filter/unscented_kalman_filter.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/kalman_filter/unscented_kalman_filter.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/least_squares/least_squares_method.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/least_squares/least_squares_method.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/least_squares/least_squares_method.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/least_squares/recursive_squares_method.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/least_squares/recursive_squares_method.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/least_squares/recursive_squares_method.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqi_easy.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/lqr/discrete_state_space_lqi_easy.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/lqr/discrete_state_space_lqi_easy.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqr.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/lqr/discrete_state_space_lqr.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/lqr/discrete_state_space_lqr.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/pid_controller/discrete_pid_controller.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/pid_controller/discrete_pid_controller.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/pid_controller/discrete_pid_controller.cpp
 
         ./sample/app
 
@@ -132,51 +125,46 @@ jobs:
 
         /opt/venv_py_samples/bin/python3 ./sample/state_space/discrete_state_space_1.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/state_space/discrete_state_space_1.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/state_space/discrete_state_space_1.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/state_space/discrete_state_space_2.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/state_space/discrete_state_space_2.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/state_space/discrete_state_space_2.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/transfer_function/discrete_transfer_function_2_4.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/transfer_function/discrete_transfer_function_2_4.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/transfer_function/discrete_transfer_function_2_4.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/transfer_function/discrete_transfer_function_3_4.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/transfer_function/discrete_transfer_function_3_4.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/transfer_function/discrete_transfer_function_3_4.cpp
 
         ./sample/app
 
         /opt/venv_py_samples/bin/python3 ./sample/transfer_function/discrete_transfer_function_4_4.py
 
-        g++ -std=c++11 -Wall -Werror -I ./python_control
-          -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
-          -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math
-          -I ./external_libraries/base_utility_cpp/base_utility
-          -o ./sample/app ./sample/transfer_function/discrete_transfer_function_4_4.cpp
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/transfer_function/discrete_transfer_function_4_4.cpp
 
         ./sample/app
 
