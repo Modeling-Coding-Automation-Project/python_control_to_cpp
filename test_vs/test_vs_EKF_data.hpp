@@ -35,7 +35,7 @@ public:
 };
 
 template <typename T>
-auto bicycle_model_state_function(
+auto bicycle_model_state_equation(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> StateSpaceState_Type<T, STATE_SIZE> {
@@ -59,7 +59,7 @@ auto bicycle_model_state_function(
 }
 
 template <typename T, typename A_Type>
-auto bicycle_model_state_function_jacobian(
+auto bicycle_model_state_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type {
@@ -89,7 +89,7 @@ auto bicycle_model_state_function_jacobian(
 }
 
 template <typename T>
-auto bicycle_model_measurement_function(
+auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {
 
@@ -118,7 +118,7 @@ auto bicycle_model_measurement_function(
 }
 
 template <typename T, typename C_Type>
-auto bicycle_model_measurement_function_jacobian(
+auto bicycle_model_measurement_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> C_Type {
 

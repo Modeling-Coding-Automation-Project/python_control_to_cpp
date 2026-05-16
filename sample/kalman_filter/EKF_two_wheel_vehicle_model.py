@@ -5,7 +5,7 @@ This script implements and simulates an Extended Kalman Filter (EKF)
 for a two-wheel vehicle model.
 The EKF estimates the vehicle's state (position, orientation, velocity, etc.)
 using a nonlinear dynamic model derived symbolically with SymPy.
-The code generates the state and measurement functions, along with their Jacobians,
+The code generates the state and measurement equations, along with their Jacobians,
 and deploys them for use in the EKF.
 It sets up a simulation environment with configurable parameters,
 generates input signals for steering and acceleration,
@@ -103,16 +103,16 @@ def create_model(delta_time: float):
     fxu_jacobian = fxu.jacobian(X)
     hx_jacobian = hx.jacobian(X)
 
-    fxu_file_name = ExpressionDeploy.write_state_function_code_from_sympy(
+    fxu_file_name = ExpressionDeploy.write_state_equation_code_from_sympy(
         fxu, X, U)
     fxu_jacobian_file_name = \
-        ExpressionDeploy.write_state_function_code_from_sympy(
+        ExpressionDeploy.write_state_equation_code_from_sympy(
             fxu_jacobian, X, U)
 
-    hx_file_name = ExpressionDeploy.write_measurement_function_code_from_sympy(
+    hx_file_name = ExpressionDeploy.write_measurement_equation_code_from_sympy(
         hx, X)
     hx_jacobian_file_name = \
-        ExpressionDeploy.write_measurement_function_code_from_sympy(
+        ExpressionDeploy.write_measurement_equation_code_from_sympy(
             hx_jacobian, X)
 
     return X, U, Y, \
@@ -163,10 +163,10 @@ def main():
     hx_jacobian_script_function = local_vars["hx_jacobian_script_function"]
 
     ekf = ExtendedKalmanFilter(
-        state_function=fxu_script_function,
-        measurement_function=hx_script_function,
-        state_function_jacobian=fxu_jacobian_script_function,
-        measurement_function_jacobian=hx_jacobian_script_function,
+        state_equation=fxu_script_function,
+        measurement_equation=hx_script_function,
+        state_equation_jacobian=fxu_jacobian_script_function,
+        measurement_equation_jacobian=hx_jacobian_script_function,
         Q=Q_ekf,
         R=R_ekf,
         Parameters=parameters_ekf

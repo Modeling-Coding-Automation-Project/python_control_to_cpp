@@ -649,7 +649,7 @@ public:
    * @brief Updates the state-space model with a new input vector.
    *
    * This function pushes a new input vector into the delayed input vector
-   * object, calculates the output and state functions, and updates the internal
+   * object, calculates the output and state equations, and updates the internal
    * state accordingly.
    *
    * @param U_in The input vector to be processed, of type Original_U_Type.
@@ -658,9 +658,9 @@ public:
 
     this->U.push(U_in);
 
-    this->_calc_output_function();
+    this->_calc_output_equation();
 
-    this->_calc_state_function();
+    this->_calc_state_equation();
   }
 
   /**
@@ -683,7 +683,7 @@ public:
    * @param X_initial_in The initial state vector to be set, of type
    * Original_X_Type.
    */
-  inline auto output_function(const Original_X_Type &X_in,
+  inline auto output_equation(const Original_X_Type &X_in,
                               const Original_U_Type &U_in) const
       -> Original_Y_Type {
 
@@ -703,7 +703,7 @@ public:
    * @param U_in The input vector, of type Original_U_Type.
    * @return The next state vector as a value of type Original_X_Type.
    */
-  inline auto state_function(const Original_X_Type &X_in,
+  inline auto state_equation(const Original_X_Type &X_in,
                              const Original_U_Type &U_in) const
       -> Original_X_Type {
 
@@ -716,14 +716,14 @@ protected:
   /* Function */
 
   /**
-   * @brief Calculates the output function based on the current state and input.
+   * @brief Calculates the output equation based on the current state and input.
    *
-   * This function computes the output of the system using the output function
+   * This function computes the output of the system using the output equation
    * defined by the matrices C and D, applied to the current state and input.
    */
-  inline void _calc_output_function(void) {
+  inline void _calc_output_equation(void) {
 
-    this->Y = this->output_function(this->X, this->U.get());
+    this->Y = this->output_equation(this->X, this->U.get());
   }
 
   /**
@@ -734,9 +734,9 @@ protected:
    * transition function defined by the matrices A and B, applied to the current
    * state and input.
    */
-  inline void _calc_state_function(void) {
+  inline void _calc_state_equation(void) {
 
-    this->X = this->state_function(this->X, this->U.get());
+    this->X = this->state_equation(this->X, this->U.get());
   }
 
 public:

@@ -5,7 +5,7 @@
  *
  * This file demonstrates the setup and simulation of an Extended Kalman Filter
  * (EKF) applied to a nonlinear bicycle model. The code defines the plant model,
- * state and measurement functions, their Jacobians, and the EKF structure. It
+ * state and measurement equations, their Jacobians, and the EKF structure. It
  * then runs a simulation loop where the true state evolves according to the
  * plant model, measurements are generated, and the EKF estimates the state in
  * the presence of system delay.
@@ -51,25 +51,25 @@ public:
 };
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+auto bicycle_model_state_equation(const StateSpaceState_Type<T, STATE_SIZE> &X,
                                   const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
     -> StateSpaceState_Type<T, STATE_SIZE>;
 
 template <typename T, typename A_Type>
-auto bicycle_model_state_function_jacobian(
+auto bicycle_model_state_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type;
 
 template <typename T>
-auto bicycle_model_measurement_function(
+auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
     -> StateSpaceOutput_Type<T, OUTPUT_SIZE>;
 
 template <typename T, typename C_Type>
-auto bicycle_model_measurement_function_jacobian(
+auto bicycle_model_measurement_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters) -> C_Type;
 
@@ -105,28 +105,28 @@ int main(void) {
 
   Parameter_Type parameters(0.1, 0.5, -1.0, -1.0, 10.0, 10.0);
 
-  /* state and measurement functions */
-  StateFunction_Object<X_Type, U_Type, BicycleModelParameter<double>>
-      state_function = bicycle_model_state_function<double>;
+  /* state and measurement equations */
+  StateEquation_Object<X_Type, U_Type, BicycleModelParameter<double>>
+      state_equation = bicycle_model_state_equation<double>;
 
-  StateFunctionJacobian_Object<A_Type, X_Type, U_Type,
+  StateEquationJacobian_Object<A_Type, X_Type, U_Type,
                                BicycleModelParameter<double>>
-      state_function_jacobian =
-          bicycle_model_state_function_jacobian<double, A_Type>;
+      state_equation_jacobian =
+          bicycle_model_state_equation_jacobian<double, A_Type>;
 
-  MeasurementFunction_Object<Y_Type, X_Type, BicycleModelParameter<double>>
-      measurement_function = bicycle_model_measurement_function<double>;
+  MeasurementEquation_Object<Y_Type, X_Type, BicycleModelParameter<double>>
+      measurement_equation = bicycle_model_measurement_equation<double>;
 
-  MeasurementFunctionJacobian_Object<C_Type, X_Type,
+  MeasurementEquationJacobian_Object<C_Type, X_Type,
                                      BicycleModelParameter<double>>
-      measurement_function_jacobian =
-          bicycle_model_measurement_function_jacobian<double, C_Type>;
+      measurement_equation_jacobian =
+          bicycle_model_measurement_equation_jacobian<double, C_Type>;
 
   /* define EKF */
   ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type,
                        NUMBER_OF_DELAY>
-      ekf(Q, R, state_function, state_function_jacobian, measurement_function,
-          measurement_function_jacobian, parameters);
+      ekf(Q, R, state_equation, state_equation_jacobian, measurement_equation,
+          measurement_equation_jacobian, parameters);
 
   /* simulation */
   auto x_true_initial = make_StateSpaceState<STATE_SIZE>(2.0, 6.0, 0.3);
@@ -145,9 +145,9 @@ int main(void) {
 
   x_true = x_true_initial;
   for (std::size_t i = 0; i < EKF_SIM_STEP_MAX; i++) {
-    x_true = bicycle_model_state_function<double>(x_true, u, parameters);
+    x_true = bicycle_model_state_equation<double>(x_true, u, parameters);
     y_store[delay_index] =
-        bicycle_model_measurement_function<double>(x_true, parameters);
+        bicycle_model_measurement_equation<double>(x_true, parameters);
 
     // system delay
     delay_index++;
@@ -175,7 +175,7 @@ int main(void) {
 }
 
 template <typename T>
-auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
+auto bicycle_model_state_equation(const StateSpaceState_Type<T, STATE_SIZE> &X,
                                   const StateSpaceInput_Type<T, INPUT_SIZE> &U,
                                   const BicycleModelParameter<T> &parameters)
     -> StateSpaceState_Type<T, STATE_SIZE> {
@@ -206,7 +206,7 @@ auto bicycle_model_state_function(const StateSpaceState_Type<T, STATE_SIZE> &X,
 }
 
 template <typename T, typename A_Type>
-auto bicycle_model_state_function_jacobian(
+auto bicycle_model_state_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type {
@@ -244,7 +244,7 @@ auto bicycle_model_state_function_jacobian(
 }
 
 template <typename T>
-auto bicycle_model_measurement_function(
+auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters)
     -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {
@@ -273,7 +273,7 @@ auto bicycle_model_measurement_function(
 }
 
 template <typename T, typename C_Type>
-auto bicycle_model_measurement_function_jacobian(
+auto bicycle_model_measurement_equation_jacobian(
     const StateSpaceState_Type<T, STATE_SIZE> &X,
     const BicycleModelParameter<T> &parameters) -> C_Type {
 

@@ -106,7 +106,7 @@ void check_python_control_state_space(void) {
     x_0(0, 0) = static_cast<T>(0.1);
     x_0(1, 0) = static_cast<T>(0.2);
 
-    auto x_1 = sys.state_function(x_0, u_0);
+    auto x_1 = sys.state_equation(x_0, u_0);
 
     decltype(x_1) x_1_answer({
         {static_cast<T>(0.21)},
@@ -114,16 +114,16 @@ void check_python_control_state_space(void) {
         });
 
     tester.expect_near(x_1.matrix.data, x_1_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check DiscreteStateSpace state function.");
+        "check DiscreteStateSpace state equation.");
 
-    auto y_1 = sys.output_function(x_0, u_0);
+    auto y_1 = sys.output_equation(x_0, u_0);
 
     decltype(y_1) y_1_answer({
         {static_cast<T>(0.2)}
         });
 
     tester.expect_near(y_1.matrix.data, y_1_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check DiscreteStateSpace output function.");
+        "check DiscreteStateSpace output equation.");
 
 
     /* State Space シミュレーション */
@@ -1237,28 +1237,28 @@ void check_python_control_extended_kalman_filter(void) {
     );
 
     /* 状態方程式、出力方程式 */
-    StateFunction_Object<X_Type,
+    StateEquation_Object<X_Type,
         U_Type,
-        EKF_TestData::BicycleModelParameter<T>> state_function;
-    state_function = EKF_TestData::bicycle_model_state_function<T>;
+        EKF_TestData::BicycleModelParameter<T>> state_equation;
+    state_equation = EKF_TestData::bicycle_model_state_equation<T>;
 
-    StateFunctionJacobian_Object<A_Type, X_Type, U_Type,
-        EKF_TestData::BicycleModelParameter<T>> state_function_jacobian;
-    state_function_jacobian = EKF_TestData::bicycle_model_state_function_jacobian<T, A_Type>;
+    StateEquationJacobian_Object<A_Type, X_Type, U_Type,
+        EKF_TestData::BicycleModelParameter<T>> state_equation_jacobian;
+    state_equation_jacobian = EKF_TestData::bicycle_model_state_equation_jacobian<T, A_Type>;
 
-    MeasurementFunction_Object<Y_Type, X_Type,
-        EKF_TestData::BicycleModelParameter<T>> measurement_function;
-    measurement_function = EKF_TestData::bicycle_model_measurement_function<T>;
+    MeasurementEquation_Object<Y_Type, X_Type,
+        EKF_TestData::BicycleModelParameter<T>> measurement_equation;
+    measurement_equation = EKF_TestData::bicycle_model_measurement_equation<T>;
 
-    MeasurementFunctionJacobian_Object<C_Type, X_Type,
-        EKF_TestData::BicycleModelParameter<T>> measurement_function_jacobian;
-    measurement_function_jacobian = EKF_TestData::bicycle_model_measurement_function_jacobian<T, C_Type>;
+    MeasurementEquationJacobian_Object<C_Type, X_Type,
+        EKF_TestData::BicycleModelParameter<T>> measurement_equation_jacobian;
+    measurement_equation_jacobian = EKF_TestData::bicycle_model_measurement_equation_jacobian<T, C_Type>;
 
 
     /* EKF定義 */
     ExtendedKalmanFilter<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
-        ekf(Q, R, state_function, state_function_jacobian,
-            measurement_function, measurement_function_jacobian, parameters);
+        ekf(Q, R, state_equation, state_equation_jacobian,
+            measurement_equation, measurement_equation_jacobian, parameters);
 
     ExtendedKalmanFilter_Type<A_Type, C_Type, U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
         ekf_copy = ekf;
@@ -1294,8 +1294,8 @@ void check_python_control_extended_kalman_filter(void) {
 
     x_true = x_true_initial;
     for (std::size_t i = 0; i < simulation_steps; i++) {
-        x_true = EKF_TestData::bicycle_model_state_function<T>(x_true, u, parameters);
-        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+        x_true = EKF_TestData::bicycle_model_state_equation<T>(x_true, u, parameters);
+        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_equation<T>(x_true, parameters);
 
         // system delay
         delay_index++;
@@ -1330,7 +1330,7 @@ void check_python_control_extended_kalman_filter(void) {
         static_cast<T>(2.0),
         static_cast<T>(0.1)
     );
-    auto X_next = ekf.calculate_state_function(X_in, U_in);
+    auto X_next = ekf.calculate_state_equation(X_in, U_in);
 
     auto X_next_answer = make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(4.86935786),
@@ -1339,10 +1339,10 @@ void check_python_control_extended_kalman_filter(void) {
     );
 
     tester.expect_near(X_next.matrix.data, X_next_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check ExtendedKalmanFilter state function.");
+        "check ExtendedKalmanFilter state equation.");
 
     /* 出方程式を単独実行 */
-    auto Y_next = ekf.calculate_measurement_function(X_in);
+    auto Y_next = ekf.calculate_measurement_equation(X_in);
 
     auto Y_next_answer = make_StateSpaceOutput<OUTPUT_SIZE>(
         static_cast<T>(15.24502055),
@@ -1352,7 +1352,7 @@ void check_python_control_extended_kalman_filter(void) {
     );
 
     tester.expect_near(Y_next.matrix.data, Y_next_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check ExtendedKalmanFilter measurement function.");
+        "check ExtendedKalmanFilter measurement equation.");
 
 
     tester.throw_error_if_test_failed();
@@ -1405,18 +1405,18 @@ void check_python_control_unscented_kalman_filter(void) {
     );
 
     /* 状態方程式、出力方程式 */
-    StateFunction_Object<X_Type,
+    StateEquation_Object<X_Type,
         U_Type,
-        EKF_TestData::BicycleModelParameter<T>> state_function;
-    state_function = EKF_TestData::bicycle_model_state_function<T>;
+        EKF_TestData::BicycleModelParameter<T>> state_equation;
+    state_equation = EKF_TestData::bicycle_model_state_equation<T>;
 
-    MeasurementFunction_Object<Y_Type, X_Type,
-        EKF_TestData::BicycleModelParameter<T>> measurement_function;
-    measurement_function = EKF_TestData::bicycle_model_measurement_function<T>;
+    MeasurementEquation_Object<Y_Type, X_Type,
+        EKF_TestData::BicycleModelParameter<T>> measurement_equation;
+    measurement_equation = EKF_TestData::bicycle_model_measurement_equation<T>;
 
     /* UKF定義 */
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
-        ukf(Q, R, state_function, measurement_function, parameters,
+        ukf(Q, R, state_equation, measurement_equation, parameters,
             static_cast<T>(0), static_cast<T>(0), static_cast<T>(0));
 
     UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, NUMBER_OF_DELAY>
@@ -1458,8 +1458,8 @@ void check_python_control_unscented_kalman_filter(void) {
 
     x_true = x_true_initial;
     for (std::size_t i = 0; i < simulation_steps; i++) {
-        x_true = EKF_TestData::bicycle_model_state_function<T>(x_true, u, parameters);
-        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_function<T>(x_true, parameters);
+        x_true = EKF_TestData::bicycle_model_state_equation<T>(x_true, u, parameters);
+        y_store[delay_index] = EKF_TestData::bicycle_model_measurement_equation<T>(x_true, parameters);
 
         // system delay
         delay_index++;
@@ -1494,7 +1494,7 @@ void check_python_control_unscented_kalman_filter(void) {
         static_cast<T>(2.0),
         static_cast<T>(0.1)
     );
-    auto X_next = ukf.calculate_state_function(X_in, U_in);
+    auto X_next = ukf.calculate_state_equation(X_in, U_in);
 
     auto X_next_answer = make_StateSpaceState<STATE_SIZE>(
         static_cast<T>(4.88215431),
@@ -1503,10 +1503,10 @@ void check_python_control_unscented_kalman_filter(void) {
     );
 
     tester.expect_near(X_next.matrix.data, X_next_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check UnscentedKalmanFilter state function.");
+        "check UnscentedKalmanFilter state equation.");
 
     /* 出方程式を単独実行 */
-    auto Y_next = ukf.calculate_measurement_function(X_in);
+    auto Y_next = ukf.calculate_measurement_equation(X_in);
 
     auto Y_next_answer = make_StateSpaceOutput<OUTPUT_SIZE>(
         static_cast<T>(15.18826689),
@@ -1516,7 +1516,7 @@ void check_python_control_unscented_kalman_filter(void) {
     );
 
     tester.expect_near(Y_next.matrix.data, Y_next_answer.matrix.data, NEAR_LIMIT_STRICT,
-        "check UnscentedKalmanFilter measurement function.");
+        "check UnscentedKalmanFilter measurement equation.");
 
 
     tester.throw_error_if_test_failed();
