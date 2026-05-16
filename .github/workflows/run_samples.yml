@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - develop
+    - feature/*
 
 jobs:
   run_samples:
@@ -97,8 +98,6 @@ jobs:
           -o ./sample/app ./sample/least_squares/recursive_squares_method.cpp
 
         ./sample/app
-
-        /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqi.py
 
         /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqi_easy.py
 
