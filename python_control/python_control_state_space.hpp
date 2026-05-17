@@ -498,8 +498,9 @@ public:
   using Value_Type = T_;
 
   using Original_U_Type = PythonControl::StateSpaceInput_Type<T_, Input_Size_>;
-  using Original_X_Type = PythonNumpy::DenseMatrix_Type<T_, State_Size_, 1>;
-  using Original_Y_Type = PythonNumpy::DenseMatrix_Type<T_, Output_Size_, 1>;
+  using Original_X_Type = PythonControl::StateSpaceState_Type<T_, State_Size_>;
+  using Original_Y_Type =
+      PythonControl::StateSpaceOutput_Type<T_, Output_Size_>;
 
   /* Check Compatibility */
   /* Check Data Type */
