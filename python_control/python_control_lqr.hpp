@@ -350,22 +350,24 @@ public:
 public:
   /* Constructor */
   LQR_DARE_Solver()
-      : K_(), P_(), S_inv_solver_(), _num_iter(0), _converged(false),
-        _max_iter(LQR_DARE_MAX_ITERATION_DEFAULT),
+      : K_(), P_(), S_solver_first_(), S_solver_second_(), _num_iter(0),
+        _converged(false), _max_iter(LQR_DARE_MAX_ITERATION_DEFAULT),
         _tol(static_cast<T_>(LQR_DARE_TOLERANCE_DEFAULT)) {}
 
   /* Copy Constructor */
   LQR_DARE_Solver(const LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &input)
-      : K_(input.K_), P_(input.P_), S_inv_solver_(input.S_inv_solver_),
-        _num_iter(input._num_iter), _converged(input._converged),
-        _max_iter(input._max_iter), _tol(input._tol) {}
+      : K_(input.K_), P_(input.P_), S_solver_first_(input.S_solver_first_),
+        S_solver_second_(input.S_solver_second_), _num_iter(input._num_iter),
+        _converged(input._converged), _max_iter(input._max_iter),
+        _tol(input._tol) {}
 
   LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &
   operator=(const LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &input) {
     if (this != &input) {
       this->K_ = input.K_;
       this->P_ = input.P_;
-      this->S_inv_solver_ = input.S_inv_solver_;
+      this->S_solver_first_ = input.S_solver_first_;
+      this->S_solver_second_ = input.S_solver_second_;
       this->_num_iter = input._num_iter;
       this->_converged = input._converged;
       this->_max_iter = input._max_iter;
@@ -378,7 +380,8 @@ public:
   LQR_DARE_Solver(
       LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept
       : K_(std::move(input.K_)), P_(std::move(input.P_)),
-        S_inv_solver_(std::move(input.S_inv_solver_)),
+        S_solver_first_(std::move(input.S_solver_first_)),
+        S_solver_second_(std::move(input.S_solver_second_)),
         _num_iter(std::move(input._num_iter)),
         _converged(std::move(input._converged)),
         _max_iter(std::move(input._max_iter)), _tol(std::move(input._tol)) {}
@@ -388,7 +391,8 @@ public:
     if (this != &input) {
       this->K_ = std::move(input.K_);
       this->P_ = std::move(input.P_);
-      this->S_inv_solver_ = std::move(input.S_inv_solver_);
+      this->S_solver_first_ = std::move(input.S_solver_first_);
+      this->S_solver_second_ = std::move(input.S_solver_second_);
       this->_num_iter = std::move(input._num_iter);
       this->_converged = std::move(input._converged);
       this->_max_iter = std::move(input._max_iter);
@@ -431,8 +435,7 @@ public:
       S_Type_ S = R + BT_P * B;
 
       /* K_iter = S^{-1} * B^T * P * A */
-      this->S_inv_solver_.inv(S);
-      auto K_iter = this->S_inv_solver_.get_answer() * (BT_P * A);
+      auto K_iter = this->S_solver_first_.solve(S, BT_P * A);
 
       /* P_next = A^T * P * A - A^T * P * B * K_iter + Q */
       auto AT_P = PythonNumpy::ATranspose_mul_B(A, this->P_);
@@ -453,8 +456,7 @@ public:
     /* K = (B^T * P * B + R)^{-1} * B^T * P * A */
     auto BT_P_final = PythonNumpy::ATranspose_mul_B(B, this->P_);
     S_Type_ S_final = R + BT_P_final * B;
-    this->S_inv_solver_.inv(S_final);
-    this->K_ = this->S_inv_solver_.get_answer() * (BT_P_final * A);
+    this->K_ = this->S_solver_second_.solve(S_final, BT_P_final * A);
 
     return this->K_;
   }
@@ -502,7 +504,7 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void set_R_inv_division_min(const T_ &division_min_in) {
-    this->S_inv_solver_.set_division_min(division_min_in);
+    this->S_solver_first_.set_division_min(division_min_in);
   }
 
   /**
@@ -548,7 +550,7 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
-    this->S_inv_solver_.set_division_min(division_min_in);
+    this->S_solver_first_.set_division_min(division_min_in);
   }
 
   /**
@@ -573,7 +575,7 @@ public:
    * @param decay_rate_in The new decay rate to be set.
    */
   inline void set_S_inv_decay_rate(const T_ &decay_rate_in) {
-    this->S_inv_solver_.set_decay_rate(decay_rate_in);
+    this->S_solver_first_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -582,7 +584,7 @@ public:
    * @param division_min_in The new minimum division value to be set.
    */
   inline void set_S_inv_division_min(const T_ &division_min_in) {
-    this->S_inv_solver_.set_division_min(division_min_in);
+    this->S_solver_first_.set_division_min(division_min_in);
   }
 
 protected:
@@ -590,7 +592,8 @@ protected:
   K_Type K_;
   P_Type_ P_;
 
-  PythonNumpy::LinalgSolverInv_Type<S_Type_> S_inv_solver_;
+  PythonNumpy::LinalgSolver_Type<S_Type_, K_Type> S_solver_first_;
+  PythonNumpy::LinalgSolver_Type<S_Type_, K_Type> S_solver_second_;
 
   std::size_t _num_iter;
   bool _converged;
