@@ -125,13 +125,15 @@ int main(void) {
   auto Y_ref = make_DenseMatrix<2, 1>(1.0, 0.0);
   auto e_y_integral = make_DenseMatrix<2, 1>(0.0, 0.0);
 
+  auto U_offset = make_DenseMatrix<1, 1>(0.1);
+
   for (int i = 0; i < 100; i++) {
     auto X = plant.get_X();
     auto Y = Cc * X;
     auto e_y = Y_ref - Y;
     e_y_integral = e_y_integral + e_y * dt;
 
-    auto U = K_x * (X_ref - X) + K_e * e_y_integral;
+    auto U = K_x * (X_ref - X) + K_e * e_y_integral + U_offset;
 
     plant.update(U);
 
