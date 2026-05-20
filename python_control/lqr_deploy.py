@@ -25,6 +25,11 @@ from external_libraries.python_numpy_to_cpp.python_numpy.numpy_deploy import Num
 from external_libraries.MCAP_python_control.python_control.control_deploy import ControlDeploy
 
 
+class LQR_METHOD:
+    ARIMOTO_POTTER = 0
+    DARE = 1
+
+
 class LQR_Deploy:
     """
     A class for generating C++ code for Linear Quadratic Regulator (LQR) controllers.
@@ -41,7 +46,8 @@ class LQR_Deploy:
         pass
 
     @staticmethod
-    def generate_LQR_cpp_code(A, B, Q, R, file_name=None):
+    def generate_LQR_cpp_code(
+            A, B, Q, R, file_name=None, method=LQR_METHOD.ARIMOTO_POTTER):
         """
         Generates C++ code for an LQR controller using the provided state-space matrices and weighting matrices.
         Args:
@@ -50,6 +56,7 @@ class LQR_Deploy:
             Q (np.ndarray): State weighting matrix for the LQR controller.
             R (np.ndarray): Input weighting matrix for the LQR controller.
             file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
+            method (int, optional): The method to use for LQR computation. Defaults to LQR_METHOD.ARIMOTO_POTTER.
         Returns:
             list: A list of file names for the generated C++ header files.
         Raises:
@@ -122,7 +129,12 @@ class LQR_Deploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+        if LQR_METHOD.ARIMOTO_POTTER == method:
+            code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+        elif LQR_METHOD.DARE == method:
+            code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_DARE;\n\n"
+        else:
+            raise ValueError("Invalid LQR method specified.")
 
         code_text += f"using A_Type = {A_file_name_no_extension}::type;\n\n"
 
@@ -198,7 +210,8 @@ class LQI_Deploy:
         pass
 
     @staticmethod
-    def generate_LQI_cpp_code(A, B, C, Q_ex, R_ex, file_name=None):
+    def generate_LQI_cpp_code(
+            A, B, C, Q_ex, R_ex, file_name=None, method=LQR_METHOD.ARIMOTO_POTTER):
         """
         Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
         Args:
@@ -208,6 +221,7 @@ class LQI_Deploy:
             Q_ex (np.ndarray): Extended state weighting matrix for the LQI controller.
             R_ex (np.ndarray): Input weighting matrix for the LQI controller.
             file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
+            method (int, optional): The method to use for LQI computation. Defaults to LQR_METHOD.ARIMOTO_POTTER.
         Returns:
             list: A list of file names for the generated C++ header files.
         Raises:
@@ -291,7 +305,12 @@ class LQI_Deploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
-        code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+        if method == LQR_METHOD.ARIMOTO_POTTER:
+            code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+        elif method == LQR_METHOD.DARE:
+            code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_DARE;\n\n"
+        else:
+            raise ValueError("Invalid LQR method specified.")
 
         code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
 
