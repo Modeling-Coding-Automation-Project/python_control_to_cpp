@@ -33,7 +33,7 @@ class LQR_Deploy:
     Attributes:
         None
     Methods:
-        generate_LQR_cpp_code(Ac, Bc, Q, R, file_name=None):
+        generate_LQR_cpp_code(A, B, Q, R, file_name=None):
             Generates C++ code for an LQR controller using the provided state-space matrices and weighting matrices.
     """
 
@@ -41,12 +41,12 @@ class LQR_Deploy:
         pass
 
     @staticmethod
-    def generate_LQR_cpp_code(Ac, Bc, Q, R, file_name=None):
+    def generate_LQR_cpp_code(A, B, Q, R, file_name=None):
         """
         Generates C++ code for an LQR controller using the provided state-space matrices and weighting matrices.
         Args:
-            Ac (np.ndarray): State matrix of the system.
-            Bc (np.ndarray): Input matrix of the system.
+            A (np.ndarray): State matrix of the system.
+            B (np.ndarray): Input matrix of the system.
             Q (np.ndarray): State weighting matrix for the LQR controller.
             R (np.ndarray): Input weighting matrix for the LQR controller.
             file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
@@ -57,9 +57,9 @@ class LQR_Deploy:
         """
         deployed_file_names = []
 
-        ControlDeploy.restrict_data_type(Ac.dtype.name)
+        ControlDeploy.restrict_data_type(A.dtype.name)
 
-        type_name = NumpyDeploy.check_dtype(Ac)
+        type_name = NumpyDeploy.check_dtype(A)
 
         # %% inspect arguments
         # Get the caller's frame
@@ -79,29 +79,29 @@ class LQR_Deploy:
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
-        # create Ac, Bc matrices
+        # create A, B matrices
         # Use locals_map + eval (avoids exec and matches pattern in state_space_deploy.py)
         locals_map = {
-            f"{variable_name}_Ac": copy.deepcopy(Ac),
+            f"{variable_name}_A": copy.deepcopy(A),
             "caller_file_name_without_ext": caller_file_name_without_ext,
         }
-        Ac_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Ac, " +
+        A_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
             "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         locals_map = {
-            f"{variable_name}_Bc": copy.deepcopy(Bc),
+            f"{variable_name}_B": copy.deepcopy(B),
             "caller_file_name_without_ext": caller_file_name_without_ext,
         }
-        Bc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Bc, " +
+        B_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_B, " +
             "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
-        deployed_file_names.append(Ac_file_name)
-        deployed_file_names.append(Bc_file_name)
+        deployed_file_names.append(A_file_name)
+        deployed_file_names.append(B_file_name)
 
-        Ac_file_name_no_extension = Ac_file_name.split(".")[0]
-        Bc_file_name_no_extension = Bc_file_name.split(".")[0]
+        A_file_name_no_extension = A_file_name.split(".")[0]
+        B_file_name_no_extension = B_file_name.split(".")[0]
 
         # create state-space cpp code
         code_text = ""
@@ -111,8 +111,8 @@ class LQR_Deploy:
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"
 
-        code_text += f"#include \"{Ac_file_name}\"\n"
-        code_text += f"#include \"{Bc_file_name}\"\n\n"
+        code_text += f"#include \"{A_file_name}\"\n"
+        code_text += f"#include \"{B_file_name}\"\n\n"
         code_text += "#include \"python_control.hpp\"\n\n"
 
         namespace_name = code_file_name
@@ -124,25 +124,25 @@ class LQR_Deploy:
 
         code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
 
-        code_text += f"using Ac_Type = {Ac_file_name_no_extension}::type;\n\n"
+        code_text += f"using A_Type = {A_file_name_no_extension}::type;\n\n"
 
-        code_text += f"using Bc_Type = {Bc_file_name_no_extension}::type;\n\n"
+        code_text += f"using B_Type = {B_file_name_no_extension}::type;\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = Ac_Type::ROWS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = Bc_Type::COLS;\n\n"
+        code_text += "constexpr std::size_t STATE_SIZE = A_Type::ROWS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = B_Type::COLS;\n\n"
 
         code_text += f"using Q_Type = DiagMatrix_Type<{type_name}, STATE_SIZE>;\n\n"
 
         code_text += f"using R_Type = DiagMatrix_Type<{type_name}, INPUT_SIZE>;\n\n"
 
         code_text += "using type = LQR_Type<" + \
-            "Ac_Type, Bc_Type, Q_Type, R_Type, LQR_METHOD>;\n\n"
+            "A_Type, B_Type, Q_Type, R_Type, LQR_METHOD>;\n\n"
 
         code_text += "inline auto make() -> type {\n\n"
 
-        code_text += f"  auto Ac = {Ac_file_name_no_extension}::make();\n\n"
+        code_text += f"  auto A = {A_file_name_no_extension}::make();\n\n"
 
-        code_text += f"  auto Bc = {Bc_file_name_no_extension}::make();\n\n"
+        code_text += f"  auto B = {B_file_name_no_extension}::make();\n\n"
 
         code_text += "  auto Q = make_DiagMatrix<STATE_SIZE>(\n"
         for i in range(Q.shape[0]):
@@ -166,7 +166,7 @@ class LQR_Deploy:
                 code_text += ",\n"
         code_text += "  );\n\n"
 
-        code_text += "  return make_LQR<LQR_METHOD>(Ac, Bc, Q, R);\n\n"
+        code_text += "  return make_LQR<LQR_METHOD>(A, B, Q, R);\n\n"
 
         code_text += "}\n\n"
 
@@ -190,7 +190,7 @@ class LQI_Deploy:
     Attributes:
         None
     Methods:
-        generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex, file_name=None):
+        generate_LQI_cpp_code(A, B, C, Q_ex, R_ex, file_name=None):
             Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
     """
 
@@ -198,13 +198,13 @@ class LQI_Deploy:
         pass
 
     @staticmethod
-    def generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex, file_name=None):
+    def generate_LQI_cpp_code(A, B, C, Q_ex, R_ex, file_name=None):
         """
         Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
         Args:
-            Ac (np.ndarray): State matrix of the system.
-            Bc (np.ndarray): Input matrix of the system.
-            Cc (np.ndarray): Output matrix of the system.
+            A (np.ndarray): State matrix of the system.
+            B (np.ndarray): Input matrix of the system.
+            C (np.ndarray): Output matrix of the system.
             Q_ex (np.ndarray): Extended state weighting matrix for the LQI controller.
             R_ex (np.ndarray): Input weighting matrix for the LQI controller.
             file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
@@ -215,9 +215,9 @@ class LQI_Deploy:
         """
         deployed_file_names = []
 
-        ControlDeploy.restrict_data_type(Ac.dtype.name)
+        ControlDeploy.restrict_data_type(A.dtype.name)
 
-        type_name = NumpyDeploy.check_dtype(Ac)
+        type_name = NumpyDeploy.check_dtype(A)
 
         # %% inspect arguments
         # Get the caller's frame
@@ -237,38 +237,38 @@ class LQI_Deploy:
         code_file_name = caller_file_name_without_ext + "_" + variable_name
         code_file_name_ext = code_file_name + ".hpp"
 
-        # create Ac, Bc, Cc matrices (use locals_map to avoid exec)
+        # create A, B, C matrices (use locals_map to avoid exec)
         locals_map = {
-            f"{variable_name}_Ac": copy.deepcopy(Ac),
+            f"{variable_name}_A": copy.deepcopy(A),
             "caller_file_name_without_ext": caller_file_name_without_ext,
         }
-        Ac_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Ac, " +
+        A_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_A, " +
             "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         locals_map = {
-            f"{variable_name}_Bc": copy.deepcopy(Bc),
+            f"{variable_name}_B": copy.deepcopy(B),
             "caller_file_name_without_ext": caller_file_name_without_ext,
         }
-        Bc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Bc, " +
+        B_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_B, " +
             "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
         locals_map = {
-            f"{variable_name}_Cc": copy.deepcopy(Cc),
+            f"{variable_name}_C": copy.deepcopy(C),
             "caller_file_name_without_ext": caller_file_name_without_ext,
         }
-        Cc_file_name = eval(
-            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_Cc, " +
+        C_file_name = eval(
+            f"NumpyDeploy.generate_matrix_cpp_code(matrix_in={variable_name}_C, " +
             "file_name=caller_file_name_without_ext)", globals(), locals_map)
 
-        deployed_file_names.append(Ac_file_name)
-        deployed_file_names.append(Bc_file_name)
-        deployed_file_names.append(Cc_file_name)
+        deployed_file_names.append(A_file_name)
+        deployed_file_names.append(B_file_name)
+        deployed_file_names.append(C_file_name)
 
-        Ac_file_name_no_extension = Ac_file_name.split(".")[0]
-        Bc_file_name_no_extension = Bc_file_name.split(".")[0]
-        Cc_file_name_no_extension = Cc_file_name.split(".")[0]
+        A_file_name_no_extension = A_file_name.split(".")[0]
+        B_file_name_no_extension = B_file_name.split(".")[0]
+        C_file_name_no_extension = C_file_name.split(".")[0]
 
         # create state-space cpp code
         code_text = ""
@@ -278,9 +278,9 @@ class LQI_Deploy:
         code_text += "#ifndef " + file_header_macro_name + "\n"
         code_text += "#define " + file_header_macro_name + "\n\n"
 
-        code_text += f"#include \"{Ac_file_name}\"\n"
-        code_text += f"#include \"{Bc_file_name}\"\n"
-        code_text += f"#include \"{Cc_file_name}\"\n\n"
+        code_text += f"#include \"{A_file_name}\"\n"
+        code_text += f"#include \"{B_file_name}\"\n"
+        code_text += f"#include \"{C_file_name}\"\n\n"
 
         code_text += "#include \"python_control.hpp\"\n\n"
 
@@ -293,15 +293,15 @@ class LQI_Deploy:
 
         code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
 
-        code_text += f"auto Ac = {Ac_file_name_no_extension}::make();\n\n"
+        code_text += f"auto A = {A_file_name_no_extension}::make();\n\n"
 
-        code_text += f"auto Bc = {Bc_file_name_no_extension}::make();\n\n"
+        code_text += f"auto B = {B_file_name_no_extension}::make();\n\n"
 
-        code_text += f"auto Cc = {Cc_file_name_no_extension}::make();\n\n"
+        code_text += f"auto C = {C_file_name_no_extension}::make();\n\n"
 
-        code_text += "constexpr std::size_t STATE_SIZE = decltype(Ac)::ROWS;\n"
-        code_text += "constexpr std::size_t INPUT_SIZE = decltype(Bc)::COLS;\n"
-        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(Cc)::ROWS;\n"
+        code_text += "constexpr std::size_t STATE_SIZE = decltype(A)::ROWS;\n"
+        code_text += "constexpr std::size_t INPUT_SIZE = decltype(B)::COLS;\n"
+        code_text += "constexpr std::size_t OUTPUT_SIZE = decltype(C)::ROWS;\n"
         code_text += "constexpr std::size_t Q_EX_SIZE = STATE_SIZE + OUTPUT_SIZE;\n\n"
 
         code_text += "auto Q_ex = make_DiagMatrix<Q_EX_SIZE>(\n"
@@ -327,11 +327,11 @@ class LQI_Deploy:
         code_text += ");\n\n"
 
         code_text += "using type = LQI_Type<" + \
-            "decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex), LQR_METHOD>;\n\n"
+            "decltype(A), decltype(B), decltype(C), decltype(Q_ex), decltype(R_ex), LQR_METHOD>;\n\n"
 
         code_text += "inline auto make() -> type {\n\n"
 
-        code_text += "    return make_LQI<LQR_METHOD>(Ac, Bc, Cc, Q_ex, R_ex);\n\n"
+        code_text += "    return make_LQI<LQR_METHOD>(A, B, C, Q_ex, R_ex);\n\n"
 
         code_text += "}\n\n"
 
