@@ -122,6 +122,8 @@ class LQR_Deploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+
         code_text += f"using Ac_Type = {Ac_file_name_no_extension}::type;\n\n"
 
         code_text += f"using Bc_Type = {Bc_file_name_no_extension}::type;\n\n"
@@ -134,7 +136,7 @@ class LQR_Deploy:
         code_text += f"using R_Type = DiagMatrix_Type<{type_name}, INPUT_SIZE>;\n\n"
 
         code_text += "using type = LQR_Type<" + \
-            "Ac_Type, Bc_Type, Q_Type, R_Type>;\n\n"
+            "Ac_Type, Bc_Type, Q_Type, R_Type, LQR_METHOD>;\n\n"
 
         code_text += "inline auto make() -> type {\n\n"
 
@@ -164,7 +166,7 @@ class LQR_Deploy:
                 code_text += ",\n"
         code_text += "  );\n\n"
 
-        code_text += "  return make_LQR(Ac, Bc, Q, R);\n\n"
+        code_text += "  return make_LQR<LQR_METHOD>(Ac, Bc, Q, R);\n\n"
 
         code_text += "}\n\n"
 
@@ -289,6 +291,8 @@ class LQI_Deploy:
         code_text += "using namespace PythonNumpy;\n"
         code_text += "using namespace PythonControl;\n\n"
 
+        code_text += "constexpr std::size_t LQR_METHOD = LQR_METHOD_ARIMOTO_POTTER;\n\n"
+
         code_text += f"auto Ac = {Ac_file_name_no_extension}::make();\n\n"
 
         code_text += f"auto Bc = {Bc_file_name_no_extension}::make();\n\n"
@@ -323,11 +327,11 @@ class LQI_Deploy:
         code_text += ");\n\n"
 
         code_text += "using type = LQI_Type<" + \
-            "decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex)>;\n\n"
+            "decltype(Ac), decltype(Bc), decltype(Cc), decltype(Q_ex), decltype(R_ex), LQR_METHOD>;\n\n"
 
         code_text += "inline auto make() -> type {\n\n"
 
-        code_text += "    return make_LQI(Ac, Bc, Cc, Q_ex, R_ex);\n\n"
+        code_text += "    return make_LQI<LQR_METHOD>(Ac, Bc, Cc, Q_ex, R_ex);\n\n"
 
         code_text += "}\n\n"
 
