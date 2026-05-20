@@ -163,7 +163,7 @@ def dlqr_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
 # LQI algorithm selection:
 #   "arimoto_potter" - continuous-time Hamiltonian (Arimoto-Potter method)
 #   "dlqr_iterative" - discrete-time DARE via iterative method
-LQI_ALGORITHM = "arimoto_potter"
+LQI_ALGORITHM = "dlqr_iterative"
 
 
 def compute_lqi_gain(algorithm):
