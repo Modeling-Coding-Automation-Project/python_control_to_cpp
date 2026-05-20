@@ -16,7 +16,7 @@
 using namespace PythonNumpy;
 using namespace PythonControl;
 
-constexpr std::size_t LQR_METHOD = PythonControl::LQR_METHOD_DARE;
+constexpr std::size_t LQR_METHOD = PythonControl::LQR_METHOD_ARIMOTO_POTTER;
 
 template <
     std::size_t Method, typename AcType, typename BcType, typename AdType,

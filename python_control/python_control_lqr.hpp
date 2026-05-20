@@ -66,7 +66,7 @@ struct Hamiltonian {
 constexpr std::size_t LQR_METHOD_ARIMOTO_POTTER = 0;
 constexpr std::size_t LQR_METHOD_DARE = 1;
 
-constexpr std::size_t LQR_DARE_MAX_ITERATION_DEFAULT = 100;
+constexpr std::size_t LQR_DARE_max_iterationATION_DEFAULT = 100;
 constexpr double LQR_DARE_TOLERANCE_DEFAULT = 1e-10;
 
 /* LQR Arimoto Potter Solver */
@@ -350,16 +350,18 @@ public:
 public:
   /* Constructor */
   LQR_DARE_Solver()
-      : K_(), P_(), S_solver_first_(), S_solver_second_(), _num_iter(0),
-        _converged(false), _max_iter(LQR_DARE_MAX_ITERATION_DEFAULT),
-        _tol(static_cast<T_>(LQR_DARE_TOLERANCE_DEFAULT)) {}
+      : K_(), P_(), S_solver_first_(), S_solver_second_(),
+        _number_of_iteration(0), _converged(false),
+        _max_iteration(LQR_DARE_max_iterationATION_DEFAULT),
+        _tolerance(static_cast<T_>(LQR_DARE_TOLERANCE_DEFAULT)) {}
 
   /* Copy Constructor */
   LQR_DARE_Solver(const LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &input)
       : K_(input.K_), P_(input.P_), S_solver_first_(input.S_solver_first_),
-        S_solver_second_(input.S_solver_second_), _num_iter(input._num_iter),
-        _converged(input._converged), _max_iter(input._max_iter),
-        _tol(input._tol) {}
+        S_solver_second_(input.S_solver_second_),
+        _number_of_iteration(input._number_of_iteration),
+        _converged(input._converged), _max_iteration(input._max_iteration),
+        _tolerance(input._tolerance) {}
 
   LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &
   operator=(const LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &input) {
@@ -368,10 +370,10 @@ public:
       this->P_ = input.P_;
       this->S_solver_first_ = input.S_solver_first_;
       this->S_solver_second_ = input.S_solver_second_;
-      this->_num_iter = input._num_iter;
+      this->_number_of_iteration = input._number_of_iteration;
       this->_converged = input._converged;
-      this->_max_iter = input._max_iter;
-      this->_tol = input._tol;
+      this->_max_iteration = input._max_iteration;
+      this->_tolerance = input._tolerance;
     }
     return *this;
   }
@@ -382,9 +384,10 @@ public:
       : K_(std::move(input.K_)), P_(std::move(input.P_)),
         S_solver_first_(std::move(input.S_solver_first_)),
         S_solver_second_(std::move(input.S_solver_second_)),
-        _num_iter(std::move(input._num_iter)),
+        _number_of_iteration(std::move(input._number_of_iteration)),
         _converged(std::move(input._converged)),
-        _max_iter(std::move(input._max_iter)), _tol(std::move(input._tol)) {}
+        _max_iteration(std::move(input._max_iteration)),
+        _tolerance(std::move(input._tolerance)) {}
 
   LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &
   operator=(LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &&input) noexcept {
@@ -393,10 +396,10 @@ public:
       this->P_ = std::move(input.P_);
       this->S_solver_first_ = std::move(input.S_solver_first_);
       this->S_solver_second_ = std::move(input.S_solver_second_);
-      this->_num_iter = std::move(input._num_iter);
+      this->_number_of_iteration = std::move(input._number_of_iteration);
       this->_converged = std::move(input._converged);
-      this->_max_iter = std::move(input._max_iter);
-      this->_tol = std::move(input._tol);
+      this->_max_iteration = std::move(input._max_iteration);
+      this->_tolerance = std::move(input._tolerance);
     }
     return *this;
   }
@@ -424,9 +427,9 @@ public:
     this->P_ = P_Type_() + Q;
 
     this->_converged = false;
-    this->_num_iter = this->_max_iter;
+    this->_number_of_iteration = this->_max_iteration;
 
-    for (std::size_t i = 0; i < this->_max_iter; i++) {
+    for (std::size_t i = 0; i < this->_max_iteration; i++) {
 
       /* BT_P = B^T * P */
       auto BT_P = PythonNumpy::ATranspose_mul_B(B, this->P_);
@@ -442,12 +445,12 @@ public:
       P_Type_ P_next = AT_P * A - AT_P * B * K_iter + Q;
 
       /* Error = Frobenius norm of (P_next - P) */
-      T_ err = PythonNumpy::norm(P_next - this->P_);
+      T_ p_error = PythonNumpy::norm(P_next - this->P_);
 
       this->P_ = P_next;
 
-      if (err < this->_tol) {
-        this->_num_iter = i + 1;
+      if (p_error < this->_tolerance) {
+        this->_number_of_iteration = i + 1;
         this->_converged = true;
         break;
       }
@@ -482,7 +485,9 @@ public:
    *
    * @return The number of iterations.
    */
-  inline auto get_num_iter() const -> std::size_t { return this->_num_iter; }
+  inline auto get_number_of_iteration() const -> std::size_t {
+    return this->_number_of_iteration;
+  }
 
   /**
    * @brief Returns whether the DARE iteration converged.
@@ -531,7 +536,7 @@ public:
    * @param iteration_max The new maximum number of iterations to be set.
    */
   inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
-    this->_max_iter = iteration_max;
+    this->_max_iteration = iteration_max;
   }
 
   /**
@@ -568,7 +573,7 @@ public:
    *
    * @param tol_in The new convergence tolerance to be set.
    */
-  inline void set_tol(const T_ &tol_in) { this->_tol = tol_in; }
+  inline void set_tolerance(const T_ &tol_in) { this->_tolerance = tol_in; }
 
   /**
    * @brief Sets the decay rate for the S inverse solver.
@@ -598,10 +603,10 @@ protected:
   PythonNumpy::LinalgSolver_Type<S_Type_, K_Type> S_solver_first_;
   PythonNumpy::LinalgSolver_Type<S_Type_, K_Type> S_solver_second_;
 
-  std::size_t _num_iter;
+  std::size_t _number_of_iteration;
   bool _converged;
-  std::size_t _max_iter;
-  T_ _tol;
+  std::size_t _max_iteration;
+  T_ _tolerance;
 };
 
 /* Linear Quadratic Regulator */
@@ -901,9 +906,9 @@ public:
    * @return The number of DARE iterations.
    */
   template <std::size_t M = Method>
-  inline auto get_num_iter() const ->
+  inline auto get_number_of_iteration() const ->
       typename std::enable_if<M == LQR_METHOD_DARE, std::size_t>::type {
-    return this->_solver.get_num_iter();
+    return this->_solver.get_number_of_iteration();
   }
 
   /**
@@ -942,9 +947,9 @@ public:
    * @param tol_in The new convergence tolerance to be set.
    */
   template <std::size_t M = Method>
-  inline auto set_DARE_tol(const T_ &tol_in) ->
+  inline auto set_DARE_tolerance(const T_ &tol_in) ->
       typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_tol(tol_in);
+    this->_solver.set_tolerance(tol_in);
   }
 
   /**
@@ -1354,9 +1359,9 @@ public:
    * @return The number of DARE iterations.
    */
   template <std::size_t M = Method>
-  inline auto get_num_iter() const ->
+  inline auto get_number_of_iteration() const ->
       typename std::enable_if<M == LQR_METHOD_DARE, std::size_t>::type {
-    return this->_solver.get_num_iter();
+    return this->_solver.get_number_of_iteration();
   }
 
   /**
@@ -1396,9 +1401,9 @@ public:
    * @param tol_in The new convergence tolerance to be set.
    */
   template <std::size_t M = Method>
-  inline auto set_DARE_tol(const T_ &tol_in) ->
+  inline auto set_DARE_tolerance(const T_ &tol_in) ->
       typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_tol(tol_in);
+    this->_solver.set_tolerance(tol_in);
   }
 
   /**
