@@ -66,7 +66,7 @@ struct Hamiltonian {
 constexpr std::size_t LQR_METHOD_ARIMOTO_POTTER = 0;
 constexpr std::size_t LQR_METHOD_DARE = 1;
 
-constexpr std::size_t LQR_DARE_MAX_ITERATION_DEFAULT = 1000;
+constexpr std::size_t LQR_DARE_MAX_ITERATION_DEFAULT = 100;
 constexpr double LQR_DARE_TOLERANCE_DEFAULT = 1e-10;
 
 /* LQR Arimoto Potter Solver */
@@ -551,6 +551,7 @@ public:
    */
   inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
     this->S_solver_first_.set_division_min(division_min_in);
+    this->S_solver_second_.set_division_min(division_min_in);
   }
 
   /**
@@ -576,6 +577,7 @@ public:
    */
   inline void set_S_inv_decay_rate(const T_ &decay_rate_in) {
     this->S_solver_first_.set_decay_rate(decay_rate_in);
+    this->S_solver_second_.set_decay_rate(decay_rate_in);
   }
 
   /**
@@ -585,6 +587,7 @@ public:
    */
   inline void set_S_inv_division_min(const T_ &division_min_in) {
     this->S_solver_first_.set_division_min(division_min_in);
+    this->S_solver_second_.set_division_min(division_min_in);
   }
 
 protected:
