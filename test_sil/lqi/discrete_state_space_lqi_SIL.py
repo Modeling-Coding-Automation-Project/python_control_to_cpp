@@ -18,7 +18,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 import numpy as np
 import control
 
-from python_control.lqr_deploy import LQI_Deploy
+from python_control.lqr_deploy import LQI_Deploy, LQR_METHOD
 from test_sil.SIL_operator import SIL_CodeGenerator
 from test_vs.MCAP_tester.tester.MCAP_tester import MCAPTester
 
@@ -67,8 +67,14 @@ Dd = sys_d.D
 Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
 R_ex = np.diag([1.0])
 
-deployed_file_names = LQI_Deploy.generate_LQI_DARE_cpp_code(
-    Ad, Bd, Cc, Q_ex, R_ex)
+deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(
+    A=Ad,
+    B=Bd,
+    C=Cc,
+    Q_ex=Q_ex,
+    R_ex=R_ex,
+    method=LQR_METHOD.DARE
+)
 
 current_dir = os.path.dirname(__file__)
 generator = SIL_CodeGenerator(deployed_file_names, current_dir)
