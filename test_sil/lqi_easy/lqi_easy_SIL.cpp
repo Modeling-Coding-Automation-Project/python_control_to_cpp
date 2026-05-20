@@ -1,4 +1,4 @@
-#include "lqi_SIL_wrapper.hpp"
+#include "lqi_easy_SIL_wrapper.hpp"
 #include "python_control.hpp"
 
 #include <pybind11/numpy.h>
@@ -6,14 +6,14 @@
 
 namespace py = pybind11;
 
-using FLOAT = typename lqi_SIL_wrapper::type::Value_Type;
+using FLOAT = typename lqi_easy_SIL_wrapper::type::Value_Type;
 
-constexpr std::size_t INPUT_SIZE = lqi_SIL_wrapper::INPUT_SIZE;
-constexpr std::size_t Q_EX_SIZE = lqi_SIL_wrapper::Q_EX_SIZE;
+constexpr std::size_t INPUT_SIZE = lqi_easy_SIL_wrapper::INPUT_SIZE;
+constexpr std::size_t Q_EX_SIZE = lqi_easy_SIL_wrapper::Q_EX_SIZE;
 
-lqi_SIL_wrapper::type lqi;
+lqi_easy_SIL_wrapper::type lqi;
 
-void initialize(void) { lqi = lqi_SIL_wrapper::make(); }
+void initialize(void) { lqi = lqi_easy_SIL_wrapper::make(); }
 
 py::array_t<FLOAT> solve(void) {
   auto K = lqi.solve();
@@ -56,7 +56,7 @@ void set_Eigen_solver_iteration_max_for_eigen_vector(const int max_iteration) {
       static_cast<std::size_t>(max_iteration));
 }
 
-PYBIND11_MODULE(LqiSIL, m) {
+PYBIND11_MODULE(LqiEasySIL, m) {
   m.def("initialize", &initialize, "initialize lqi");
   m.def("solve", &solve, "solve discrete state space lqi");
   m.def("get_K", &get_K, "get K matrix");
