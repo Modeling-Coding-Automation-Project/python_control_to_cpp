@@ -16,6 +16,29 @@
 using namespace PythonNumpy;
 using namespace PythonControl;
 
+constexpr std::size_t LQR_METHOD = PythonControl::LQR_METHOD_DARE;
+
+template <
+    std::size_t Method, typename AcType, typename BcType, typename AdType,
+    typename BdType, typename QType, typename RType,
+    typename std::enable_if<Method == LQR_METHOD_ARIMOTO_POTTER, int>::type = 0>
+inline auto
+make_lqr_dispatch(const AcType &Ac, const BcType &Bc, const AdType &,
+                  const BdType &, const QType &Q,
+                  const RType &R) -> decltype(make_LQR<Method>(Ac, Bc, Q, R)) {
+  return make_LQR<Method>(Ac, Bc, Q, R);
+}
+
+template <std::size_t Method, typename AcType, typename BcType, typename AdType,
+          typename BdType, typename QType, typename RType,
+          typename std::enable_if<Method == LQR_METHOD_DARE, int>::type = 0>
+inline auto
+make_lqr_dispatch(const AcType &, const BcType &, const AdType &Ad,
+                  const BdType &Bd, const QType &Q,
+                  const RType &R) -> decltype(make_LQR<Method>(Ad, Bd, Q, R)) {
+  return make_LQR<Method>(Ad, Bd, Q, R);
+}
+
 int main(void) {
   /* Create plant model */
   using SparseAvailable_Ac =
@@ -59,7 +82,7 @@ int main(void) {
   auto Q = make_DiagMatrix<4>(1.0, 0.0, 1.0, 0.0);
   auto R = make_DiagMatrix<1>(1.0);
 
-  auto lqr = make_LQR(Ac, Bc, Q, R);
+  auto lqr = make_lqr_dispatch<LQR_METHOD>(Ac, Bc, Ad, Bd, Q, R);
 
   auto K = lqr.solve();
   K = lqr.get_K();
