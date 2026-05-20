@@ -57,8 +57,8 @@ current_dir = os.path.dirname(__file__)
 generator = SIL_CodeGenerator(deployed_file_names, current_dir)
 generator.build_SIL_code()
 
-from test_sil.lqi import LqiSIL
-LqiSIL.initialize()
+from test_sil.lqi_easy import LqiEasySIL
+LqiEasySIL.initialize()
 
 
 def lqr_with_arimoto_potter(Ac, Bc, Q, R):
@@ -106,9 +106,9 @@ NEAR_LIMIT = 0.3
 
 K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
 
-LqiSIL.set_Eigen_solver_iteration_max(3)
-LqiSIL.set_Eigen_solver_iteration_max_for_eigen_vector(8)
-K_cpp = LqiSIL.solve()
+LqiEasySIL.set_Eigen_solver_iteration_max(3)
+LqiEasySIL.set_Eigen_solver_iteration_max_for_eigen_vector(8)
+K_cpp = LqiEasySIL.solve()
 
 tester.expect_near(K_cpp, K_ex, NEAR_LIMIT,
                    "LQI SIL, check K.")

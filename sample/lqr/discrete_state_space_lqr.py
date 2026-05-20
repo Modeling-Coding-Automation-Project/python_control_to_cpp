@@ -133,12 +133,75 @@ def dlqr_origin(Ad, Bd, Q, R):
     return K
 
 
+def solve_dare_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
+    P = Q.copy()
+
+    for i in range(max_iter):
+        BT_P = B.T @ P
+        S = R + BT_P @ B
+
+        K = np.linalg.solve(S, BT_P @ A)
+
+        P_next = A.T @ P @ A - A.T @ P @ B @ K + Q
+
+        err = np.linalg.norm(P_next - P, ord="fro")
+
+        P = P_next
+
+        if err < tol:
+            return P, i + 1, True
+
+    return P, max_iter, False
+
+
+def dlqr_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
+    P, num_iter, converged = solve_dare_iterative(
+        A, B, Q, R, max_iter=max_iter, tol=tol
+    )
+
+    K = np.linalg.solve(B.T @ P @ B + R, B.T @ P @ A)
+    eigvals = np.linalg.eigvals(A - B @ K)
+
+    return K, P, eigvals, num_iter, converged
+
+
+# LQR algorithm selection:
+#   "arimoto_potter" - continuous-time Hamiltonian (Arimoto-Potter method)
+#   "dlqr_origin"    - discrete-time DARE via scipy.linalg.solve_discrete_are
+#   "dlqr_iterative" - discrete-time DARE via iterative method
+#   "control_lqr"    - continuous-time LQR via Python Control Library
+#   "control_dlqr"   - discrete-time LQR via Python Control Library
+LQR_ALGORITHM = "arimoto_potter"
+
+
+def compute_lqr_gain(algorithm):
+    if algorithm == "arimoto_potter":
+        K = lqr_with_arimoto_potter(Ac, Bc, Q, R)
+    elif algorithm == "dlqr_origin":
+        K = dlqr_origin(Ad, Bd, Q, R)
+    elif algorithm == "dlqr_iterative":
+        K, P, eigvals, num_iter, converged = dlqr_iterative(
+            np.asarray(Ad), np.asarray(Bd), Q, R
+        )
+        print(f"  iterations: {num_iter}, converged: {converged}")
+        print(f"  closed-loop eigenvalues: {eigvals}")
+        K = np.matrix(K)
+    elif algorithm == "control_lqr":
+        K, _, _ = control.lqr(Ac, Bc, Q, R)
+    elif algorithm == "control_dlqr":
+        K, _, _ = control.dlqr(Ad, Bd, Q, R)
+    else:
+        raise ValueError(f"Unknown LQR algorithm: {algorithm}")
+    return K
+
+
 def main_reference_tracking():
     # design LQR controller
-    K = lqr_with_arimoto_potter(Ac, Bc, Q, R)
-    # K, _, _ = control.lqr(Ac, Bc, Q, R)
-    # K = dlqr_origin(A, B, Q, R)
-    # K, _, _ = control.dlqr(A, B, Q, R)
+    print(f"LQR algorithm: {LQR_ALGORITHM}")
+    K = compute_lqr_gain(LQR_ALGORITHM)
+    # To switch algorithms, change LQR_ALGORITHM above to one of:
+    #   "arimoto_potter", "dlqr_origin", "dlqr_iterative",
+    #   "control_lqr", "control_dlqr"
 
     print("K: ")
     print(K)
