@@ -103,6 +103,15 @@ jobs:
 
         ./sample/app
 
+        /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqi.py
+
+        g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
+        -I ./external_libraries/python_numpy_to_cpp/base_matrix -I ./external_libraries/python_math_to_cpp/base_math
+        -I ./external_libraries/python_math_to_cpp/python_math -I ./external_libraries/base_utility_cpp/base_utility
+        -o ./sample/app ./sample/lqr/discrete_state_space_lqi.cpp
+
+        ./sample/app
+
         /opt/venv_py_samples/bin/python3 ./sample/lqr/discrete_state_space_lqr.py
 
         g++ -std=c++11 -Wall -Werror -I ./python_control -I ./external_libraries/python_numpy_to_cpp/python_numpy
