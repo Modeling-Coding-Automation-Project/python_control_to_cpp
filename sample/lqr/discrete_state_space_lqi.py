@@ -28,6 +28,7 @@ import control
 import numpy as np
 import scipy.linalg as la
 
+from python_control.lqr_deploy import LQI_Deploy
 from sample.simulation_manager.visualize.simulation_plotter_dash import SimulationPlotterDash
 
 simulation_time = 10.0
@@ -70,6 +71,12 @@ Ad = sys_d.A
 Bd = sys_d.B
 Cd = sys_d.C
 Dd = sys_d.D
+
+# Create Expanded Discrete State Space Model for DARE
+Ad_ex = np.block([
+    [Ad, np.zeros((Ad.shape[0], Cd.shape[0]))],
+    [Cd, np.zeros((Cd.shape[0], Cd.shape[0]))]])
+Bd_ex = np.vstack([Bd, np.zeros((Cd.shape[0], Bd.shape[1]))])
 
 # LQI parameters
 Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
@@ -121,10 +128,70 @@ def lqr_with_arimoto_potter(Ac, Bc, Q, R):
     return K
 
 
-def main_reference_tracking():
+def solve_dare_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
+    P = Q.copy()
 
-    K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
-    # K_ex = control.lqr(Ac_ex, Bc_ex, Q_ex, R_ex)[0]
+    for i in range(max_iter):
+        BT_P = B.T @ P
+        S = R + BT_P @ B
+
+        K = np.linalg.solve(S, BT_P @ A)
+
+        P_next = A.T @ P @ A - A.T @ P @ B @ K + Q
+
+        err = np.linalg.norm(P_next - P, ord="fro")
+
+        P = P_next
+
+        if err < tol:
+            return P, i + 1, True
+
+    return P, max_iter, False
+
+
+def dlqr_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
+    P, num_iter, converged = solve_dare_iterative(
+        A, B, Q, R, max_iter=max_iter, tol=tol
+    )
+
+    K = np.linalg.solve(B.T @ P @ B + R, B.T @ P @ A)
+    eigvals = np.linalg.eigvals(A - B @ K)
+
+    return K, P, eigvals, num_iter, converged
+
+
+# LQI algorithm selection:
+#   "arimoto_potter" - continuous-time Hamiltonian (Arimoto-Potter method)
+#   "dlqr_iterative" - discrete-time DARE via iterative method
+LQI_ALGORITHM = "arimoto_potter"
+
+
+def compute_lqi_gain(algorithm):
+    if algorithm == "arimoto_potter":
+        K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
+    elif algorithm == "dlqr_iterative":
+        K_ex, P, eigvals, num_iter, converged = dlqr_iterative(
+            np.asarray(Ad_ex), np.asarray(Bd_ex), Q_ex, R_ex
+        )
+        print(f"  iterations: {num_iter}, converged: {converged}")
+        print(f"  closed-loop eigenvalues: {eigvals}")
+        K_ex = np.matrix(K_ex)
+    else:
+        raise ValueError(f"Unknown LQI algorithm: {algorithm}")
+    return K_ex
+
+
+# You can create cpp header which can easily define LQI as C++ code
+deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex)
+print(deployed_file_names)
+
+
+def main_reference_tracking():
+    # design LQI controller
+    print(f"LQI algorithm: {LQI_ALGORITHM}")
+    K_ex = compute_lqi_gain(LQI_ALGORITHM)
+    # To switch algorithms, change LQI_ALGORITHM above to one of:
+    #   "arimoto_potter", "dlqr_iterative"
 
     print("K_ex: ")
     print(K_ex)
