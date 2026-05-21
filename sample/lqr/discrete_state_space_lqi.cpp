@@ -18,19 +18,6 @@ using namespace PythonControl;
 
 constexpr std::size_t LQI_METHOD = PythonControl::LQR_METHOD_DARE;
 
-/* Helper: set Eigen solver options (Arimoto-Potter only) */
-template <
-    std::size_t Method, typename LQI_T,
-    typename std::enable_if<Method == LQR_METHOD_ARIMOTO_POTTER, int>::type = 0>
-void set_lqi_solver_options(LQI_T &lqi, std::size_t q_ex_size) {
-  lqi.set_Eigen_solver_iteration_max(q_ex_size);
-  lqi.set_Eigen_solver_iteration_max_for_eigen_vector(3 * q_ex_size);
-}
-
-template <std::size_t Method, typename LQI_T,
-          typename std::enable_if<Method == LQR_METHOD_DARE, int>::type = 0>
-void set_lqi_solver_options(LQI_T &, std::size_t) {}
-
 /* Dispatch: Arimoto-Potter uses continuous-time Ac, Bc, Cc */
 template <
     std::size_t Method, typename AcType, typename BcType, typename CcType,
@@ -100,7 +87,7 @@ int main(void) {
 
   auto lqi = make_lqi_dispatch<LQI_METHOD>(Ac, Bc, Cc, Ad, Bd, Q_ex, R_ex);
 
-  set_lqi_solver_options<LQI_METHOD>(lqi, Q_EX_SIZE);
+  lqi.solver.set_iteration_max(Q_EX_SIZE);
 
   auto K = lqi.solve();
   K = lqi.get_K();

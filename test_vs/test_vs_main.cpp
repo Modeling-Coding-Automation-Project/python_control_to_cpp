@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <tuple>
+#include <stdexcept>
 
 #include "python_control.hpp"
 
@@ -823,13 +824,13 @@ void check_python_control_lqr(void) {
     lqr = lqr_move;
 
     /* LQR計算 */
-    lqr.set_R_inv_division_min(static_cast<T>(1.0e-10));
-    lqr.set_V1_inv_decay_rate(static_cast<T>(0));
-    lqr.set_V1_inv_division_min(static_cast<T>(1.0e-10));
-    lqr.set_Eigen_solver_iteration_max(10);
-    lqr.set_Eigen_solver_iteration_max_for_eigen_vector(30);
-    lqr.set_Eigen_solver_division_min(static_cast<T>(1.0e-20));
-    lqr.set_Eigen_solver_small_value(static_cast<T>(1.0e-6));
+    lqr.solver.set_R_inv_division_min(static_cast<T>(1.0e-10));
+    lqr.solver.set_V1_inv_decay_rate(static_cast<T>(0));
+    lqr.solver.set_V1_inv_division_min(static_cast<T>(1.0e-10));
+    lqr.solver.set_Eigen_solver_iteration_max(10);
+    lqr.solver.set_Eigen_solver_iteration_max_for_eigen_vector(30);
+    lqr.solver.set_Eigen_solver_division_min(static_cast<T>(1.0e-20));
+    lqr.solver.set_Eigen_solver_small_value(static_cast<T>(1.0e-6));
 
 
     auto K = lqr.solve();
@@ -844,7 +845,7 @@ void check_python_control_lqr(void) {
     tester.expect_near(K.matrix.data, K_answer.matrix.data, NEAR_LIMIT_STRICT,
         "check LQR solve continuous.");
 
-    bool condition = lqr.get_eigen_solver_is_ill();
+    bool condition = lqr.solver.get_eigen_solver_is_ill();
 
     tester.expect_near(condition, false, 0,
         "check LQR eigen solver is not ill.");
@@ -911,8 +912,8 @@ void check_python_control_lqr(void) {
     lqi = lqi_move;
 
     /* LQI計算 */
-    lqi.set_Eigen_solver_iteration_max(3);
-    lqi.set_Eigen_solver_iteration_max_for_eigen_vector(8);
+    lqi.solver.set_Eigen_solver_iteration_max(3);
+    lqi.solver.set_Eigen_solver_iteration_max_for_eigen_vector(8);
 
     auto K_ex = lqi.solve();
     K_ex = lqi.get_K();
@@ -929,6 +930,99 @@ void check_python_control_lqr(void) {
 
     tester.throw_error_if_test_failed();
 }
+
+template <typename T>
+void check_python_control_lqr_dare(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+
+    constexpr T NEAR_LIMIT_STRICT = std::is_same<T, double>::value ? T(1.0e-4) : T(1.0e-3);
+
+
+    using SparseAvailable_Ad = SparseAvailable<
+        ColumnAvailable<true, true, false, false>,
+        ColumnAvailable<false, true, true, false>,
+        ColumnAvailable<false, false, true, true>,
+        ColumnAvailable<false, true, true, true>>;
+
+    auto Ad = make_SparseMatrix<SparseAvailable_Ad>(
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(0.99), static_cast<T>(0.3),
+        static_cast<T>(1.0), static_cast<T>(0.1),
+        static_cast<T>(-0.05), static_cast<T>(3.0), static_cast<T>(1.0));
+
+    using SparseAvailable_Bd = SparseAvailable<
+        ColumnAvailable<false>,
+        ColumnAvailable<true>,
+        ColumnAvailable<false>,
+        ColumnAvailable<true>>;
+
+    auto Bd = make_SparseMatrix<SparseAvailable_Bd>(
+        static_cast<T>(0.2), static_cast<T>(0.5));
+
+    auto Q = make_DiagMatrix<4>(
+        static_cast<T>(1), static_cast<T>(0),
+        static_cast<T>(1), static_cast<T>(0));
+
+    auto R = make_DiagMatrix<1>(static_cast<T>(1));
+
+
+    /* LQR DARE 定義 */
+    LQR_Type<decltype(Ad), decltype(Bd), decltype(Q), decltype(R), LQR_METHOD_DARE>
+        lqr_dare = make_LQR<LQR_METHOD_DARE>(Ad, Bd, Q, R);
+
+    /* set */
+    lqr_dare.set_A(make_SparseMatrix<SparseAvailable_Ad>(
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0),
+        static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqr_dare.set_B(make_SparseMatrix<SparseAvailable_Bd>(
+        static_cast<T>(0.0), static_cast<T>(0.0)));
+
+    lqr_dare.set_Q(make_DiagMatrix<4>(
+        static_cast<T>(0), static_cast<T>(0),
+        static_cast<T>(0), static_cast<T>(0)));
+
+    lqr_dare.set_R(make_DiagMatrix<1>(static_cast<T>(0)));
+
+    lqr_dare.set_A(Ad);
+    lqr_dare.set_B(Bd);
+    lqr_dare.set_Q(Q);
+    lqr_dare.set_R(R);
+
+    LQR_Type<decltype(Ad), decltype(Bd), decltype(Q), decltype(R), LQR_METHOD_DARE>
+        lqr_dare_copy = lqr_dare;
+    LQR_Type<decltype(Ad), decltype(Bd), decltype(Q), decltype(R), LQR_METHOD_DARE>
+        lqr_dare_move = std::move(lqr_dare_copy);
+    lqr_dare = lqr_dare_move;
+
+    /* LQR DARE 計算 */
+    auto K_dare = lqr_dare.solve();
+    K_dare = lqr_dare.get_K();
+
+    auto K_dare_answer = make_DenseMatrix<1, 4>(
+        static_cast<T>(-0.59361499),
+        static_cast<T>(-1.21726806),
+        static_cast<T>(13.84046224),
+        static_cast<T>(2.62623554));
+
+    tester.expect_near(K_dare.matrix.data, K_dare_answer.matrix.data, NEAR_LIMIT_STRICT,
+        "check LQR DARE solve discrete.");
+
+    auto number_of_iteration = lqr_dare.solver.get_number_of_iteration();
+
+    if (number_of_iteration <= 0) {
+        throw std::runtime_error("check LQR DARE solver iteration count is positive.");
+    }
+
+
+    tester.throw_error_if_test_failed();
+}
+
 
 template <typename T>
 void check_python_control_linear_kalman_filter(void) {
@@ -1680,6 +1774,10 @@ int main(void) {
     check_python_control_lqr<double>();
 
     check_python_control_lqr<float>();
+
+    check_python_control_lqr_dare<double>();
+
+    check_python_control_lqr_dare<float>();
 
     check_python_control_linear_kalman_filter<double>();
 

@@ -47,12 +47,13 @@ py::array_t<FLOAT> get_K(void) {
 
 void set_Eigen_solver_iteration_max(const int max_iteration) {
 
-  lqi.set_Eigen_solver_iteration_max(static_cast<std::size_t>(max_iteration));
+  lqi.solver.set_Eigen_solver_iteration_max(
+      static_cast<std::size_t>(max_iteration));
 }
 
 void set_Eigen_solver_iteration_max_for_eigen_vector(const int max_iteration) {
 
-  lqi.set_Eigen_solver_iteration_max_for_eigen_vector(
+  lqi.solver.set_Eigen_solver_iteration_max_for_eigen_vector(
       static_cast<std::size_t>(max_iteration));
 }
 

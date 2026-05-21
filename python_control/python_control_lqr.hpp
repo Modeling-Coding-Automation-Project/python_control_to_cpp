@@ -66,7 +66,7 @@ struct Hamiltonian {
 constexpr std::size_t LQR_METHOD_ARIMOTO_POTTER = 0;
 constexpr std::size_t LQR_METHOD_DARE = 1;
 
-constexpr std::size_t LQR_DARE_max_iterationATION_DEFAULT = 100;
+constexpr std::size_t LQR_DARE_iteration_maxATION_DEFAULT = 100;
 constexpr double LQR_DARE_TOLERANCE_DEFAULT = 1e-10;
 
 /* LQR Arimoto Potter Solver */
@@ -352,7 +352,7 @@ public:
   LQR_DARE_Solver()
       : K_(), P_(), S_solver_first_(), S_solver_second_(),
         _number_of_iteration(0), _converged(false),
-        _max_iteration(LQR_DARE_max_iterationATION_DEFAULT),
+        _iteration_max(LQR_DARE_iteration_maxATION_DEFAULT),
         _tolerance(static_cast<T_>(LQR_DARE_TOLERANCE_DEFAULT)) {}
 
   /* Copy Constructor */
@@ -360,7 +360,7 @@ public:
       : K_(input.K_), P_(input.P_), S_solver_first_(input.S_solver_first_),
         S_solver_second_(input.S_solver_second_),
         _number_of_iteration(input._number_of_iteration),
-        _converged(input._converged), _max_iteration(input._max_iteration),
+        _converged(input._converged), _iteration_max(input._iteration_max),
         _tolerance(input._tolerance) {}
 
   LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &
@@ -372,7 +372,7 @@ public:
       this->S_solver_second_ = input.S_solver_second_;
       this->_number_of_iteration = input._number_of_iteration;
       this->_converged = input._converged;
-      this->_max_iteration = input._max_iteration;
+      this->_iteration_max = input._iteration_max;
       this->_tolerance = input._tolerance;
     }
     return *this;
@@ -386,7 +386,7 @@ public:
         S_solver_second_(std::move(input.S_solver_second_)),
         _number_of_iteration(std::move(input._number_of_iteration)),
         _converged(std::move(input._converged)),
-        _max_iteration(std::move(input._max_iteration)),
+        _iteration_max(std::move(input._iteration_max)),
         _tolerance(std::move(input._tolerance)) {}
 
   LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type> &
@@ -398,7 +398,7 @@ public:
       this->S_solver_second_ = std::move(input.S_solver_second_);
       this->_number_of_iteration = std::move(input._number_of_iteration);
       this->_converged = std::move(input._converged);
-      this->_max_iteration = std::move(input._max_iteration);
+      this->_iteration_max = std::move(input._iteration_max);
       this->_tolerance = std::move(input._tolerance);
     }
     return *this;
@@ -427,9 +427,9 @@ public:
     this->P_ = P_Type_() + Q;
 
     this->_converged = false;
-    this->_number_of_iteration = this->_max_iteration;
+    this->_number_of_iteration = this->_iteration_max;
 
-    for (std::size_t i = 0; i < this->_max_iteration; i++) {
+    for (std::size_t i = 0; i < this->_iteration_max; i++) {
 
       /* BT_P = B^T * P */
       auto BT_P = PythonNumpy::ATranspose_mul_B(B, this->P_);
@@ -472,15 +472,6 @@ public:
   inline auto get_K() const -> K_Type { return this->K_; }
 
   /**
-   * @brief Returns whether the DARE solver did not converge (ill-conditioned).
-   *
-   * @return True if the DARE iteration did not converge, false otherwise.
-   */
-  inline auto get_eigen_solver_is_ill() const -> bool {
-    return !this->_converged;
-  }
-
-  /**
    * @brief Returns the number of iterations performed by the DARE solver.
    *
    * @return The number of iterations.
@@ -504,68 +495,34 @@ public:
   inline auto get_P() const -> P_Type_ { return this->P_; }
 
   /**
-   * @brief Sets the division minimum for the S inverse solver.
+   * @brief Sets the division minimum for the first S solver used in DARE.
    *
-   * @param division_min_in The new minimum division value to be set.
+   * @param division_min_in The new minimum division value to be set for the
+   * first S solver.
    */
-  inline void set_R_inv_division_min(const T_ &division_min_in) {
+  inline void set_S_solver_first_division_min(const T_ &division_min_in) {
     this->S_solver_first_.set_division_min(division_min_in);
   }
 
   /**
-   * @brief No-op for interface compatibility (V1 is not used in DARE).
+   * @brief Sets the division minimum for the second S solver used in DARE.
    *
-   * @param decay_rate_in Unused.
+   * @param division_min_in The new minimum division value to be set for the
+   * second S solver.
    */
-  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
-    (void)decay_rate_in;
-  }
-
-  /**
-   * @brief No-op for interface compatibility (V1 is not used in DARE).
-   *
-   * @param division_min_in Unused.
-   */
-  inline void set_V1_inv_division_min(const T_ &division_min_in) {
-    (void)division_min_in;
-  }
-
-  /**
-   * @brief Sets the maximum number of iterations for the DARE solver.
-   *
-   * @param iteration_max The new maximum number of iterations to be set.
-   */
-  inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
-    this->_max_iteration = iteration_max;
-  }
-
-  /**
-   * @brief No-op for interface compatibility (not used in DARE).
-   *
-   * @param iteration_max_for_eigen_vector Unused.
-   */
-  inline void set_Eigen_solver_iteration_max_for_eigen_vector(
-      const std::size_t &iteration_max_for_eigen_vector) {
-    (void)iteration_max_for_eigen_vector;
-  }
-
-  /**
-   * @brief Sets the division minimum for the S inverse solver.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
-    this->S_solver_first_.set_division_min(division_min_in);
+  inline void set_S_solver_second_division_min(const T_ &division_min_in) {
     this->S_solver_second_.set_division_min(division_min_in);
   }
 
   /**
-   * @brief No-op for interface compatibility (not used in DARE).
+   * @brief Sets the maximum number of iterations for the S solvers used in
+   * DARE.
    *
-   * @param small_value_in Unused.
+   * @param iteration_max The new maximum number of iterations to be set for the
+   * S solvers.
    */
-  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
-    (void)small_value_in;
+  inline void set_iteration_max(const std::size_t &iteration_max) {
+    this->_iteration_max = iteration_max;
   }
 
   /**
@@ -575,24 +532,17 @@ public:
    */
   inline void set_tolerance(const T_ &tol_in) { this->_tolerance = tol_in; }
 
-  /**
-   * @brief Sets the decay rate for the S inverse solver.
-   *
-   * @param decay_rate_in The new decay rate to be set.
-   */
-  inline void set_S_inv_decay_rate(const T_ &decay_rate_in) {
+  inline void set_S_solver_first_decay_rate(const T_ &decay_rate_in) {
     this->S_solver_first_.set_decay_rate(decay_rate_in);
-    this->S_solver_second_.set_decay_rate(decay_rate_in);
   }
 
   /**
-   * @brief Sets the division minimum for the S inverse solver.
+   * @brief Sets the decay rate for the second S solver used in DARE.
    *
-   * @param division_min_in The new minimum division value to be set.
+   * @param decay_rate_in The new decay rate to be set for the second S solver.
    */
-  inline void set_S_inv_division_min(const T_ &division_min_in) {
-    this->S_solver_first_.set_division_min(division_min_in);
-    this->S_solver_second_.set_division_min(division_min_in);
+  inline void set_S_solver_second_decay_rate(const T_ &decay_rate_in) {
+    this->S_solver_second_.set_decay_rate(decay_rate_in);
   }
 
 protected:
@@ -605,7 +555,7 @@ protected:
 
   std::size_t _number_of_iteration;
   bool _converged;
-  std::size_t _max_iteration;
+  std::size_t _iteration_max;
   T_ _tolerance;
 };
 
@@ -645,11 +595,6 @@ protected:
                     std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  using Solver_Type_ = typename std::conditional<
-      (Method == LQR_METHOD_DARE),
-      LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type>,
-      LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>>::type;
-
 protected:
   /* Constant */
   static constexpr std::size_t Input_Size_ = B_Type::COLS;
@@ -660,6 +605,11 @@ public:
   using Value_Type = T_;
 
   using K_Type = PythonNumpy::DenseMatrix_Type<T_, Input_Size_, State_Size_>;
+
+  using Solver_Type = typename std::conditional<
+      (Method == LQR_METHOD_DARE),
+      LQR_DARE_Solver<A_Type, B_Type, Q_Type, R_Type>,
+      LQR_ArimotoPotterSolver<A_Type, B_Type, Q_Type, R_Type>>::type;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -687,15 +637,15 @@ public:
 
 public:
   /* Constructor */
-  LQR() : A_(), B_(), Q_(), R_(), K_(), _solver() {}
+  LQR() : solver(), A_(), B_(), Q_(), R_(), K_() {}
 
   LQR(const A_Type &A, const B_Type &B, const Q_Type &Q, const R_Type &R)
-      : A_(A), B_(B), Q_(Q), R_(R), K_(), _solver() {}
+      : solver(), A_(A), B_(B), Q_(Q), R_(R), K_() {}
 
   /* Copy Constructor */
   LQR(const LQR<A_Type, B_Type, Q_Type, R_Type, Method> &input)
-      : A_(input.A_), B_(input.B_), Q_(input.Q_), R_(input.R_), K_(input.K_),
-        _solver(input._solver) {}
+      : solver(input.solver), A_(input.A_), B_(input.B_), Q_(input.Q_),
+        R_(input.R_), K_(input.K_) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type, Method> &
   operator=(const LQR<A_Type, B_Type, Q_Type, R_Type, Method> &input) {
@@ -705,16 +655,16 @@ public:
       this->Q_ = input.Q_;
       this->R_ = input.R_;
       this->K_ = input.K_;
-      this->_solver = input._solver;
+      this->solver = input.solver;
     }
     return *this;
   }
 
   /* Move Constructor */
   LQR(LQR<A_Type, B_Type, Q_Type, R_Type, Method> &&input) noexcept
-      : A_(std::move(input.A_)), B_(std::move(input.B_)),
-        Q_(std::move(input.Q_)), R_(std::move(input.R_)),
-        K_(std::move(input.K_)), _solver(std::move(input._solver)) {}
+      : solver(std::move(input.solver)), A_(std::move(input.A_)),
+        B_(std::move(input.B_)), Q_(std::move(input.Q_)),
+        R_(std::move(input.R_)), K_(std::move(input.K_)) {}
 
   LQR<A_Type, B_Type, Q_Type, R_Type, Method> &
   operator=(LQR<A_Type, B_Type, Q_Type, R_Type, Method> &&input) noexcept {
@@ -724,7 +674,7 @@ public:
       this->Q_ = std::move(input.Q_);
       this->R_ = std::move(input.R_);
       this->K_ = std::move(input.K_);
-      this->_solver = std::move(input._solver);
+      this->solver = std::move(input.solver);
     }
     return *this;
   }
@@ -743,7 +693,7 @@ public:
    */
   inline K_Type solve(void) {
 
-    this->K_ = this->_solver.solve(this->A_, this->B_, this->Q_, this->R_);
+    this->K_ = this->solver.solve(this->A_, this->B_, this->Q_, this->R_);
 
     return this->K_;
   }
@@ -758,19 +708,6 @@ public:
    * @return The computed gain matrix K.
    */
   inline K_Type get_K() const { return this->K_; }
-
-  /**
-   * @brief Checks if the eigenvalue solver is ill-posed.
-   *
-   * This function returns a boolean indicating whether the eigenvalue solver
-   * encountered an ill-posed problem during the computation of the gain matrix
-   * K.
-   *
-   * @return True if the eigenvalue solver is ill-posed, false otherwise.
-   */
-  inline bool get_eigen_solver_is_ill() const {
-    return this->_solver.get_eigen_solver_is_ill();
-  }
 
   /**
    * @brief Returns the state transition matrix A.
@@ -809,174 +746,9 @@ public:
    */
   inline void set_R(const R_Type &R) { this->R_ = R; }
 
-  /**
-   * @brief Returns the gain matrix K.
-   *
-   * This function returns the gain matrix K computed by the LQR algorithm.
-   *
-   * @return The gain matrix K.
-   */
-  inline void set_R_inv_division_min(const T_ &division_min_in) {
-    this->_solver.set_R_inv_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Returns the inverse solver for V1 and V2 matrices.
-   *
-   * This function returns the inverse solver used for the V1 and V2 matrices
-   * in the LQR computation.
-   *
-   * @return The inverse solver for V1 and V2 matrices.
-   */
-  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
-    this->_solver.set_V1_inv_decay_rate(decay_rate_in);
-  }
-
-  /**
-   * @brief Sets the division minimum for the inverse solver of V1 and V2
-   * matrices.
-   *
-   * This function updates the minimum division value used in the inverse
-   * solver to avoid division by zero errors during the LQR computation.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_V1_inv_division_min(const T_ &division_min_in) {
-    this->_solver.set_V1_inv_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Sets the maximum number of iterations for the eigenvalue solver.
-   *
-   * This function updates the maximum number of iterations allowed for the
-   * eigenvalue solver used in the LQR computation.
-   *
-   * @param iteration_max The new maximum number of iterations to be set.
-   */
-  inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
-    this->_solver.set_Eigen_solver_iteration_max(iteration_max);
-  }
-
-  /**
-   * @brief Sets the maximum number of iterations for the eigenvector solver.
-   *
-   * This function updates the maximum number of iterations allowed for the
-   * eigenvector solver used in the LQR computation.
-   *
-   * @param iteration_max_for_eigen_vector The new maximum number of iterations
-   * to be set for the eigenvector solver.
-   */
-  inline void set_Eigen_solver_iteration_max_for_eigen_vector(
-      const std::size_t &iteration_max_for_eigen_vector) {
-    this->_solver.set_Eigen_solver_iteration_max_for_eigen_vector(
-        iteration_max_for_eigen_vector);
-  }
-
-  /**
-   * @brief Sets the minimum division value for the eigenvalue solver.
-   *
-   * This function updates the minimum division value used in the eigenvalue
-   * solver to avoid division by zero errors during the LQR computation.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
-    this->_solver.set_Eigen_solver_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Sets the small value for the eigenvalue solver.
-   *
-   * This function updates the small value used in the eigenvalue solver to
-   * handle numerical stability issues during the LQR computation.
-   *
-   * @param small_value_in The new small value to be set.
-   */
-  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
-    this->_solver.set_Eigen_solver_small_value(small_value_in);
-  }
-
-  /* DARE-specific methods (available only when Method == LQR_METHOD_DARE) */
-
-  /**
-   * @brief Returns the number of iterations performed by the DARE solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return The number of DARE iterations.
-   */
-  template <std::size_t M = Method>
-  inline auto get_number_of_iteration() const ->
-      typename std::enable_if<M == LQR_METHOD_DARE, std::size_t>::type {
-    return this->_solver.get_number_of_iteration();
-  }
-
-  /**
-   * @brief Returns whether the DARE iteration converged.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return True if the DARE iteration converged, false otherwise.
-   */
-  template <std::size_t M = Method>
-  inline auto get_converged() const ->
-      typename std::enable_if<M == LQR_METHOD_DARE, bool>::type {
-    return this->_solver.get_converged();
-  }
-
-  /**
-   * @brief Returns the DARE solution matrix P.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return The DARE solution matrix P.
-   */
-  template <std::size_t M = Method>
-  inline auto get_P() const ->
-      typename std::enable_if<
-          M == LQR_METHOD_DARE,
-          PythonNumpy::DenseMatrix_Type<T_, State_Size_, State_Size_>>::type {
-    return this->_solver.get_P();
-  }
-
-  /**
-   * @brief Sets the convergence tolerance for the DARE solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param tol_in The new convergence tolerance to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_tolerance(const T_ &tol_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_tolerance(tol_in);
-  }
-
-  /**
-   * @brief Sets the decay rate for the DARE S inverse solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param decay_rate_in The new decay rate to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_S_inv_decay_rate(const T_ &decay_rate_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_S_inv_decay_rate(decay_rate_in);
-  }
-
-  /**
-   * @brief Sets the division minimum for the DARE S inverse solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_S_inv_division_min(const T_ &division_min_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_S_inv_division_min(division_min_in);
-  }
+public:
+  /* Variable */
+  Solver_Type solver;
 
 protected:
   /* Variable */
@@ -985,8 +757,6 @@ protected:
   Q_Type Q_;
   R_Type R_;
   K_Type K_;
-
-  Solver_Type_ _solver;
 };
 
 /* Make LQR */
@@ -1006,9 +776,9 @@ protected:
  */
 template <std::size_t Method = LQR_METHOD_ARIMOTO_POTTER, typename A_Type,
           typename B_Type, typename Q_Type, typename R_Type>
-inline auto
-make_LQR(const A_Type &A, const B_Type &B, const Q_Type &Q,
-         const R_Type &R) -> LQR<A_Type, B_Type, Q_Type, R_Type, Method> {
+inline auto make_LQR(const A_Type &A, const B_Type &B, const Q_Type &Q,
+                     const R_Type &R)
+    -> LQR<A_Type, B_Type, Q_Type, R_Type, Method> {
 
   return LQR<A_Type, B_Type, Q_Type, R_Type, Method>(A, B, Q, R);
 }
@@ -1070,11 +840,6 @@ protected:
       B_Type,
       PythonNumpy::SparseMatrixEmpty_Type<T_, C_Type::ROWS, B_Type::COLS>>;
 
-  using Solver_Type_ = typename std::conditional<
-      (Method == LQR_METHOD_DARE),
-      LQR_DARE_Solver<A_EX_Type_, B_EX_Type_, Q_Type, R_Type>,
-      LQR_ArimotoPotterSolver<A_EX_Type_, B_EX_Type_, Q_Type, R_Type>>::type;
-
 protected:
   /* Constant */
   static constexpr std::size_t Input_Size_ = B_Type::COLS;
@@ -1087,6 +852,11 @@ public:
 
   using K_Type = PythonNumpy::DenseMatrix_Type<T_, Input_Size_,
                                                (State_Size_ + Output_Size_)>;
+
+  using Solver_Type = typename std::conditional<
+      (Method == LQR_METHOD_DARE),
+      LQR_DARE_Solver<A_EX_Type_, B_EX_Type_, Q_Type, R_Type>,
+      LQR_ArimotoPotterSolver<A_EX_Type_, B_EX_Type_, Q_Type, R_Type>>::type;
 
   /* Check Compatibility */
   static_assert(PythonNumpy::Is_Diag_Matrix<Q_Type>::value,
@@ -1117,16 +887,16 @@ public:
 
 public:
   /* Constructor */
-  LQI() : A_(), B_(), C_(), Q_(), R_(), K_(), _solver() {}
+  LQI() : solver(), A_(), B_(), C_(), Q_(), R_(), K_() {}
 
   LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
       const R_Type &R)
-      : A_(A), B_(B), C_(C), Q_(Q), R_(R), K_(), _solver() {}
+      : solver(), A_(A), B_(B), C_(C), Q_(Q), R_(R), K_() {}
 
   /* Copy Constructor */
   LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &input)
-      : A_(input.A_), B_(input.B_), C_(input.C_), Q_(input.Q_), R_(input.R_),
-        K_(input.K_), _solver(input._solver) {}
+      : solver(input.solver), A_(input.A_), B_(input.B_), C_(input.C_),
+        Q_(input.Q_), R_(input.R_), K_(input.K_) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &
   operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &input) {
@@ -1137,17 +907,17 @@ public:
       this->Q_ = input.Q_;
       this->R_ = input.R_;
       this->K_ = input.K_;
-      this->_solver = input._solver;
+      this->solver = input.solver;
     }
     return *this;
   }
 
   /* Move Constructor */
   LQI(LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &&input) noexcept
-      : A_(std::move(input.A_)), B_(std::move(input.B_)),
-        C_(std::move(input.C_)), Q_(std::move(input.Q_)),
-        R_(std::move(input.R_)), K_(std::move(input.K_)),
-        _solver(std::move(input._solver)) {}
+      : solver(std::move(input.solver)), A_(std::move(input.A_)),
+        B_(std::move(input.B_)), C_(std::move(input.C_)),
+        Q_(std::move(input.Q_)), R_(std::move(input.R_)),
+        K_(std::move(input.K_)) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &operator=(
       LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &&input) noexcept {
@@ -1158,7 +928,7 @@ public:
       this->Q_ = std::move(input.Q_);
       this->R_ = std::move(input.R_);
       this->K_ = std::move(input.K_);
-      this->_solver = std::move(input._solver);
+      this->solver = std::move(input.solver);
     }
     return *this;
   }
@@ -1186,7 +956,7 @@ public:
         this->B_,
         PythonNumpy::make_SparseMatrixEmpty<T_, Output_Size_, Input_Size_>());
 
-    this->K_ = this->_solver.solve(A_ex, B_ex, this->Q_, this->R_);
+    this->K_ = this->solver.solve(A_ex, B_ex, this->Q_, this->R_);
 
     return this->K_;
   }
@@ -1201,19 +971,6 @@ public:
    * @return The computed gain matrix K.
    */
   inline K_Type get_K() const { return this->K_; }
-
-  /**
-   * @brief Checks if the eigenvalue solver is ill-posed.
-   *
-   * This function returns a boolean indicating whether the eigenvalue solver
-   * encountered an ill-posed problem during the computation of the gain matrix
-   * K.
-   *
-   * @return True if the eigenvalue solver is ill-posed, false otherwise.
-   */
-  inline bool get_eigen_solver_is_ill() const {
-    return this->_solver.get_eigen_solver_is_ill();
-  }
 
   /**
    * @brief Sets the state transition matrix A.
@@ -1261,176 +1018,9 @@ public:
    */
   inline void set_R(const R_Type &R) { this->R_ = R; }
 
-  /**
-   * @brief Sets the division minimum for the inverse solver of R.
-   *
-   * This function updates the minimum division value used in the inverse
-   * solver to avoid division by zero errors during the LQI computation.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_R_inv_division_min(const T_ &division_min_in) {
-    this->_solver.set_R_inv_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Sets the decay rate for the inverse solver of V1 and V2 matrices.
-   *
-   * This function updates the decay rate used in the inverse solver to
-   * control the convergence behavior during the LQI computation.
-   *
-   * @param decay_rate_in The new decay rate to be set.
-   */
-  inline void set_V1_inv_decay_rate(const T_ &decay_rate_in) {
-    this->_solver.set_V1_inv_decay_rate(decay_rate_in);
-  }
-
-  /**
-   * @brief Sets the division minimum for the inverse solver of V1 and V2
-   * matrices.
-   *
-   * This function updates the minimum division value used in the inverse
-   * solver to avoid division by zero errors during the LQI computation.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_V1_inv_division_min(const T_ &division_min_in) {
-    this->_solver.set_V1_inv_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Sets the maximum number of iterations for the eigenvalue solver.
-   *
-   * This function updates the maximum number of iterations allowed for the
-   * eigenvalue solver used in the LQI computation.
-   *
-   * @param iteration_max The new maximum number of iterations to be set.
-   */
-  inline void set_Eigen_solver_iteration_max(const std::size_t &iteration_max) {
-    this->_solver.set_Eigen_solver_iteration_max(iteration_max);
-  }
-
-  /**
-   * @brief Sets the maximum number of iterations for the eigenvector solver.
-   *
-   * This function updates the maximum number of iterations allowed for the
-   * eigenvector solver used in the LQI computation.
-   *
-   * @param iteration_max_for_eigen_vector The new maximum number of iterations
-   * to be set for the eigenvector solver.
-   */
-  inline void set_Eigen_solver_iteration_max_for_eigen_vector(
-      const std::size_t &iteration_max_for_eigen_vector) {
-    this->_solver.set_Eigen_solver_iteration_max_for_eigen_vector(
-        iteration_max_for_eigen_vector);
-  }
-
-  /**
-   * @brief Sets the minimum division value for the eigenvalue solver.
-   *
-   * This function updates the minimum division value used in the eigenvalue
-   * solver to avoid division by zero errors during the LQI computation.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_Eigen_solver_division_min(const T_ &division_min_in) {
-    this->_solver.set_Eigen_solver_division_min(division_min_in);
-  }
-
-  /**
-   * @brief Sets the small value for the eigenvalue solver.
-   *
-   * This function updates the small value used in the eigenvalue solver to
-   * handle numerical stability issues during the LQI computation.
-   *
-   * @param small_value_in The new small value to be set.
-   */
-  inline void set_Eigen_solver_small_value(const T_ &small_value_in) {
-    this->_solver.set_Eigen_solver_small_value(small_value_in);
-  }
-
-  /* DARE-specific methods (available only when Method == LQR_METHOD_DARE) */
-
-  /**
-   * @brief Returns the number of iterations performed by the DARE solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return The number of DARE iterations.
-   */
-  template <std::size_t M = Method>
-  inline auto get_number_of_iteration() const ->
-      typename std::enable_if<M == LQR_METHOD_DARE, std::size_t>::type {
-    return this->_solver.get_number_of_iteration();
-  }
-
-  /**
-   * @brief Returns whether the DARE iteration converged.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return True if the DARE iteration converged, false otherwise.
-   */
-  template <std::size_t M = Method>
-  inline auto get_converged() const ->
-      typename std::enable_if<M == LQR_METHOD_DARE, bool>::type {
-    return this->_solver.get_converged();
-  }
-
-  /**
-   * @brief Returns the DARE solution matrix P.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @return The DARE solution matrix P.
-   */
-  template <std::size_t M = Method>
-  inline auto get_P() const ->
-      typename std::enable_if<
-          M == LQR_METHOD_DARE,
-          PythonNumpy::DenseMatrix_Type<T_, (State_Size_ + Output_Size_),
-                                        (State_Size_ + Output_Size_)>>::type {
-    return this->_solver.get_P();
-  }
-
-  /**
-   * @brief Sets the convergence tolerance for the DARE solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param tol_in The new convergence tolerance to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_tolerance(const T_ &tol_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_tolerance(tol_in);
-  }
-
-  /**
-   * @brief Sets the decay rate for the DARE S inverse solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param decay_rate_in The new decay rate to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_S_inv_decay_rate(const T_ &decay_rate_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_S_inv_decay_rate(decay_rate_in);
-  }
-
-  /**
-   * @brief Sets the division minimum for the DARE S inverse solver.
-   *
-   * This method is only available when Method == LQR_METHOD_DARE.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  template <std::size_t M = Method>
-  inline auto set_DARE_S_inv_division_min(const T_ &division_min_in) ->
-      typename std::enable_if<M == LQR_METHOD_DARE, void>::type {
-    this->_solver.set_S_inv_division_min(division_min_in);
-  }
+public:
+  /* Variable */
+  Solver_Type solver;
 
 protected:
   /* Variable */
@@ -1440,8 +1030,6 @@ protected:
   Q_Type Q_;
   R_Type R_;
   K_Type K_;
-
-  Solver_Type_ _solver;
 };
 
 /* Make LQI */
