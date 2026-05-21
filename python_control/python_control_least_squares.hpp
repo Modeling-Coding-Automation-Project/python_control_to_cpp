@@ -480,31 +480,6 @@ public:
    */
   inline auto get_weights(void) const -> Wights_Type_ { return this->_weights; }
 
-  /**
-   * @brief Retrieves the covariance matrix P used in the RLS algorithm.
-   *
-   * This function returns the current covariance matrix P, which is used to
-   * compute the Kalman gain and update the weights in the RLS algorithm.
-   *
-   * @return The covariance matrix P of shape (ROWS + 1, ROWS + 1).
-   */
-  inline void set_inv_solver_decay_rate(const T_ &decay_rate_in) {
-    this->_lambda_X_P_Solver.set_decay_rate(decay_rate_in);
-  }
-
-  /**
-   * @brief Sets the minimum division value for the inverse solver in the RLS
-   * algorithm.
-   *
-   * This function updates the minimum division value used in the inverse
-   * solver to avoid division by zero errors during the RLS updates.
-   *
-   * @param division_min_in The new minimum division value to be set.
-   */
-  inline void set_inv_solver_division_min(const T_ &division_min_in) {
-    this->_lambda_X_P_Solver.set_division_min(division_min_in);
-  }
-
 protected:
   /* Variables */
   T_ _lambda_factor;
