@@ -1017,10 +1017,8 @@ public:
   LinearKalmanFilter(const DiscreteStateSpace_Type &DiscreteStateSpace,
                      const Q_Type &Q, const R_Type &R)
       : state_space(DiscreteStateSpace), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-              .create_dense()),
-        G(), C_P_CT_R_inv_solver_(), _input_count(static_cast<std::size_t>(0)) {
-  }
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()), G(),
+        C_P_CT_R_inv_solver_(), _input_count(static_cast<std::size_t>(0)) {}
 
   /* Copy Constructor */
   LinearKalmanFilter(
@@ -1517,9 +1515,8 @@ public:
   /* Constructor */
   ExtendedKalmanFilter()
       : A(), C(), Q(), R(),
-        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-              .create_dense()),
-        G(), X_hat(), U_store(), parameters(), C_P_CT_R_inv_solver_(),
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()), G(),
+        X_hat(), U_store(), parameters(), C_P_CT_R_inv_solver_(),
         _input_count(static_cast<std::size_t>(0)) {}
 
   ExtendedKalmanFilter(
@@ -1529,9 +1526,8 @@ public:
       MeasurementEquationJacobian_Object_ &measurement_equation_jacobian,
       const Parameter_Type &parameters)
       : A(), C(), Q(Q), R(R),
-        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-              .create_dense()),
-        G(), X_hat(), U_store(), parameters(parameters), C_P_CT_R_inv_solver_(),
+        P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()), G(),
+        X_hat(), U_store(), parameters(parameters), C_P_CT_R_inv_solver_(),
         _state_equation(state_equation),
         _state_equation_jacobian(state_equation_jacobian),
         _measurement_equation(measurement_equation),
@@ -2025,8 +2021,7 @@ public:
 public:
   /* Constructor */
   UnscentedKalmanFilter()
-      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-                        .create_dense()),
+      : Q(), R(), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()),
         G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
         U_store(), parameters(), P_YY_R_inv_solver_(), _state_equation(),
@@ -2038,8 +2033,7 @@ public:
                         StateEquation_Object_ &state_equation,
                         MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-                          .create_dense()),
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()),
         G(), kappa(static_cast<T_>(0)), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
         U_store(), parameters(parameters), P_YY_R_inv_solver_(),
@@ -2055,8 +2049,7 @@ public:
                         StateEquation_Object_ &state_equation,
                         MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-                          .create_dense()),
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()),
         G(), kappa(kappa_in), alpha(static_cast<T_>(0.5)),
         beta(static_cast<T_>(2)), w_m(static_cast<T_>(0)), W(), X_hat(), X_d(),
         U_store(), parameters(parameters), P_YY_R_inv_solver_(),
@@ -2073,8 +2066,7 @@ public:
                         MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in,
                         T_ alpha_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-                          .create_dense()),
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(static_cast<T_>(2)),
         w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), P_YY_R_inv_solver_(),
@@ -2091,8 +2083,7 @@ public:
                         MeasurementEquation_Object_ &measurement_equation,
                         const Parameter_Type &parameters, T_ kappa_in,
                         T_ alpha_in, T_ beta_in)
-      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()
-                          .create_dense()),
+      : Q(Q), R(R), P(PythonNumpy::make_DiagMatrixIdentity<T_, STATE_SIZE_>()),
         G(), kappa(kappa_in), alpha(alpha_in), beta(beta_in),
         w_m(static_cast<T_>(0)), W(), X_hat(), X_d(), U_store(),
         parameters(parameters), P_YY_R_inv_solver_(),

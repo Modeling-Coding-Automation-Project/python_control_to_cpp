@@ -341,21 +341,18 @@ public:
             static_cast<T_>(1) /
             static_cast<T_>(LEAST_SQUARES_LAMBDA_FACTOR_DEFAULT)),
         _weights(), P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
-                           static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))
-                           .create_dense()) {}
+                        static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))) {}
 
   RecursiveLeastSquares(const T_ &lambda_in)
       : _lambda_factor(static_cast<T_>(lambda_in)),
         _lambda_factor_inv(static_cast<T_>(1) / static_cast<T_>(lambda_in)),
         _weights(), P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(
-                           static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))
-                           .create_dense()) {}
+                        static_cast<T_>(LEAST_SQUARES_DELTA_DEFAULT))) {}
 
   RecursiveLeastSquares(const T_ &lambda_in, const T_ &delta_in)
       : _lambda_factor(lambda_in),
         _lambda_factor_inv(static_cast<T_>(1) / lambda_in), _weights(),
-        P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(delta_in)
-               .create_dense()) {}
+        P_(PythonNumpy::make_DiagMatrixFull<RLS_SIZE>(delta_in)) {}
 
   /* Copy Constructor */
   RecursiveLeastSquares(const RecursiveLeastSquares<X_Type> &input)
