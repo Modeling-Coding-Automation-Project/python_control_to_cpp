@@ -52,7 +52,7 @@ int main(void) {
   auto weights = ls.get_weights();
 
   for (std::size_t i = 0; i < (X_SIZE + 1); i++) {
-    std::cout << "weights[" << i << "] = " << weights(i, 0) << std::endl;
+    std::cout << "weights[" << i << "] = " << weights(i) << std::endl;
   }
 
   return 0;

@@ -124,8 +124,8 @@ int main(void) {
 
     plant.update(U);
 
-    std::cout << "X_0: " << X(0, 0) << ", ";
-    std::cout << "X_2: " << X(2, 0) << ", ";
+    std::cout << "X_0: " << X(0) << ", ";
+    std::cout << "X_2: " << X(2) << ", ";
     std::cout << std::endl;
   }
 

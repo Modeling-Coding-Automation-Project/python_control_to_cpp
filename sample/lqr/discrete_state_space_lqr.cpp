@@ -22,20 +22,19 @@ template <
     std::size_t Method, typename AcType, typename BcType, typename AdType,
     typename BdType, typename QType, typename RType,
     typename std::enable_if<Method == LQR_METHOD_ARIMOTO_POTTER, int>::type = 0>
-inline auto
-make_lqr_dispatch(const AcType &Ac, const BcType &Bc, const AdType &,
-                  const BdType &, const QType &Q,
-                  const RType &R) -> decltype(make_LQR<Method>(Ac, Bc, Q, R)) {
+inline auto make_lqr_dispatch(const AcType &Ac, const BcType &Bc,
+                              const AdType &, const BdType &, const QType &Q,
+                              const RType &R)
+    -> decltype(make_LQR<Method>(Ac, Bc, Q, R)) {
   return make_LQR<Method>(Ac, Bc, Q, R);
 }
 
 template <std::size_t Method, typename AcType, typename BcType, typename AdType,
           typename BdType, typename QType, typename RType,
           typename std::enable_if<Method == LQR_METHOD_DARE, int>::type = 0>
-inline auto
-make_lqr_dispatch(const AcType &, const BcType &, const AdType &Ad,
-                  const BdType &Bd, const QType &Q,
-                  const RType &R) -> decltype(make_LQR<Method>(Ad, Bd, Q, R)) {
+inline auto make_lqr_dispatch(const AcType &, const BcType &, const AdType &Ad,
+                              const BdType &Bd, const QType &Q, const RType &R)
+    -> decltype(make_LQR<Method>(Ad, Bd, Q, R)) {
   return make_LQR<Method>(Ad, Bd, Q, R);
 }
 
@@ -103,8 +102,8 @@ int main(void) {
 
     plant.update(U);
 
-    std::cout << "X_0: " << X(0, 0) << ", ";
-    std::cout << "X_2: " << X(2, 0) << ", ";
+    std::cout << "X_0: " << X(0) << ", ";
+    std::cout << "X_2: " << X(2) << ", ";
     std::cout << std::endl;
   }
 

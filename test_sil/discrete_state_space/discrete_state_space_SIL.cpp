@@ -31,7 +31,7 @@ void update(py::array_t<FLOAT> U_in) {
   FLOAT *U_data_ptr = static_cast<FLOAT *>(U_info.ptr);
   PythonControl::StateSpaceInput_Type<FLOAT, INPUT_SIZE> U;
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
-    U.access(i, 0) = U_data_ptr[i];
+    U(i) = U_data_ptr[i];
   }
 
   sys.update(U);
@@ -43,7 +43,7 @@ py::array_t<FLOAT> get_X(void) {
   result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    result.mutable_at(i, 0) = X.access(i, 0);
+    result.mutable_at(i, 0) = X(i);
   }
 
   return result;
@@ -55,7 +55,7 @@ py::array_t<FLOAT> get_Y(void) {
   result.resize({static_cast<int>(OUTPUT_SIZE), 1});
 
   for (std::size_t i = 0; i < OUTPUT_SIZE; ++i) {
-    result.mutable_at(i, 0) = Y.access(i, 0);
+    result.mutable_at(i, 0) = Y(i);
   }
 
   return result;
