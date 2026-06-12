@@ -69,7 +69,7 @@ py::array_t<FLOAT> get_weights(void) {
   result.resize({static_cast<int>(WEIGHTS_SIZE), 1});
 
   for (std::size_t i = 0; i < WEIGHTS_SIZE; ++i) {
-    result.mutable_at(i, 0) = weights.access(i, 0);
+    result.mutable_at(i, 0) = weights(i);
   }
 
   return result;

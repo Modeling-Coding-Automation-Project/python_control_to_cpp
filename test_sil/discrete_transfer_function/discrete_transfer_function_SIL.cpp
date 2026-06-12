@@ -38,7 +38,7 @@ py::array_t<FLOAT> get_X(void) {
   result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    result.mutable_at(i, 0) = X.access(i, 0);
+    result.mutable_at(i, 0) = X(i);
   }
 
   return result;

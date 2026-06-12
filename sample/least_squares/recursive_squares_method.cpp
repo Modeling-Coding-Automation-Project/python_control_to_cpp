@@ -51,7 +51,7 @@ int main(void) {
   for (std::size_t i = 0; i < RLS_NUMBER_OF_DATA; i++) {
     X_Type X_row;
     for (std::size_t j = 0; j < X_SIZE; j++) {
-      X_row(j, 0) = X(i, j);
+      X_row(j) = X(i, j);
     }
 
     rls.update(X_row, Y(i, 0));
@@ -60,7 +60,7 @@ int main(void) {
 
     std::cout << "weights: ";
     for (std::size_t j = 0; j < X_SIZE + 1; j++) {
-      std::cout << weights(j, 0) << ", ";
+      std::cout << weights(j) << ", ";
     }
     std::cout << std::endl;
   }

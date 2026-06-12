@@ -159,7 +159,7 @@ int main(void) {
     ekf.update(y_store[delay_index]);
 
     for (std::size_t j = 0; j < STATE_SIZE; j++) {
-      std::cout << "X_hat[" << j << "]: " << ekf.get_x_hat_without_delay()(j, 0)
+      std::cout << "X_hat[" << j << "]: " << ekf.get_x_hat_without_delay()(j)
                 << ", ";
     }
     std::cout << std::endl;
@@ -167,7 +167,7 @@ int main(void) {
   std::cout << std::endl;
 
   for (std::size_t j = 0; j < STATE_SIZE; j++) {
-    std::cout << "x_true[" << j << "]: " << x_true(j, 0) << ", ";
+    std::cout << "x_true[" << j << "]: " << x_true(j) << ", ";
   }
   std::cout << std::endl;
 

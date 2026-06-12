@@ -51,8 +51,8 @@ int main(void) {
 
     sys.update(u);
 
-    std::cout << "Y_0: " << sys.get_Y()(0, 0) << ", ";
-    std::cout << "Y_1: " << sys.get_Y()(1, 0) << ", ";
+    std::cout << "Y_0: " << sys.get_Y()(0) << ", ";
+    std::cout << "Y_1: " << sys.get_Y()(1) << ", ";
     std::cout << std::endl;
   }
 

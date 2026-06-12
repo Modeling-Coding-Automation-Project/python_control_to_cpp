@@ -49,10 +49,10 @@ int main(void) {
 
   std::cout << "if y_steady_state is " << y_steady_state << ", " << std::endl;
   std::cout << "u_steady_state: " << u_steady_state << std::endl;
-  std::cout << "x_steady_state_0: " << x_steady_state(0, 0) << std::endl;
-  std::cout << "x_steady_state_1: " << x_steady_state(1, 0) << std::endl;
-  std::cout << "x_steady_state_2: " << x_steady_state(2, 0) << std::endl;
-  std::cout << "x_steady_state_3: " << x_steady_state(3, 0) << std::endl;
+  std::cout << "x_steady_state_0: " << x_steady_state(0) << std::endl;
+  std::cout << "x_steady_state_1: " << x_steady_state(1) << std::endl;
+  std::cout << "x_steady_state_2: " << x_steady_state(2) << std::endl;
+  std::cout << "x_steady_state_3: " << x_steady_state(3) << std::endl;
 
   return 0;
 }

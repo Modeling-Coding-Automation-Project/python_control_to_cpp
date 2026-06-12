@@ -36,13 +36,13 @@ void predict_and_update(py::array_t<FLOAT> U_in, py::array_t<FLOAT> Y_in) {
   FLOAT *U_data_ptr = static_cast<FLOAT *>(U_info.ptr);
   PythonControl::StateSpaceInput_Type<FLOAT, INPUT_SIZE> U;
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
-    U.access(i, 0) = U_data_ptr[i];
+    U(i) = U_data_ptr[i];
   }
 
   FLOAT *Y_data_ptr = static_cast<FLOAT *>(Y_info.ptr);
   PythonControl::StateSpaceOutput_Type<FLOAT, OUTPUT_SIZE> Y;
   for (std::size_t i = 0; i < OUTPUT_SIZE; ++i) {
-    Y.access(i, 0) = Y_data_ptr[i];
+    Y(i) = Y_data_ptr[i];
   }
 
   /* predict and update */
@@ -62,7 +62,7 @@ void set_x_hat(py::array_t<FLOAT> x_hat_in) {
   FLOAT *x_hat_data_ptr = static_cast<FLOAT *>(x_hat_info.ptr);
   PythonControl::StateSpaceState_Type<FLOAT, STATE_SIZE> x_hat;
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    x_hat.access(i, 0) = x_hat_data_ptr[i];
+    x_hat(i) = x_hat_data_ptr[i];
   }
 
   /* set */
@@ -76,7 +76,7 @@ py::array_t<FLOAT> get_x_hat(void) {
   result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    result.mutable_at(i, 0) = x_hat.access(i, 0);
+    result.mutable_at(i, 0) = x_hat(i);
   }
 
   return result;
@@ -89,7 +89,7 @@ py::array_t<FLOAT> get_x_hat_without_delay(void) {
   result.resize({static_cast<int>(STATE_SIZE), 1});
 
   for (std::size_t i = 0; i < STATE_SIZE; ++i) {
-    result.mutable_at(i, 0) = x_hat.access(i, 0);
+    result.mutable_at(i, 0) = x_hat(i);
   }
 
   return result;

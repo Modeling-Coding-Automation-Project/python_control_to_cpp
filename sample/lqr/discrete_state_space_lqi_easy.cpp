@@ -88,7 +88,7 @@ int main(void) {
 
     plant.update(u);
 
-    std::cout << "x(1, 0): " << x(1, 0);
+    std::cout << "x(1): " << x(1);
     std::cout << std::endl;
   }
 
