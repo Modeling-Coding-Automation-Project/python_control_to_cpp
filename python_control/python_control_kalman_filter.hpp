@@ -1211,9 +1211,10 @@ public:
       for (std::size_t i = 0; i < STATE_SIZE_; i++) {
         for (std::size_t j = 0; j < OUTPUT_SIZE_; j++) {
 
-          if (PythonMath::abs(this->G.access(i, j)) >
+          if (PythonMath::abs(this->G.unsafe_access(i, j)) >
               PythonControl::KALMAN_FILTER_DIVISION_MIN) {
-            if (PythonMath::abs(G_diff.access(i, j) / this->G.access(i, j)) >
+            if (PythonMath::abs(G_diff.unsafe_access(i, j) /
+                                this->G.unsafe_access(i, j)) >
                 PythonControl::KALMAN_FILTER_DIVISION_MIN) {
               is_converged = false;
             }
@@ -2161,10 +2162,9 @@ public:
             std::move(input._update_sigma_points_calculator)),
         _input_count(std::move(input._input_count)) {}
 
-  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                        Number_Of_Delay> &
-  operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
-                                  Number_Of_Delay> &&input) noexcept {
+  UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type, Number_Of_Delay>
+      &operator=(UnscentedKalmanFilter<U_Type, Q_Type, R_Type, Parameter_Type,
+                                       Number_Of_Delay> &&input) noexcept {
     if (this != &input) {
       this->Q = std::move(input.Q);
       this->R = std::move(input.R);

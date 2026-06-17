@@ -23,7 +23,7 @@ py::array_t<FLOAT> solve(void) {
 
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
     for (std::size_t j = 0; j < STATE_SIZE; ++j) {
-      result.mutable_at(i, j) = K.access(i, j);
+      result.mutable_at(i, j) = K.unsafe_access(i, j);
     }
   }
 
@@ -38,7 +38,7 @@ py::array_t<FLOAT> get_K(void) {
 
   for (std::size_t i = 0; i < INPUT_SIZE; ++i) {
     for (std::size_t j = 0; j < STATE_SIZE; ++j) {
-      result.mutable_at(i, j) = K.access(i, j);
+      result.mutable_at(i, j) = K.unsafe_access(i, j);
     }
   }
 

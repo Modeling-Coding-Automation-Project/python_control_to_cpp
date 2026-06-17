@@ -34,7 +34,7 @@ void update(py::array_t<FLOAT> X_in, py::array_t<FLOAT> Y_in) {
   FLOAT *X_data_ptr = static_cast<FLOAT *>(X_info.ptr);
   PythonControl::StateSpaceState_Type<FLOAT, X_SIZE> X;
   for (std::size_t i = 0; i < X_SIZE; i++) {
-    X.access(i, 0) = X_data_ptr[i];
+    X.unsafe_access(i, 0) = X_data_ptr[i];
   }
 
   FLOAT *Y_data_ptr = static_cast<FLOAT *>(Y_info.ptr);

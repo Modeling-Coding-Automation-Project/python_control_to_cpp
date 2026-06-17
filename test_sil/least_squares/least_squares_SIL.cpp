@@ -47,7 +47,7 @@ void fit(py::array_t<FLOAT> X_in, py::array_t<FLOAT> Y_in) {
   PythonNumpy::DenseMatrix_Type<FLOAT, LS_NUMBER_OF_DATA, X_SIZE> X;
   for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
     for (std::size_t j = 0; j < X_SIZE; j++) {
-      X.access(i, j) = X_data_ptr[i * X_SIZE + j];
+      X.unsafe_access(i, j) = X_data_ptr[i * X_SIZE + j];
     }
   }
 
@@ -55,7 +55,7 @@ void fit(py::array_t<FLOAT> X_in, py::array_t<FLOAT> Y_in) {
   PythonNumpy::DenseMatrix_Type<FLOAT, LS_NUMBER_OF_DATA, Y_SIZE> Y;
   for (std::size_t i = 0; i < LS_NUMBER_OF_DATA; i++) {
     for (std::size_t j = 0; j < Y_SIZE; j++) {
-      Y.access(i, j) = Y_data_ptr[i * Y_SIZE + j];
+      Y.unsafe_access(i, j) = Y_data_ptr[i * Y_SIZE + j];
     }
   }
 

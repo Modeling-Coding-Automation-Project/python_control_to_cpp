@@ -282,7 +282,7 @@ public:
     static_assert(Index < Vector_Type::ROWS,
                   "Index must be less than vector size.");
 
-    return this->_store[this->_delay_ring_buffer_index].access(Index, 0);
+    return this->_store[this->_delay_ring_buffer_index].unsafe_access(Index, 0);
   }
 
   /**
