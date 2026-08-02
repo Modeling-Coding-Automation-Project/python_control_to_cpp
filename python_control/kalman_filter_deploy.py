@@ -751,7 +751,7 @@ class KalmanFilterDeploy:
         state_equation_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_equation_code += "using namespace PythonMath;\n\n"
+        state_equation_code += "using namespace PythonNumpy;\n\n"
 
         state_equation_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         state_equation_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
@@ -784,7 +784,7 @@ class KalmanFilterDeploy:
         state_equation_jacobian_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_equation_jacobian_code += "using namespace PythonMath;\n\n"
+        state_equation_jacobian_code += "using namespace PythonNumpy;\n\n"
 
         state_equation_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         state_equation_jacobian_code += "using X_Type = StateSpaceState_Type<double, A_Type::ROWS>;\n"
@@ -819,7 +819,7 @@ class KalmanFilterDeploy:
         measurement_equation_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_equation_code += "using namespace PythonMath;\n\n"
+        measurement_equation_code += "using namespace PythonNumpy;\n\n"
 
         measurement_equation_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_equation_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
@@ -855,7 +855,7 @@ class KalmanFilterDeploy:
         measurement_equation_jacobian_code += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_equation_jacobian_code += "using namespace PythonMath;\n\n"
+        measurement_equation_jacobian_code += "using namespace PythonNumpy;\n\n"
 
         measurement_equation_jacobian_code += f"using A_Type = {A_file_name_no_extension}::type;\n"
         measurement_equation_jacobian_code += f"using C_Type = {C_file_name_no_extension}::type;\n"
@@ -1080,7 +1080,7 @@ class KalmanFilterDeploy:
         state_equation_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        state_equation_code_suffix += "using namespace PythonMath;\n\n"
+        state_equation_code_suffix += "using namespace PythonNumpy;\n\n"
 
         state_equation_code = ""
         state_equation_code += f"using X_Type = StateSpaceState_Type<double, {state_size}>;\n"
@@ -1111,7 +1111,7 @@ class KalmanFilterDeploy:
         measurement_equation_code_suffix += "using Parameter_Type = " + \
             parameter_code_file_name_without_ext + "::Parameter_Type;\n\n"
 
-        measurement_equation_code_suffix += "using namespace PythonMath;\n\n"
+        measurement_equation_code_suffix += "using namespace PythonNumpy;\n\n"
 
         measurement_equation_code = ""
         measurement_equation_code += f"using X_Type = StateSpaceState_Type<double, {state_size}>;\n"
