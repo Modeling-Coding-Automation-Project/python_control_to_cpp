@@ -62,8 +62,6 @@ auto bicycle_model_state_equation_jacobian(
     const StateSpaceInput_Type<T, INPUT_SIZE> &U,
     const BicycleModelParameter<T> &parameters) -> A_Type {
 
-    using namespace PythonMath;
-
     T theta = X.template get<2, 0>();
     T v = U.template get<0, 0>();
     T steering_angle = U.template get<1, 0>();
@@ -90,8 +88,6 @@ template <typename T>
 auto bicycle_model_measurement_equation(
     const StateSpaceState_Type<T, STATE_SIZE>& X,
     const BicycleModelParameter<T>& parameters) -> StateSpaceOutput_Type<T, OUTPUT_SIZE> {
-
-    using namespace PythonMath;
 
     T x = X.template get<0, 0>();
     T y = X.template get<1, 0>();
