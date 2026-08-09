@@ -294,7 +294,7 @@ public:
    *
    * @return The current index of the ring buffer.
    */
-  inline const std::size_t get_delay_ring_buffer_index(void) const {
+  inline std::size_t get_delay_ring_buffer_index(void) const {
     return this->_delay_ring_buffer_index;
   }
 
@@ -642,7 +642,7 @@ public:
     return this->U.template access<Index>();
   }
 
-  inline const std::size_t get_delay_ring_buffer_index(void) const {
+  inline std::size_t get_delay_ring_buffer_index(void) const {
     return this->U.get_delay_ring_buffer_index();
   }
 
