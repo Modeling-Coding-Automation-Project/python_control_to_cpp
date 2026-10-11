@@ -141,3 +141,5 @@ deployed_file_names = LeastSquaresDeploy.generate_RLS_cpp_code(rls)
 次は、各 Deploy クラスの使い分けと生成物（どのヘッダが出るか）をまとめます。
 [コード生成（Deploy）実践ガイド](./04_cpp_code_generation_guide.md)
 
+あわせて、C++側の共通API（`solve`, `predict`, `update`, `get_x_hat` など）は
+[Pythonクラスに対応するC++クラスとインターフェース](./06_cpp_class_interfaces.md) に整理しています。

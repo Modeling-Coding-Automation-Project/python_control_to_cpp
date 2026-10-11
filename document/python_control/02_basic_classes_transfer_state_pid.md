@@ -131,3 +131,5 @@ print(u, deployed_file_names)
 次は、LQR/LQI・Kalman・最小二乗の実装パターンです。
 [応用クラスの使い方（LQR/LQI・Kalman・最小二乗）](./03_advanced_classes_lqr_kalman_least_squares.md)
 
+Pythonクラスに対応するC++側インターフェースをまとめて確認したい場合は、
+[Pythonクラスに対応するC++クラスとインターフェース](./06_cpp_class_interfaces.md) を参照してください。
