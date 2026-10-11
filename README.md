@@ -27,9 +27,8 @@ Python 3.12 以降
 
 「sample」ディレクトリに使い方の例を示しています。
 
-また、詳細については記事をご参照ください。
-
-https://note.com/claude_a/n/n57d7be4be39c
+`python_control` の機能説明ドキュメントは次を参照してください。
+[python_control 機能ガイド](./document/python_control/README.md)
 
 ## サポート
 
