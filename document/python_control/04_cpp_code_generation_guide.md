@@ -37,7 +37,7 @@ print(deployed_file_names)
 flowchart TD
     A[Pythonモデル/クラス] --> B[Deploy.generate_*_cpp_code]
     B --> C[行列ヘッダ群<br/>A/B/C/D, Q, R, ...]
-    B --> D[モデルヘッダ<br/>make() / type 定義]
+    B --> D["モデルヘッダ<br/>make() / type 定義"]
     D --> E[C++側アプリで include]
 ```
 
