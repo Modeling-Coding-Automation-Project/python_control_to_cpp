@@ -1757,6 +1757,127 @@ void check_python_control_least_squares(void) {
 }
 
 
+template <typename T, std::size_t FeatureCount>
+void check_python_control_least_squares_no_intercept_features(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+    constexpr T NEAR_LIMIT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    using X_Type = DenseMatrix_Type<T, 8, FeatureCount>;
+    using LS_Type = LeastSquares_Type<X_Type, false>;
+    static_assert(LS_Type::PARAMETER_COUNT == FeatureCount,
+        "No-intercept weights must match the raw feature count.");
+    static_assert(LS_Type::Weights_Type::ROWS == FeatureCount,
+        "The public weights type must not contain an intercept.");
+    static_assert(!LS_Type::FIT_INTERCEPT, "Intercept must be disabled.");
+
+    /* Orthogonal columns and constant residual give a known LS solution. */
+    const T coefficients[] = {T(0.7), T(-1.2), T(0.35)};
+    X_Type X;
+    typename LS_Type::Y_Type Y;
+    for (std::size_t i = 0; i < X_Type::ROWS; ++i) {
+        Y(i, 0) = T(0.25);
+        for (std::size_t j = 0; j < FeatureCount; ++j) {
+            const std::size_t half_period = std::size_t(4) >> j;
+            X(i, j) = ((i / half_period) % 2 == 0 ? T(1) : T(-1)) * T(j + 1);
+            Y(i, 0) += X(i, j) * coefficients[j];
+        }
+    }
+
+    LS_Type ls = make_LeastSquares<X_Type, false>();
+    ls.fit(X, Y);
+    auto weights = ls.get_weights();
+    for (std::size_t j = 0; j < FeatureCount; ++j) {
+        tester.expect_near(weights(j, 0), coefficients[j], NEAR_LIMIT,
+            "check LeastSquares no-intercept multi-feature weights.");
+    }
+
+    auto prediction = ls.predict(X);
+    X_Type zero_input;
+    auto zero_prediction = ls.predict(zero_input);
+    for (std::size_t i = 0; i < X_Type::ROWS; ++i) {
+        tester.expect_near(prediction(i, 0), Y(i, 0) - T(0.25), NEAR_LIMIT,
+            "check LeastSquares no-intercept multi-feature prediction.");
+        tester.expect_near(zero_prediction(i, 0), T(0), NEAR_LIMIT,
+            "check LeastSquares no-intercept zero-input prediction.");
+    }
+
+    /* A second fit must solve the new target, including the solver's state. */
+    for (std::size_t i = 0; i < X_Type::ROWS; ++i) {
+        Y(i, 0) *= T(2);
+    }
+    ls.fit(X, Y);
+    weights = ls.get_weights();
+    for (std::size_t j = 0; j < FeatureCount; ++j) {
+        tester.expect_near(weights(j, 0), T(2) * coefficients[j], NEAR_LIMIT,
+            "check LeastSquares no-intercept repeated fit.");
+    }
+
+    tester.throw_error_if_test_failed();
+}
+
+
+template <typename T>
+void check_python_control_least_squares_intercept_selection(void) {
+    using namespace PythonNumpy;
+    using namespace PythonControl;
+
+    MCAPTester<T> tester;
+    constexpr T NEAR_LIMIT = std::is_same<T, double>::value ? T(1.0e-5) : T(1.0e-4);
+    using X_Type = DenseMatrix_Type<T, 3, 1>;
+    using LS_Type = LeastSquares_Type<X_Type, false>;
+    static_assert(LeastSquares<X_Type>::FIT_INTERCEPT,
+        "The default must retain intercept fitting.");
+    static_assert(LeastSquares<X_Type>::PARAMETER_COUNT == 2,
+        "The default must retain the extra coefficient.");
+    static_assert(std::is_same<LeastSquares_Type<X_Type>,
+        LeastSquares_Type<X_Type, true>>::value, "Default type compatibility.");
+
+    X_Type X({{T(1)}, {T(2)}, {T(3)}});
+    typename LS_Type::Y_Type Y({{T(2)}, {T(3)}, {T(4)}});
+    LeastSquares_Type<X_Type> ls_default = make_LeastSquares<X_Type>();
+    auto ls_intercept = make_LeastSquares<X_Type, true>();
+    LS_Type ls = make_LeastSquares<X_Type, false>();
+    ls_default.fit(X, Y);
+    ls_intercept.fit(X, Y);
+    ls.fit(X, Y);
+
+    auto default_weights = ls_default.get_weights();
+    auto intercept_weights = ls_intercept.get_weights();
+    tester.expect_near(default_weights.matrix.data, intercept_weights.matrix.data,
+        NEAR_LIMIT, "check LeastSquares default and explicit intercept agree.");
+    tester.expect_near(intercept_weights(0, 0), T(1), NEAR_LIMIT,
+        "check LeastSquares intercept slope.");
+    tester.expect_near(intercept_weights(1, 0), T(1), NEAR_LIMIT,
+        "check LeastSquares intercept bias.");
+    tester.expect_near(ls.get_weights()(0, 0), T(10) / T(7), NEAR_LIMIT,
+        "check LeastSquares no-intercept solution is not discarded-bias fit.");
+
+    auto intercept_prediction = ls_intercept.predict(X);
+    tester.expect_near(intercept_prediction.matrix.data, Y.matrix.data, NEAR_LIMIT,
+        "check LeastSquares explicit intercept prediction.");
+
+    /* Copy/move fitted false specializations, including both assignments. */
+    LS_Type copied(ls);
+    LS_Type moved(std::move(copied));
+    LS_Type assigned;
+    assigned = moved;
+    LS_Type move_assigned;
+    move_assigned = std::move(assigned);
+    auto prediction = move_assigned.predict(X);
+    for (std::size_t i = 0; i < X_Type::ROWS; ++i) {
+        tester.expect_near(prediction(i, 0), X(i, 0) * T(10) / T(7), NEAR_LIMIT,
+            "check LeastSquares no-intercept copied/moved predictions.");
+    }
+
+    tester.throw_error_if_test_failed();
+    check_python_control_least_squares_no_intercept_features<T, 1>();
+    check_python_control_least_squares_no_intercept_features<T, 2>();
+    check_python_control_least_squares_no_intercept_features<T, 3>();
+}
+
+
 int main(void) {
 
     check_python_control_state_space<double>();
@@ -1794,6 +1915,10 @@ int main(void) {
     check_python_control_least_squares<double>();
 
     check_python_control_least_squares<float>();
+
+    check_python_control_least_squares_intercept_selection<double>();
+
+    check_python_control_least_squares_intercept_selection<float>();
 
 
     return 0;

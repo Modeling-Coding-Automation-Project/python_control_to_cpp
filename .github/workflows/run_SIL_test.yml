@@ -81,4 +81,6 @@ jobs:
 
         /opt/venv_py_MCAP/bin/python3 ./test_sil/kalman_filter/EKF_two_wheel_vehicle_model_SIL.py
 
+        /opt/venv_py_MCAP/bin/python3 ./test_sil/least_squares_intercept/least_squares_intercept_SIL.py
+
         '

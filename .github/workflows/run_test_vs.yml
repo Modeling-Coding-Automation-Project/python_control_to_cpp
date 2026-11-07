@@ -25,7 +25,7 @@ jobs:
         sudo apt install -y g++
 
         '
-    - name: Build and Run C++ application
+    - name: Build and run C++11 unit tests including LS intercept selection
       run: 'g++ -std=c++11 -Wall -Wextra -Werror ${{ matrix.define }} -I ./python_control
         -I ./external_libraries/python_numpy_to_cpp/python_numpy -I ./external_libraries/python_numpy_to_cpp/base_matrix
         -I ./external_libraries/python_math_to_cpp/base_math -I ./external_libraries/python_math_to_cpp/python_math

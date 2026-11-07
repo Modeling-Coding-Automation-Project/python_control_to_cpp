@@ -18,6 +18,7 @@
 
 #include <array>
 #include <type_traits>
+#include <utility>
 
 namespace PythonControl {
 
@@ -125,17 +126,43 @@ inline auto make_LeastSquaresInput(T value_1, Args... args)
 
 /* Least Squares Method */
 
+namespace LeastSquaresDetail {
+
+// Select the design-matrix shape at compile time (C++11).
+template <typename X, bool FitIntercept> struct DesignMatrix;
+
+template <typename X> struct DesignMatrix<X, true> {
+  using T = typename X::Value_Type;
+  using Type = PythonNumpy::DenseMatrix_Type<T, X::ROWS, X::COLS + 1>;
+
+  static Type make(const X &input) {
+    auto ones = PythonNumpy::make_DenseMatrixOnes<T, X::ROWS, 1>();
+    return PythonNumpy::concatenate_horizontally(input, ones);
+  }
+};
+
+template <typename X> struct DesignMatrix<X, false> {
+  using Type = X;
+
+  static const X &make(const X &input) { return input; }
+};
+
+} // namespace LeastSquaresDetail
+
 /**
  * @brief Least Squares Method for regression and system identification.
  *
  * This class implements the Least Squares method, allowing for fitting a model
  * to data and making predictions. It supports batch learning with a fixed set
- * of input-output pairs.
+ * of input-output pairs. Inputs contain only the original features; the class
+ * appends a constant column only when FitIntercept is true. The current solver
+ * requires more data rows than fitted parameters.
  *
  * @tparam X_Type_In The type of the input data, which must provide ROWS and
  * COLS.
+ * @tparam FitIntercept Whether to fit an additional intercept (default: true).
  */
-template <typename X_Type_In> class LeastSquares {
+template <typename X_Type_In, bool FitIntercept = true> class LeastSquares {
 public:
   /* Type */
   using X_Type = X_Type_In;
@@ -147,19 +174,26 @@ protected:
                     std::is_same<T_, float>::value,
                 "Value data type must be float or double.");
 
-  using Wights_Type_ = StateSpaceState_Type<T_, (X_Type::COLS + 1)>;
+  using Design_ = LeastSquaresDetail::DesignMatrix<X_Type, FitIntercept>;
+  using Design_Type_ = typename Design_::Type;
+
+  // Preserve the legacy protected alias for derived classes.
+  using Wights_Type_ =
+      StateSpaceState_Type<T_, X_Type::COLS + (FitIntercept ? 1 : 0)>;
 
   using LstsqSolver_Type_ = PythonNumpy::LinalgLstsqSolver_Type<
-      PythonNumpy::DenseMatrix_Type<T_, X_Type::ROWS, Wights_Type_::ROWS>,
-      PythonNumpy::DenseMatrix_Type<T_, X_Type::ROWS, 1>>;
+      Design_Type_, PythonNumpy::DenseMatrix_Type<T_, X_Type::ROWS, 1>>;
 
 public:
   /* Constant */
   static constexpr std::size_t NUMBER_OF_DATA = X_Type::ROWS;
+  static constexpr std::size_t PARAMETER_COUNT = Wights_Type_::ROWS;
+  static constexpr bool FIT_INTERCEPT = FitIntercept;
 
 public:
   /* Type */
   using Value_Type = T_;
+  using Weights_Type = Wights_Type_;
 
   using Y_Type = StateSpaceOutput_Type<T_, NUMBER_OF_DATA>;
 
@@ -168,10 +202,10 @@ public:
   LeastSquares() : _weights(), _lstsq_solver() {}
 
   /* Copy Constructor */
-  LeastSquares(const LeastSquares<X_Type> &input)
+  LeastSquares(const LeastSquares &input)
       : _weights(input._weights), _lstsq_solver(input._lstsq_solver) {}
 
-  LeastSquares<X_Type> &operator=(const LeastSquares<X_Type> &input) {
+  LeastSquares &operator=(const LeastSquares &input) {
     if (this != &input) {
       this->_weights = input._weights;
       this->_lstsq_solver = input._lstsq_solver;
@@ -180,11 +214,11 @@ public:
   }
 
   /* Move Constructor */
-  LeastSquares(LeastSquares<X_Type> &&input) noexcept
+  LeastSquares(LeastSquares &&input) noexcept
       : _weights(std::move(input._weights)),
         _lstsq_solver(std::move(input._lstsq_solver)) {}
 
-  LeastSquares<X_Type> &operator=(LeastSquares<X_Type> &&input) noexcept {
+  LeastSquares &operator=(LeastSquares &&input) noexcept {
     if (this != &input) {
       this->_weights = std::move(input._weights);
       this->_lstsq_solver = std::move(input._lstsq_solver);
@@ -199,49 +233,35 @@ public:
    * @brief Fits the model to the provided input and output data.
    *
    * This function computes the weights of the model using the least squares
-   * method based on the provided input (X) and output (Y) data. It adds a bias
-   * term to the input data before solving for the weights.
+   * method based on the provided input (X) and output (Y) data. A bias column
+   * is appended only when FitIntercept is true.
    *
-   * @param X The input data matrix of shape (COLS, ROWS).
-   * @param Y The output data vector of shape (COLS, 1).
+   * @param X The input data matrix of shape (NUMBER_OF_DATA, X_Type::COLS).
+   * @param Y The output data vector of shape (NUMBER_OF_DATA, 1).
    */
   inline void fit(const X_Type &X, const Y_Type &Y) {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, X_Type::ROWS, 1>();
-
-    auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
-
-    this->_weights = this->_lstsq_solver.solve(X_ex, Y);
+    this->_weights = this->_lstsq_solver.solve(Design_::make(X), Y);
   }
 
   /**
-   * @brief Fits the model to the provided input data and a single output value.
+   * @brief Predicts outputs using the fitted coefficients.
    *
-   * This function computes the weights of the model using the least squares
-   * method based on the provided input (X) and a single output value (y_true).
-   * It adds a bias term to the input data before solving for the weights.
+   * Uses the same intercept selection as fit().
    *
-   * @param X The input data matrix of shape (COLS, ROWS).
-   * @param y_true The true output value.
+   * @param X The input data matrix of shape (NUMBER_OF_DATA, X_Type::COLS).
+   * @return The predicted output vector of shape (NUMBER_OF_DATA, 1).
    */
   inline auto predict(const X_Type &X) const -> Y_Type {
 
-    auto bias_vector = PythonNumpy::make_DenseMatrixOnes<T_, X_Type::ROWS, 1>();
-
-    auto X_ex = PythonNumpy::concatenate_horizontally(X, bias_vector);
-
-    return X_ex * this->_weights;
+    return Design_::make(X) * this->_weights;
   }
 
   /**
-   * @brief Predicts the output for a single input vector.
+   * @brief Returns the fitted coefficients.
    *
-   * This function computes the predicted output for a single input vector
-   * using the learned weights. It adds a bias term to the input vector before
-   * making the prediction.
-   *
-   * @param X The input vector of shape (1, ROWS).
-   * @return The predicted output value.
+   * @return A PARAMETER_COUNT x 1 vector. The final coefficient is an intercept
+   * only when FitIntercept is true.
    */
   inline auto get_weights(void) const -> Wights_Type_ { return this->_weights; }
 
@@ -249,7 +269,8 @@ public:
    * @brief Sets the decay rate for the least squares solver.
    *
    * This function updates the decay rate used in the least squares solver,
-   * which can affect the regularization of the solution.
+   * which controls the iterative solver's stopping criterion, not ridge
+   * regularization.
    *
    * @param decay_rate_in The new decay rate to be set.
    */
@@ -285,15 +306,17 @@ protected:
  * identification.
  *
  * @tparam X_Type The type of the input data, which must provide ROWS and COLS.
- * @return LeastSquares<X_Type> The resulting LeastSquares object.
+ * @tparam FitIntercept Whether to fit an additional intercept (default: true).
+ * @return LeastSquares<X_Type, FitIntercept> The resulting LeastSquares object.
  */
-template <typename X_Type>
-inline auto make_LeastSquares(void) -> LeastSquares<X_Type> {
-  return LeastSquares<X_Type>();
+template <typename X_Type, bool FitIntercept = true>
+inline auto make_LeastSquares(void) -> LeastSquares<X_Type, FitIntercept> {
+  return LeastSquares<X_Type, FitIntercept>();
 }
 
 /* Least Squares type */
-template <typename X_Type> using LeastSquares_Type = LeastSquares<X_Type>;
+template <typename X_Type, bool FitIntercept = true>
+using LeastSquares_Type = LeastSquares<X_Type, FitIntercept>;
 
 /* Recursive Least Squares Method */
 

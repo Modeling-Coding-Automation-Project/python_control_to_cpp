@@ -12,7 +12,8 @@ constexpr std::size_t LS_NUMBER_OF_DATA =
     least_squares_SIL_wrapper::LS_NUMBER_OF_DATA;
 constexpr std::size_t X_SIZE = least_squares_SIL_wrapper::X_SIZE;
 constexpr std::size_t Y_SIZE = least_squares_SIL_wrapper::Y_SIZE;
-constexpr std::size_t WEIGHTS_SIZE = X_SIZE + 1;
+constexpr std::size_t WEIGHTS_SIZE =
+    least_squares_SIL_wrapper::type::PARAMETER_COUNT;
 
 least_squares_SIL_wrapper::type ls;
 

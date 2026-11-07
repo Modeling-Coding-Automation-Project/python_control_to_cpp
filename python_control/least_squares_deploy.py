@@ -70,6 +70,9 @@ class LeastSquaresDeploy:
 
         number_of_data = ls.number_of_data
         state_size = ls.state_size
+        # Objects created before intercept selection retain the legacy behavior.
+        fit_intercept = bool(getattr(ls, "fit_intercept", True))
+        fit_intercept_cpp = "true" if fit_intercept else "false"
         output_size = 1
 
         # %% code generation
@@ -97,15 +100,17 @@ class LeastSquaresDeploy:
         code_text += f"constexpr std::size_t LS_NUMBER_OF_DATA = {number_of_data};\n"
         code_text += f"constexpr std::size_t X_SIZE = {state_size};\n"
         code_text += f"constexpr std::size_t Y_SIZE = {output_size};\n\n"
+        code_text += f"constexpr bool FIT_INTERCEPT = {fit_intercept_cpp};\n\n"
 
         code_text += f"using X_Type = DenseMatrix_Type<{type_name}, "
         code_text += "LS_NUMBER_OF_DATA, X_SIZE>;\n\n"
 
-        code_text += "using type = LeastSquares_Type<X_Type>;\n\n"
+        code_text += "using type = LeastSquares_Type<X_Type, FIT_INTERCEPT>;\n\n"
+        code_text += "constexpr std::size_t WEIGHTS_SIZE = type::PARAMETER_COUNT;\n\n"
 
         code_text += "inline auto make(void) -> type {\n\n"
 
-        code_text += "  return make_LeastSquares<X_Type>();\n\n"
+        code_text += "  return make_LeastSquares<X_Type, FIT_INTERCEPT>();\n\n"
 
         code_text += "}\n\n"
 

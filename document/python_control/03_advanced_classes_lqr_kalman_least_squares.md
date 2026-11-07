@@ -103,6 +103,7 @@ deployed_file_names = KalmanFilterDeploy.generate_UKF_cpp_code(ukf, number_of_de
 ### 対応サンプル
 
 - `sample/least_squares/least_squares_method.py`
+- `sample/least_squares/least_squares_intercept.py` / `.cpp`（切片の選択とコード生成）
 - `sample/least_squares/recursive_squares_method.py`
 
 ### 3.1 バッチLS
@@ -119,6 +120,27 @@ ls = LeastSquares(X)
 ls.fit(X, y)
 deployed_file_names = LeastSquaresDeploy.generate_LS_cpp_code(ls)
 ```
+
+切片を追加せず `min ||X w-y||²` を解く場合は、
+`LeastSquares(X, fit_intercept=False)` を指定します。既定値は `True` です。
+入力の `X` は、どちらの設定でも定数列を追加していない特徴量行列です。
+重みは切片ありで「特徴量数＋1」、切片なしで「特徴量数」になります。
+切片ありの推定結果から末尾を捨てる方法とは、推定される重みが異なります。
+
+C++では、コンパイル時の第2テンプレート引数に同じ設定を指定します。
+
+```cpp
+using X_Type = PythonNumpy::DenseMatrix_Type<double, 20, 2>;
+auto with_intercept = PythonControl::make_LeastSquares<X_Type>();
+auto without_intercept = PythonControl::make_LeastSquares<X_Type, false>();
+// LeastSquares<X_Type, false> / LeastSquares_Type<X_Type, false> も利用可能。
+```
+
+`FIT_INTERCEPT`、`PARAMETER_COUNT`、`Weights_Type` で設定と係数次元を参照できます。
+`LeastSquaresDeploy` はPythonモデルの設定をC++へ出力します。
+生成するファクトリーは未学習モデルを作るため、重みの保存とは別です。
+現行C++ソルバーでは「データ行数 > 係数数」が必要です。
+切片の追加選択によって、解法・ランク不足への対応は変わりません。
 
 ### 3.2 逐次RLS
 
