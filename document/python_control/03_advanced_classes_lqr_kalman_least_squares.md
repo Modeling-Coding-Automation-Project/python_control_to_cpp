@@ -121,11 +121,43 @@ ls.fit(X, y)
 deployed_file_names = LeastSquaresDeploy.generate_LS_cpp_code(ls)
 ```
 
-切片を追加せず `min ||X w-y||²` を解く場合は、
-`LeastSquares(X, fit_intercept=False)` を指定します。既定値は `True` です。
-入力の `X` は、どちらの設定でも定数列を追加していない特徴量行列です。
-重みは切片ありで「特徴量数＋1」、切片なしで「特徴量数」になります。
-切片ありの推定結果から末尾を捨てる方法とは、推定される重みが異なります。
+#### 切片の選択
+
+`fit_intercept` の既定値は `True` で、`y ≈ Xw + b` を推定します。
+`LeastSquares(X, fit_intercept=False)` では切片を追加せず、
+`min ||Xw - y||²` を解きます。どちらの設定でも、`X` には定数列を
+手動で追加しない特徴量行列を渡します。
+
+```python
+import numpy as np
+from external_libraries.MCAP_python_control.python_control.least_squares import LeastSquares
+
+X = np.array([[1.0], [2.0], [3.0]])
+y = np.array([[2.0], [3.0], [4.0]])
+with_intercept = LeastSquares(X)
+without_intercept = LeastSquares(X, fit_intercept=False)
+with_intercept.fit(X, y)
+without_intercept.fit(X, y)
+print(with_intercept.get_weights().ravel())     # [1. 1.]（係数、切片）
+print(without_intercept.get_weights().ravel())  # [1.42857143]（係数のみ）
+```
+
+重みは切片ありで「特徴量数＋1」、切片なしで「特徴量数」になり、
+切片ありの場合は末尾が切片です。`parameter_count` で係数の数を確認できます。
+切片なしでは原点を通るように再学習するため、切片ありの推定結果から
+末尾を捨てる方法とは一般に係数が異なります。
+`fit_intercept` は読み取り専用です。設定を変える場合は新しいモデルを生成してください。
+この選択はバッチLS用であり、RLSは切片を含みます。
+
+比較サンプルはリポジトリルートから次のコマンドで実行できます。
+`--no-plot` を省略すると予測結果を可視化します。
+
+```sh
+python sample/least_squares/least_squares_intercept.py --no-plot
+```
+
+サンプルは切片あり・なしのC++ヘッダーをリポジトリルートに生成し、
+ファイル名を表示します。実行時には同名ファイルが上書きされます。
 
 C++では、コンパイル時の第2テンプレート引数に同じ設定を指定します。
 
