@@ -84,9 +84,9 @@ def create_model(delta_time: float):
 
     hx = sp.Matrix([[X[0]], [X[1]], [X[2]], [X[3]], [X[5]]])
 
-    # derive Jacobian
-    fxu_jacobian = fxu.jacobian(X)
-    hx_jacobian = hx.jacobian(X)
+    # Simplify Jacobians before code generation to eliminate cancelling terms.
+    fxu_jacobian = sp.simplify(fxu.jacobian(X))
+    hx_jacobian = sp.simplify(hx.jacobian(X))
 
     fxu_file_name = ExpressionDeploy.write_state_equation_code_from_sympy(
         fxu, X, U)
@@ -222,10 +222,6 @@ def main():
 
     tester = MCAPTester()
     NEAR_LIMIT = 2e-5
-    if os.environ.get("GITHUB_ACTIONS") == "true":
-        # On some CPUs (FMA rounding), the GMRES inverse of the innovation
-        # covariance loses accuracy, giving x_hat errors of about 5e-4.
-        NEAR_LIMIT = 1e-2
 
     # simulation
     for i in range(round(simulation_time / sim_delta_time)):
