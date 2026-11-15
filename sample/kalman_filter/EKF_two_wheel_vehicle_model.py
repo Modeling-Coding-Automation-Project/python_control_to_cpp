@@ -99,9 +99,8 @@ def create_model(delta_time: float):
     hx = sp.Matrix([[X[0]], [X[1]], [X[2]], [X[3]], [X[5]]])
     sp.pprint(hx)
 
-    # derive Jacobian
-    fxu_jacobian = fxu.jacobian(X)
-    hx_jacobian = hx.jacobian(X)
+    fxu_jacobian = sp.simplify(fxu.jacobian(X))
+    hx_jacobian = sp.simplify(hx.jacobian(X))
 
     fxu_file_name = ExpressionDeploy.write_state_equation_code_from_sympy(
         fxu, X, U)
