@@ -90,6 +90,7 @@ def build_module(directory):
         Path(pybind11.get_include()), Path(sysconfig.get_path("include")),
     ]
     command = shlex.split(os.environ.get("CXX", "g++"))
+    command += shlex.split(os.environ.get("CXXFLAGS", ""))
     command += ["-std=c++11", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC"]
     command += [f"-I{path}" for path in include_paths]
     command += [str(source), "-o", str(output)]

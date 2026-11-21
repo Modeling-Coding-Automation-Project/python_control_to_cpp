@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
+        cxxflags: ['', '-ffp-contract=off']
         define:
         - ''
 
@@ -47,6 +49,8 @@ jobs:
 
         '
     - name: Run SIL tests
+      env:
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: '/opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_1_SIL.py
 
         /opt/venv_py_MCAP/bin/python3 ./test_sil/discrete_state_space/discrete_state_space_2_SIL.py
