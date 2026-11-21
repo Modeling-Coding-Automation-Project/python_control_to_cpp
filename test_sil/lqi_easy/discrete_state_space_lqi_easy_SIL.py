@@ -106,8 +106,6 @@ NEAR_LIMIT = 0.3
 
 K_ex = lqr_with_arimoto_potter(Ac_ex, Bc_ex, Q_ex, R_ex)
 
-LqiEasySIL.set_Eigen_solver_iteration_max(3)
-LqiEasySIL.set_Eigen_solver_iteration_max_for_eigen_vector(8)
 K_cpp = LqiEasySIL.solve()
 
 tester.expect_near(K_cpp, K_ex, NEAR_LIMIT,

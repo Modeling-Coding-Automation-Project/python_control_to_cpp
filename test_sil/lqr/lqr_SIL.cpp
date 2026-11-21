@@ -13,7 +13,11 @@ constexpr std::size_t STATE_SIZE = lqr_SIL_wrapper::STATE_SIZE;
 
 lqr_SIL_wrapper::type lqr;
 
-void initialize(void) { lqr = lqr_SIL_wrapper::make(); }
+void initialize(void) {
+  lqr = lqr_SIL_wrapper::make();
+  // Use a smaller inverse-iteration shift for the pendulum Hamiltonian.
+  lqr.solver.set_Eigen_solver_small_value(static_cast<FLOAT>(8.0e-5));
+}
 
 py::array_t<FLOAT> solve(void) {
   auto K = lqr.solve();

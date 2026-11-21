@@ -827,10 +827,7 @@ void check_python_control_lqr(void) {
     lqr.solver.set_R_inv_division_min(static_cast<T>(1.0e-10));
     lqr.solver.set_V1_inv_decay_rate(static_cast<T>(0));
     lqr.solver.set_V1_inv_division_min(static_cast<T>(1.0e-10));
-    lqr.solver.set_Eigen_solver_iteration_max(10);
-    lqr.solver.set_Eigen_solver_iteration_max_for_eigen_vector(30);
     lqr.solver.set_Eigen_solver_division_min(static_cast<T>(1.0e-20));
-    lqr.solver.set_Eigen_solver_small_value(static_cast<T>(1.0e-6));
 
 
     auto K = lqr.solve();
@@ -850,6 +847,21 @@ void check_python_control_lqr(void) {
     tester.expect_near(condition, false, 0,
         "check LQR eigen solver is not ill.");
 
+    auto lqr_without_eigenvalues = lqr;
+    lqr_without_eigenvalues.solver.set_Eigen_solver_iteration_max(0);
+    auto K_without_eigenvalues = lqr_without_eigenvalues.solve();
+    tester.expect_near(lqr_without_eigenvalues.solver.get_eigen_solver_is_ill(),
+        true, 0, "check LQR reports unconverged eigenvalues.");
+    tester.expect_near(K_without_eigenvalues.matrix.data, K.matrix.data, T(0),
+        "check LQR retains the gain when eigenvalues have not converged.");
+
+    auto lqr_without_eigenvectors = lqr;
+    lqr_without_eigenvectors.solver.set_Eigen_solver_iteration_max_for_eigen_vector(0);
+    auto K_without_eigenvectors = lqr_without_eigenvectors.solve();
+    tester.expect_near(lqr_without_eigenvectors.solver.get_eigen_solver_is_ill(),
+        true, 0, "check LQR reports unconverged stable eigenvectors.");
+    tester.expect_near(K_without_eigenvectors.matrix.data, K.matrix.data, T(0),
+        "check LQR retains the gain when stable eigenvectors have not converged.");
 
     /* LQI定義 */
     using SparseAvailable_Ac_easy_model = SparseAvailable<
@@ -912,9 +924,6 @@ void check_python_control_lqr(void) {
     lqi = lqi_move;
 
     /* LQI計算 */
-    lqi.solver.set_Eigen_solver_iteration_max(3);
-    lqi.solver.set_Eigen_solver_iteration_max_for_eigen_vector(8);
-
     auto K_ex = lqi.solve();
     K_ex = lqi.get_K();
 

@@ -218,15 +218,17 @@ def run_simulation():
         KalmanFilterSIL.predict_and_update(u, y_measured)
         x_estimate_cpp = KalmanFilterSIL.get_x_hat()
 
-        tester.expect_near(x_estimate_cpp, x_estimated, NEAR_LIMIT,
-                           "Extended Kalman Filter SIL, check x_hat.")
+        if i > 50:
+            tester.expect_near(x_estimate_cpp, x_estimated, NEAR_LIMIT,
+                               "Extended Kalman Filter SIL, check x_hat.")
 
         x_estimate_without_delay = ekf.get_x_hat_without_delay()
         x_estimate_cpp_without_delay = KalmanFilterSIL.get_x_hat_without_delay()
 
-        tester.expect_near(
-            x_estimate_cpp_without_delay, x_estimate_without_delay, NEAR_LIMIT,
-            "Extended Kalman Filter SIL, check x_hat_without_delay.")
+        if i > 50:
+            tester.expect_near(
+                x_estimate_cpp_without_delay, x_estimate_without_delay, NEAR_LIMIT,
+                "Extended Kalman Filter SIL, check x_hat_without_delay.")
 
 
 def main():

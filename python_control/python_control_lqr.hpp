@@ -14,6 +14,7 @@
 
 #include "python_numpy.hpp"
 
+#include <algorithm>
 #include <type_traits>
 
 namespace PythonControl {
@@ -58,6 +59,43 @@ struct Hamiltonian {
   using Type = PythonNumpy::ConcatenateBlock_Type<
       HAMILTONIAN_COLUMN_SIZE, HAMILTONIAN_ROW_SIZE, A_Type, B_R_INV_BT_Type,
       Q_Type, PythonNumpy::Transpose_Type<A_Type>>;
+};
+
+// The NumPy wrapper keeps the underlying solver's convergence state protected.
+template <typename Matrix>
+class HamiltonianEigenSolver
+    : public PythonNumpy::LinalgSolverEig_Type<Matrix> {
+public:
+  inline bool eigen_values_converged() const {
+    return this->Eigen_solver_.eigen_values_converged();
+  }
+
+  template <typename EigenValues>
+  inline bool stable_eigenvectors_converged(const Matrix &hamiltonian,
+                                            const EigenValues &eigen_values) {
+    if (this->Eigen_solver_.eigen_vectors_converged()) {
+      return true;
+    }
+
+    // Only the eigenvectors for the stable subspace are needed for the gain.
+    using T = typename Matrix::Value_Type;
+    T scale = 0;
+    for (std::size_t i = 0; i < Matrix::ROWS; ++i) {
+      for (std::size_t j = 0; j < Matrix::COLS; ++j) {
+        scale = (std::max)(scale, Base::Math::abs(hamiltonian(i, j)));
+      }
+    }
+    const T limit = scale * this->Eigen_solver_.eigenvector_tolerance;
+    const auto residuals = this->check_validity(hamiltonian);
+    for (std::size_t i = 0; i < Matrix::ROWS; ++i) {
+      if (eigen_values(i, 0).real < 0 &&
+          !(Base::Matrix::Numerical::norm(residuals.matrix.get_row(i)) <=
+            limit)) {
+        return false;
+      }
+    }
+    return true;
+  }
 };
 
 } // namespace LQR_Operation
@@ -163,7 +201,8 @@ public:
    * @param B The input matrix B.
    * @param Q The state cost matrix Q.
    * @param R The input cost matrix R.
-   * @return The computed gain matrix K.
+   * @return The computed gain, or the previous gain if the stable subspace
+   * cannot be computed. The initial gain is zero.
    */
   inline auto solve(const A_Type &A, const B_Type &B, const Q_Type &Q,
                     const R_Type &R) -> K_Type {
@@ -177,35 +216,42 @@ public:
             A, PythonNumpy::A_mul_BTranspose(-B * R_inv, B), -Q,
             -A.transpose());
 
+    this->_eigen_solver_is_ill = true;
     this->_eig_solver.solve_eigen_values(Hamiltonian);
+    if (!this->_eig_solver.eigen_values_converged()) {
+      return this->K_;
+    }
 
-    auto eigen_values = this->_eig_solver.get_eigen_values();
-
+    const auto eigen_values = this->_eig_solver.get_eigen_values();
     this->_eig_solver.solve_eigen_vectors(Hamiltonian);
+    if (!this->_eig_solver.stable_eigenvectors_converged(Hamiltonian,
+                                                         eigen_values)) {
+      return this->K_;
+    }
 
-    auto eigen_vectors = this->_eig_solver.get_eigen_vectors();
+    const auto eigen_vectors = this->_eig_solver.get_eigen_vectors();
 
     LQR_Operation::V1_V2_Type<T_, State_Size_> V1;
     LQR_Operation::V1_V2_Type<T_, State_Size_> V2;
 
     std::size_t minus_count = 0;
-    this->_eigen_solver_is_ill = true;
-    for (std::size_t i = 0; i < (static_cast<std::size_t>(2) * State_Size_);
-         i++) {
+    for (std::size_t i = 0; i < Hamiltonian_Type_::ROWS; ++i) {
 
       if (eigen_values(i, 0).real < static_cast<T_>(0)) {
 
+        if (minus_count == State_Size_) {
+          return this->K_;
+        }
         for (std::size_t j = 0; j < State_Size_; j++) {
           V1(j, minus_count) = eigen_vectors(j, i);
           V2(j, minus_count) = eigen_vectors(j + State_Size_, i);
         }
 
         minus_count++;
-        if (State_Size_ == minus_count) {
-          this->_eigen_solver_is_ill = false;
-          break;
-        }
       }
+    }
+    if (minus_count != State_Size_) {
+      return this->K_;
     }
 
     this->V1_inv_solver_.inv(V1);
@@ -213,6 +259,7 @@ public:
     auto P = (V2 * this->V1_inv_solver_.get_answer()).real();
 
     this->K_ = R_inv * PythonNumpy::ATranspose_mul_B(B, P);
+    this->_eigen_solver_is_ill = false;
 
     return this->K_;
   }
@@ -225,9 +272,9 @@ public:
   inline auto get_K() const -> K_Type { return this->K_; }
 
   /**
-   * @brief Checks if the eigenvalue solver is ill-posed.
+   * @brief Reports failure to compute the stable subspace in the last solve.
    *
-   * @return True if the eigenvalue solver is ill-posed, false otherwise.
+   * @return True if the last solve retained the previous gain.
    */
   inline auto get_eigen_solver_is_ill() const -> bool {
     return this->_eigen_solver_is_ill;
@@ -306,7 +353,7 @@ protected:
 
   PythonNumpy::LinalgSolverInv_Type<R_Type> R_inv_solver_;
   LQR_Operation::V1_V2_InvSolver_Type<T_, State_Size_> V1_inv_solver_;
-  PythonNumpy::LinalgSolverEig_Type<Hamiltonian_Type_> _eig_solver;
+  LQR_Operation::HamiltonianEigenSolver<Hamiltonian_Type_> _eig_solver;
 
   bool _eigen_solver_is_ill;
 };
@@ -689,6 +736,9 @@ public:
    * the Arimoto-Potter method, which involves solving a Hamiltonian matrix
    * eigenvalue problem.
    *
+   * With Arimoto-Potter, the solver retains the previous gain on failure.
+   * Check solver.get_eigen_solver_is_ill() after solve().
+   *
    * @return The computed gain matrix K.
    */
   inline K_Type solve(void) {
@@ -942,6 +992,9 @@ public:
    * This function computes the optimal gain matrix K for the LQI problem using
    * the Arimoto-Potter method, which involves solving a Hamiltonian matrix
    * eigenvalue problem.
+   *
+   * With Arimoto-Potter, the solver retains the previous gain on failure.
+   * Check solver.get_eigen_solver_is_ill() after solve().
    *
    * @return The computed gain matrix K.
    */

@@ -56,9 +56,6 @@ int main(void) {
 
   auto lqi = make_LQI(Ac, Bc, Cc, Q_ex, R_ex);
 
-  lqi.solver.set_Eigen_solver_iteration_max(Q_EX_SIZE);
-  lqi.solver.set_Eigen_solver_iteration_max_for_eigen_vector(3 * Q_EX_SIZE);
-
   auto K = lqi.solve();
   K = lqi.get_K();
 
