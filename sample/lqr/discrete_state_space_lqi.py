@@ -59,27 +59,30 @@ Dc = np.matrix([
     [0.0]
 ])
 
+# Integrate only cart position to keep the augmented plant stabilizable.
+C_integral = Cc[:1, :]
+integral_size = C_integral.shape[0]
+
 # Create Expanded State Space Model
 Ac_ex = np.block([
-    [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
-    [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
-Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+    [Ac, np.zeros((Ac.shape[0], integral_size))],
+    [C_integral, np.zeros((integral_size, integral_size))]])
+Bc_ex = np.vstack([Bc, np.zeros((integral_size, Bc.shape[1]))])
 
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
 Ad = sys_d.A
 Bd = sys_d.B
-Cd = sys_d.C
 Dd = sys_d.D
 
-# Create Expanded Discrete State Space Model for DARE
+# The discrete integral state carries over and accumulates dt times the error.
 Ad_ex = np.block([
-    [Ad, np.zeros((Ad.shape[0], Cd.shape[0]))],
-    [Cd, np.zeros((Cd.shape[0], Cd.shape[0]))]])
-Bd_ex = np.vstack([Bd, np.zeros((Cd.shape[0], Bd.shape[1]))])
+    [Ad, np.zeros((Ad.shape[0], integral_size))],
+    [dt * C_integral, np.eye(integral_size)]])
+Bd_ex = np.vstack([Bd, np.zeros((integral_size, Bd.shape[1]))])
 
-# LQI parameters
-Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
+# Weights for position, velocity, angle, angular velocity, and position integral.
+Q_ex = np.diag([0.3, 0.01, 1.0, 10.0, 0.08])
 R_ex = np.diag([1.0])
 
 
@@ -182,7 +185,8 @@ def compute_lqi_gain(algorithm):
 
 
 # You can create cpp header which can easily define LQI as C++ code
-deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(Ac, Bc, Cc, Q_ex, R_ex)
+deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(
+    Ac, Bc, C_integral, Q_ex, R_ex)
 print(deployed_file_names)
 
 
@@ -197,7 +201,7 @@ def main_reference_tracking():
     print(K_ex)
 
     K_x = K_ex[:, 0:Ac.shape[0]]
-    K_e = K_ex[:, Ac.shape[0]:(Ac.shape[0] + Cc.shape[0])]
+    K_e = K_ex[:, Ac.shape[0]:]
 
     # prepare simulation
     t = 0.0
@@ -217,12 +221,8 @@ def main_reference_tracking():
         [0.0]
     ])
 
-    y_ref = np.matrix([
-        [1.0],
-        [0.0]
-    ])
-
-    e_y_integral = np.zeros((2, 1))
+    y_ref = C_integral * x_ref
+    e_y_integral = np.zeros((integral_size, 1))
 
     time = []
     plotter = SimulationPlotterDash()
@@ -231,11 +231,11 @@ def main_reference_tracking():
 
     # simulation
     while t <= simulation_time:
-        y = Cc * x
+        y = C_integral * x
         e_y = y_ref - y
-        e_y_integral = e_y_integral + dt * e_y
 
         u = K_x * (x_ref - x) + K_e * e_y_integral
+        e_y_integral = e_y_integral + dt * e_y
         u0 = float(u[0, 0]) + u_offset
 
         x = process(x, u0)

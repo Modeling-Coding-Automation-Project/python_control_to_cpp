@@ -17,6 +17,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 import numpy as np
 import control
+from scipy.linalg import solve_discrete_are
 
 from python_control.lqr_deploy import LQI_Deploy, LQR_METHOD
 from test_sil.SIL_operator import SIL_CodeGenerator
@@ -26,54 +27,51 @@ simulation_time = 10.0
 dt = 0.1
 
 # pendulum model continuous
-Ac = np.matrix([
+Ac = np.array([
     [0.0, 1.0, 0.0, 0.0],
     [0.0, -0.1, 3.0, 0.0],
     [0.0, 0.0, 0.0, 1.0],
     [0.0, -0.5, 30.0, 0.0]
 ])
 
-Bc = np.matrix([
+Bc = np.array([
     [0.0],
     [2.0],
     [0.0],
     [5.0]
 ])
 
-Cc = np.matrix([
+Cc = np.array([
     [1.0, 0.0, 0.0, 0.0],
     [0.0, 0.0, 1.0, 0.0]
 ])
 
-Dc = np.matrix([
+Dc = np.array([
     [0.0],
     [0.0]
 ])
 
-# Create Expanded State Space Model
-Ac_ex = np.block([
-    [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
-    [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
-Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+# Integrate cart position so the augmented plant is stabilizable.
+C_integral = Cc[:1, :]
+integral_size = C_integral.shape[0]
 
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
 Ad = sys_d.A
 Bd = sys_d.B
-Cd = sys_d.C
-Dd = sys_d.D
 
-# LQI parameters
-Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
+# Match the discrete LQI sample's weights.
+Q_ex = np.diag([0.3, 0.01, 1.0, 10.0, 0.08])
 R_ex = np.diag([1.0])
 
 deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(
     A=Ad,
     B=Bd,
-    C=Cc,
+    C=C_integral,
     Q_ex=Q_ex,
     R_ex=R_ex,
-    method=LQR_METHOD.DARE
+    method=LQR_METHOD.DARE,
+    dt=dt
 )
 
 current_dir = os.path.dirname(__file__)
@@ -84,52 +82,40 @@ from test_sil.lqi import LqiSIL
 LqiSIL.initialize()
 
 
-def solve_dare_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
-    P = Q.copy()
-
-    for i in range(max_iter):
-        BT_P = B.T @ P
-        S = R + BT_P @ B
-
-        K = np.linalg.solve(S, BT_P @ A)
-
-        P_next = A.T @ P @ A - A.T @ P @ B @ K + Q
-
-        err = np.linalg.norm(P_next - P, ord="fro")
-
-        P = P_next
-
-        if err < tol:
-            return P, i + 1, True
-
-    return P, max_iter, False
-
-
-def dlqr_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
-    P, num_iter, converged = solve_dare_iterative(
-        A, B, Q, R, max_iter=max_iter, tol=tol
-    )
-
-    K = np.linalg.solve(B.T @ P @ B + R, B.T @ P @ A)
-
-    return K
-
-
-# Create Expanded Discrete State Space Model for DARE
+# Use SciPy's DARE solution as an independent reference.
 Ad_ex = np.block([
-    [Ad, np.zeros((Ad.shape[0], Cd.shape[0]))],
-    [Cd, np.zeros((Cd.shape[0], Cd.shape[0]))]])
-Bd_ex = np.vstack([Bd, np.zeros((Cd.shape[0], Bd.shape[1]))])
+    [Ad, np.zeros((Ad.shape[0], integral_size))],
+    [dt * C_integral, np.eye(integral_size)]])
+Bd_ex = np.vstack([Bd, np.zeros((integral_size, Bd.shape[1]))])
+P = solve_discrete_are(Ad_ex, Bd_ex, Q_ex, R_ex)
+BT_P = Bd_ex.T @ P
+K_ex = np.linalg.solve(R_ex + BT_P @ Bd_ex, BT_P @ Ad_ex)
 
 tester = MCAPTester()
-NEAR_LIMIT = 1e-3
-
-K_ex = dlqr_iterative(np.asarray(Ad_ex), np.asarray(Bd_ex), Q_ex, R_ex)
-K_ex = np.matrix(K_ex)
-
 K_cpp = LqiSIL.solve()
+tester.expect_near(K_cpp, K_ex, 1e-4, "LQI SIL, check DARE gain.")
+np.testing.assert_array_equal(LqiSIL.get_K(), K_cpp,
+                              err_msg="LQI SIL, check stored gain.")
 
-tester.expect_near(K_cpp, K_ex, NEAR_LIMIT,
-                   "LQI SIL, check K.")
+closed_loop_poles = np.linalg.eigvals(Ad_ex - Bd_ex @ K_cpp)
+if np.any(np.abs(closed_loop_poles) >= 1.0):
+    raise AssertionError("LQI SIL, the discrete closed loop is unstable.")
 
+# Track the sample's position command with the same constant input offset.
+state_size = Ad.shape[0]
+K_x = K_cpp[:, :state_size]
+K_e = K_cpp[:, state_size:]
+x_ref = np.array([[1.0], [0.0], [0.0], [0.0]])
+y_ref = C_integral @ x_ref
+x = np.zeros_like(x_ref)
+e_y_integral = np.zeros_like(y_ref)
+u_offset = 0.1
+
+for _ in range(round(simulation_time / dt)):
+    u = K_x @ (x_ref - x) + K_e @ e_y_integral
+    e_y_integral += dt * (y_ref - C_integral @ x)
+    x = Ad @ x + Bd @ (u + u_offset)
+
+tester.expect_near(Cc @ x, Cc @ x_ref, 1e-3,
+                   "LQI SIL, check position and angle with input offset.")
 tester.throw_error_if_test_failed()

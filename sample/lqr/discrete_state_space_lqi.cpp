@@ -18,27 +18,29 @@ using namespace PythonControl;
 
 constexpr std::size_t LQI_METHOD = PythonControl::LQR_METHOD_DARE;
 
-/* Dispatch: Arimoto-Potter uses continuous-time Ac, Bc, Cc */
+/* Dispatch: Arimoto-Potter uses continuous-time Ac, Bc, C_integral */
 template <
     std::size_t Method, typename AcType, typename BcType, typename CcType,
     typename AdType, typename BdType, typename QType, typename RType,
     typename std::enable_if<Method == LQR_METHOD_ARIMOTO_POTTER, int>::type = 0>
 inline auto make_lqi_dispatch(const AcType &Ac, const BcType &Bc,
                               const CcType &Cc, const AdType &, const BdType &,
-                              const QType &Q, const RType &R)
+                              const QType &Q, const RType &R, double)
     -> decltype(make_LQI<Method>(Ac, Bc, Cc, Q, R)) {
   return make_LQI<Method>(Ac, Bc, Cc, Q, R);
 }
 
-/* Dispatch: DARE uses discrete-time Ad, Bd, Cc */
+/* Dispatch: DARE uses discrete-time Ad, Bd, C_integral and dt */
 template <std::size_t Method, typename AcType, typename BcType, typename CcType,
           typename AdType, typename BdType, typename QType, typename RType,
           typename std::enable_if<Method == LQR_METHOD_DARE, int>::type = 0>
 inline auto make_lqi_dispatch(const AcType &, const BcType &, const CcType &Cc,
                               const AdType &Ad, const BdType &Bd,
-                              const QType &Q, const RType &R)
-    -> decltype(make_LQI<Method>(Ad, Bd, Cc, Q, R)) {
-  return make_LQI<Method>(Ad, Bd, Cc, Q, R);
+                              const QType &Q, const RType &R, double dt)
+    -> decltype(make_LQI<Method>(Ad, Bd, Cc, Q, R, dt)) {
+  auto lqi = make_LQI<Method>(Ad, Bd, Cc, Q, R, dt);
+  lqi.solver.set_iteration_max(1000);
+  return lqi;
 }
 
 int main(void) {
@@ -80,14 +82,19 @@ int main(void) {
 
   auto plant = make_DiscreteStateSpace(Ad, Bd, Cc, D, dt);
 
-  /* Create controller model */
-  constexpr std::size_t Q_EX_SIZE = 6;
-  auto Q_ex = make_DiagMatrix<Q_EX_SIZE>(1.0, 0.1, 1.0, 0.1, 2.0, 0.1);
+  /* Integrate only cart position to keep the augmented plant stabilizable. */
+  using SparseAvailable_C_integral =
+      SparseAvailable<ColumnAvailable<true, false, false, false>>;
+  auto C_integral = make_SparseMatrix<SparseAvailable_C_integral>(1.0);
+
+  /* Weights for position, velocity, angle, angular velocity, and position
+     integral. */
+  constexpr std::size_t Q_EX_SIZE = 5;
+  auto Q_ex = make_DiagMatrix<Q_EX_SIZE>(0.3, 0.01, 1.0, 10.0, 0.08);
   auto R_ex = make_DiagMatrix<1>(1.0);
 
-  auto lqi = make_lqi_dispatch<LQI_METHOD>(Ac, Bc, Cc, Ad, Bd, Q_ex, R_ex);
-
-  lqi.solver.set_iteration_max(Q_EX_SIZE);
+  auto lqi =
+      make_lqi_dispatch<LQI_METHOD>(Ac, Bc, C_integral, Ad, Bd, Q_ex, R_ex, dt);
 
   auto K = lqi.solve();
   K = lqi.get_K();
@@ -95,32 +102,30 @@ int main(void) {
   auto K_x =
       make_DenseMatrix<1, 4>(K.template get<0, 0>(), K.template get<0, 1>(),
                              K.template get<0, 2>(), K.template get<0, 3>());
-  auto K_e =
-      make_DenseMatrix<1, 2>(K.template get<0, 4>(), K.template get<0, 5>());
+  auto K_e = make_DenseMatrix<1, 1>(K.template get<0, 4>());
 
   std::cout << "K: ";
   std::cout << K(0, 0) << ", ";
   std::cout << K(0, 1) << ", ";
   std::cout << K(0, 2) << ", ";
   std::cout << K(0, 3) << ", ";
-  std::cout << K(0, 4) << ", ";
-  std::cout << K(0, 5) << ", ";
+  std::cout << K(0, 4);
   std::cout << std::endl << std::endl;
 
   /* Simulation */
   auto X_ref = make_DenseMatrix<4, 1>(1.0, 0.0, 0.0, 0.0);
-  auto Y_ref = make_DenseMatrix<2, 1>(1.0, 0.0);
-  auto e_y_integral = make_DenseMatrix<2, 1>(0.0, 0.0);
+  auto Y_ref = C_integral * X_ref;
+  auto e_y_integral = make_DenseMatrix<1, 1>(0.0);
 
   auto U_offset = make_DenseMatrix<1, 1>(0.1);
 
   for (int i = 0; i < 100; i++) {
     auto X = plant.get_X();
-    auto Y = Cc * X;
+    auto Y = C_integral * X;
     auto e_y = Y_ref - Y;
-    e_y_integral = e_y_integral + e_y * dt;
 
     auto U = K_x * (X_ref - X) + K_e * e_y_integral + U_offset;
+    e_y_integral = e_y_integral + e_y * dt;
 
     plant.update(U);
 
