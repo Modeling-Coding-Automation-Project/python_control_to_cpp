@@ -38,7 +38,9 @@ inline auto make_lqi_dispatch(const AcType &, const BcType &, const CcType &Cc,
                               const AdType &Ad, const BdType &Bd,
                               const QType &Q, const RType &R)
     -> decltype(make_LQI<Method>(Ad, Bd, Cc, Q, R)) {
-  return make_LQI<Method>(Ad, Bd, Cc, Q, R);
+  auto lqi = make_LQI<Method>(Ad, Bd, Cc, Q, R);
+  lqi.solver.set_iteration_max(static_cast<std::size_t>(QType::ROWS));
+  return lqi;
 }
 
 int main(void) {
@@ -86,8 +88,6 @@ int main(void) {
   auto R_ex = make_DiagMatrix<1>(1.0);
 
   auto lqi = make_lqi_dispatch<LQI_METHOD>(Ac, Bc, Cc, Ad, Bd, Q_ex, R_ex);
-
-  lqi.solver.set_iteration_max(Q_EX_SIZE);
 
   auto K = lqi.solve();
   K = lqi.get_K();
