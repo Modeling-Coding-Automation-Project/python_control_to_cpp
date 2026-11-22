@@ -13,7 +13,10 @@ constexpr std::size_t Q_EX_SIZE = lqi_SIL_wrapper::Q_EX_SIZE;
 
 lqi_SIL_wrapper::type lqi;
 
-void initialize(void) { lqi = lqi_SIL_wrapper::make(); }
+void initialize(void) {
+  lqi = lqi_SIL_wrapper::make();
+  lqi.solver.set_iteration_max(1000);
+}
 
 py::array_t<FLOAT> solve(void) {
   auto K = lqi.solve();
