@@ -61,7 +61,13 @@ struct Hamiltonian {
       Q_Type, PythonNumpy::Transpose_Type<A_Type>>;
 };
 
-// The NumPy wrapper keeps the underlying solver's convergence state protected.
+/**
+ * @brief Eigen solver for the Hamiltonian matrix in LQR.
+ *
+ * This class wraps the eigenvalue solver for the Hamiltonian matrix, providing
+ * methods to check the convergence of eigenvalues and the stability of the
+ * corresponding eigenvectors.
+ */
 template <typename Matrix>
 class HamiltonianEigenSolver
     : public PythonNumpy::LinalgSolverEig_Type<Matrix> {
@@ -70,6 +76,17 @@ public:
     return this->Eigen_solver_.eigen_values_converged();
   }
 
+  /**
+   * @brief Checks if the stable eigenvectors have converged.
+   *
+   * This function verifies the convergence of the eigenvectors corresponding
+   * to the stable subspace of the Hamiltonian matrix.
+   *
+   * @tparam EigenValues The type of the eigenvalues matrix.
+   * @param hamiltonian The Hamiltonian matrix.
+   * @param eigen_values The eigenvalues of the Hamiltonian matrix.
+   * @return true if the stable eigenvectors have converged, false otherwise.
+   */
   template <typename EigenValues>
   inline bool stable_eigenvectors_converged(const Matrix &hamiltonian,
                                             const EigenValues &eigen_values) {
