@@ -875,9 +875,7 @@ using LQR_Type = LQR<A_Type, B_Type, Q_Type, R_Type, Method>;
  * @tparam C_Type_In Type of the output matrix C.
  * @tparam Q_Type_In Type of the state cost matrix Q.
  * @tparam R_Type_In Type of the input cost matrix R.
- * The class provides methods to compute the optimal gain matrix K using the
- * Arimoto-Potter method, which involves solving a Hamiltonian matrix
- * eigenvalue problem.
+ * @tparam Method Continuous-time Arimoto-Potter or discrete-time DARE.
  */
 template <typename A_Type_In, typename B_Type_In, typename C_Type_In,
           typename Q_Type_In, typename R_Type_In,
@@ -898,10 +896,19 @@ protected:
                     std::is_same<T_, float>::value,
                 "Matrix value data type must be float or double.");
 
-  using A_EX_Type_ = PythonNumpy::ConcatenateHorizontally_Type<
-      PythonNumpy::ConcatenateVertically_Type<A_Type, C_Type>,
-      PythonNumpy::SparseMatrixEmpty_Type<T_, (A_Type::ROWS + C_Type::ROWS),
-                                          C_Type::ROWS>>;
+  using Is_Discrete_ = std::integral_constant<bool, Method == LQR_METHOD_DARE>;
+  using Integral_Zero_Type_ =
+      PythonNumpy::SparseMatrixEmpty_Type<T_, C_Type::ROWS, C_Type::ROWS>;
+  using Integral_Identity_Type_ =
+      PythonNumpy::DiagMatrix_Type<T_, C_Type::ROWS>;
+  using Integral_Dynamics_Type_ =
+      typename std::conditional<Is_Discrete_::value, Integral_Identity_Type_,
+                                Integral_Zero_Type_>::type;
+
+  using A_EX_Type_ = PythonNumpy::ConcatenateBlock_Type<
+      2, 2, A_Type,
+      PythonNumpy::SparseMatrixEmpty_Type<T_, A_Type::ROWS, C_Type::ROWS>,
+      C_Type, Integral_Dynamics_Type_>;
 
   using B_EX_Type_ = PythonNumpy::ConcatenateVertically_Type<
       B_Type,
@@ -954,16 +961,17 @@ public:
 
 public:
   /* Constructor */
-  LQI() : solver(), A_(), B_(), C_(), Q_(), R_(), K_() {}
+  LQI()
+      : solver(), A_(), B_(), C_(), Q_(), R_(), K_(), dt_(static_cast<T_>(1)) {}
 
   LQI(const A_Type &A, const B_Type &B, const C_Type &C, const Q_Type &Q,
-      const R_Type &R)
-      : solver(), A_(A), B_(B), C_(C), Q_(Q), R_(R), K_() {}
+      const R_Type &R, T_ dt = static_cast<T_>(1))
+      : solver(), A_(A), B_(B), C_(C), Q_(Q), R_(R), K_(), dt_(dt) {}
 
   /* Copy Constructor */
   LQI(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &input)
       : solver(input.solver), A_(input.A_), B_(input.B_), C_(input.C_),
-        Q_(input.Q_), R_(input.R_), K_(input.K_) {}
+        Q_(input.Q_), R_(input.R_), K_(input.K_), dt_(input.dt_) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &
   operator=(const LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &input) {
@@ -974,6 +982,7 @@ public:
       this->Q_ = input.Q_;
       this->R_ = input.R_;
       this->K_ = input.K_;
+      this->dt_ = input.dt_;
       this->solver = input.solver;
     }
     return *this;
@@ -984,7 +993,7 @@ public:
       : solver(std::move(input.solver)), A_(std::move(input.A_)),
         B_(std::move(input.B_)), C_(std::move(input.C_)),
         Q_(std::move(input.Q_)), R_(std::move(input.R_)),
-        K_(std::move(input.K_)) {}
+        K_(std::move(input.K_)), dt_(input.dt_) {}
 
   LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &operator=(
       LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> &&input) noexcept {
@@ -995,6 +1004,7 @@ public:
       this->Q_ = std::move(input.Q_);
       this->R_ = std::move(input.R_);
       this->K_ = std::move(input.K_);
+      this->dt_ = input.dt_;
       this->solver = std::move(input.solver);
     }
     return *this;
@@ -1004,11 +1014,10 @@ public:
   /* Function */
 
   /**
-   * @brief Solves the LQI problem using the Arimoto-Potter method.
+   * @brief Solves the augmented LQI problem with the selected method.
    *
-   * This function computes the optimal gain matrix K for the LQI problem using
-   * the Arimoto-Potter method, which involves solving a Hamiltonian matrix
-   * eigenvalue problem.
+   * The continuous augmentation uses z_dot = C*x. The discrete
+   * augmentation uses z[k+1] = z[k] + dt*C*x[k].
    *
    * With Arimoto-Potter, the solver retains the previous gain on failure.
    * Check solver.get_eigen_solver_is_ill() after solve().
@@ -1017,10 +1026,11 @@ public:
    */
   inline K_Type solve(void) {
 
-    auto A_ex = PythonNumpy::concatenate_horizontally(
-        PythonNumpy::concatenate_vertically(this->A_, this->C_),
-        PythonNumpy::make_SparseMatrixEmpty<T_, (State_Size_ + Output_Size_),
-                                            Output_Size_>());
+    auto C_ex = Is_Discrete_::value ? this->C_ * this->dt_ : this->C_;
+    auto A_ex = PythonNumpy::concatenate_block<2, 2>(
+        this->A_,
+        PythonNumpy::make_SparseMatrixEmpty<T_, State_Size_, Output_Size_>(),
+        C_ex, integral_dynamics(Is_Discrete_{}));
 
     auto B_ex = PythonNumpy::concatenate_vertically(
         this->B_,
@@ -1032,13 +1042,7 @@ public:
   }
 
   /**
-   * @brief Computes the gain matrix K using the Arimoto-Potter method.
-   *
-   * This function computes the gain matrix K for the LQI problem using the
-   * Arimoto-Potter method, which involves solving a Hamiltonian matrix
-   * eigenvalue problem.
-   *
-   * @return The computed gain matrix K.
+   * @brief Returns the most recently computed gain matrix K.
    */
   inline K_Type get_K() const { return this->K_; }
 
@@ -1092,6 +1096,16 @@ public:
   /* Variable */
   Solver_Type solver;
 
+private:
+  static Integral_Identity_Type_ integral_dynamics(std::true_type) {
+    return PythonNumpy::make_DiagMatrixIdentity<T_, Output_Size_>();
+  }
+
+  static Integral_Zero_Type_ integral_dynamics(std::false_type) {
+    return PythonNumpy::make_SparseMatrixEmpty<T_, Output_Size_,
+                                               Output_Size_>();
+  }
+
 protected:
   /* Variable */
   A_Type A_;
@@ -1100,6 +1114,7 @@ protected:
   Q_Type Q_;
   R_Type R_;
   K_Type K_;
+  T_ dt_;
 };
 
 /* Make LQI */
@@ -1111,21 +1126,26 @@ protected:
  * transition matrix A, input matrix B, output matrix C, state cost matrix Q,
  * and input cost matrix R. It returns an instance of the LQI class with
  * these parameters.
+ * For DARE, pass discrete A and B and the unscaled output matrix C.
  *
  * @param A The state transition matrix A.
  * @param B The input matrix B.
  * @param C The output matrix C.
  * @param Q The state cost matrix Q.
  * @param R The input cost matrix R.
+ * @param dt Positive sample period for DARE (defaults to one time unit).
+ * This parameter is unused by Arimoto-Potter.
  * @return An instance of the LQI class initialized with the provided matrices.
  */
 template <std::size_t Method = LQR_METHOD_ARIMOTO_POTTER, typename A_Type,
           typename B_Type, typename C_Type, typename Q_Type, typename R_Type>
 inline auto make_LQI(const A_Type &A, const B_Type &B, const C_Type &C,
-                     const Q_Type &Q, const R_Type &R)
+                     const Q_Type &Q, const R_Type &R,
+                     typename A_Type::Value_Type dt =
+                         static_cast<typename A_Type::Value_Type>(1))
     -> LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method> {
 
-  return LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method>(A, B, C, Q, R);
+  return LQI<A_Type, B_Type, C_Type, Q_Type, R_Type, Method>(A, B, C, Q, R, dt);
 }
 
 /* LQI Type */

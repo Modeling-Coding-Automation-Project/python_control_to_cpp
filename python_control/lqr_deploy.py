@@ -211,7 +211,8 @@ class LQI_Deploy:
 
     @staticmethod
     def generate_LQI_cpp_code(
-            A, B, C, Q_ex, R_ex, file_name=None, method=LQR_METHOD.ARIMOTO_POTTER):
+            A, B, C, Q_ex, R_ex, file_name=None,
+            method=LQR_METHOD.ARIMOTO_POTTER, dt=1.0):
         """
         Generates C++ code for an LQI controller using the provided state-space matrices and weighting matrices.
         Args:
@@ -222,12 +223,20 @@ class LQI_Deploy:
             R_ex (np.ndarray): Input weighting matrix for the LQI controller.
             file_name (str, optional): The base name for the generated C++ header file. If None, the caller's file name is used.
             method (int, optional): The method to use for LQI computation. Defaults to LQR_METHOD.ARIMOTO_POTTER.
+            dt (float, optional): Positive sampling period for DARE. Defaults to 1.0.
+                DARE expects discrete A and B and an unscaled C.
         Returns:
             list: A list of file names for the generated C++ header files.
         Raises:
             ValueError: If the input matrices are not compatible or if the data type is unsupported.
         """
         deployed_file_names = []
+
+        if method == LQR_METHOD.DARE:
+            dt = float(dt)
+            if not np.isfinite(dt) or dt <= 0.0:
+                raise ValueError(
+                    "The DARE sampling period must be finite and positive.")
 
         ControlDeploy.restrict_data_type(A.dtype.name)
 
@@ -350,7 +359,12 @@ class LQI_Deploy:
 
         code_text += "inline auto make() -> type {\n\n"
 
-        code_text += "    return make_LQI<LQR_METHOD>(A, B, C, Q_ex, R_ex);\n\n"
+        sampling_period = (
+            f", static_cast<{type_name}>({dt!r})" if method == LQR_METHOD.DARE else ""
+        )
+        code_text += (
+            f"    return make_LQI<LQR_METHOD>(A, B, C, Q_ex, R_ex{sampling_period});\n\n"
+        )
 
         code_text += "}\n\n"
 

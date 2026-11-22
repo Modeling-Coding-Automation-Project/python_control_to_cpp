@@ -50,30 +50,27 @@ Dc = np.matrix([
     [0.0]
 ])
 
-# Create Expanded State Space Model
-Ac_ex = np.block([
-    [Ac, np.zeros((Ac.shape[0], Cc.shape[0]))],
-    [Cc, np.zeros((Cc.shape[0], Cc.shape[0]))]])
-Bc_ex = np.vstack([Bc, np.zeros((Cc.shape[0], Bc.shape[1]))])
+# Integrate cart position so the augmented plant is stabilizable.
+C_integral = Cc[:1, :]
+integral_size = C_integral.shape[0]
 
 # Discretize the continuous time model
 sys_d = control.c2d(control.ss(Ac, Bc, Cc, Dc), dt, method='euler')
 Ad = sys_d.A
 Bd = sys_d.B
-Cd = sys_d.C
-Dd = sys_d.D
 
 # LQI parameters
-Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0, 0.1])
+Q_ex = np.diag([1.0, 0.1, 1.0, 0.1, 2.0])
 R_ex = np.diag([1.0])
 
 deployed_file_names = LQI_Deploy.generate_LQI_cpp_code(
     A=Ad,
     B=Bd,
-    C=Cc,
+    C=C_integral,
     Q_ex=Q_ex,
     R_ex=R_ex,
-    method=LQR_METHOD.DARE
+    method=LQR_METHOD.DARE,
+    dt=dt
 )
 
 current_dir = os.path.dirname(__file__)
@@ -117,9 +114,9 @@ def dlqr_iterative(A, B, Q, R, max_iter=1000, tol=1e-10):
 
 # Create Expanded Discrete State Space Model for DARE
 Ad_ex = np.block([
-    [Ad, np.zeros((Ad.shape[0], Cd.shape[0]))],
-    [Cd, np.zeros((Cd.shape[0], Cd.shape[0]))]])
-Bd_ex = np.vstack([Bd, np.zeros((Cd.shape[0], Bd.shape[1]))])
+    [Ad, np.zeros((Ad.shape[0], integral_size))],
+    [dt * C_integral, np.eye(integral_size)]])
+Bd_ex = np.vstack([Bd, np.zeros((integral_size, Bd.shape[1]))])
 
 tester = MCAPTester()
 NEAR_LIMIT = 1e-3
