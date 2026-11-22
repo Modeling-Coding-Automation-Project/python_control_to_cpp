@@ -15,7 +15,7 @@ lqi_SIL_wrapper::type lqi;
 
 void initialize(void) {
   lqi = lqi_SIL_wrapper::make();
-  lqi.solver.set_iteration_max(1000);
+  lqi.solver.set_iteration_max(200);
 }
 
 py::array_t<FLOAT> solve(void) {

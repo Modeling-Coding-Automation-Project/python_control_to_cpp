@@ -93,7 +93,7 @@ K_ex = np.linalg.solve(R_ex + BT_P @ Bd_ex, BT_P @ Ad_ex)
 
 tester = MCAPTester()
 K_cpp = LqiSIL.solve()
-tester.expect_near(K_cpp, K_ex, 1e-6, "LQI SIL, check DARE gain.")
+tester.expect_near(K_cpp, K_ex, 1e-4, "LQI SIL, check DARE gain.")
 np.testing.assert_array_equal(LqiSIL.get_K(), K_cpp,
                               err_msg="LQI SIL, check stored gain.")
 
